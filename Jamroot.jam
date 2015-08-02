@@ -1,0 +1,51 @@
+path-constant LIBRARIES
+	# path to your libraries directory
+	: /media/data/libraries/src
+	;
+
+use-project /boost
+	: $(LIBRARIES)/boost
+	;
+
+use-project /disposer
+	: $(LIBRARIES)/disposer
+	;
+
+exe disposer_module
+	:
+	[ glob src/*.cpp ]
+	/disposer//disposer
+	/boost//system
+	/boost//filesystem
+	/boost//thread
+	/boost//iostreams
+	:
+	<warnings>all
+	<c++-template-depth>1024
+
+	<toolset>gcc:<cxxflags>-std=c++14
+	<toolset>gcc:<cxxflags>-fconstexpr-depth=1024
+	<toolset>gcc:<cxxflags>-fopenmp
+	<toolset>gcc:<cxxflags>-Wno-unused-local-typedefs
+	<toolset>gcc:<cxxflags>-Wno-deprecated-declarations
+	<toolset>gcc:<linkflags>-lpthread
+	<toolset>gcc:<linkflags>-fopenmp
+
+	<toolset>clang:<cxxflags>-std=c++14
+	<toolset>clang:<cxxflags>-fconstexpr-depth=1024
+	<toolset>clang:<cxxflags>-fopenmp
+	<toolset>clang:<cxxflags>-Wno-deprecated-register
+	<toolset>clang:<cxxflags>-Wno-unused-local-typedef
+	<toolset>clang:<cxxflags>-stdlib=libc++
+	<toolset>clang:<cxxflags>-DBOOST_ASIO_HAS_STD_CHRONO
+	<toolset>clang:<linkflags>-lpthread
+	<toolset>clang:<linkflags>-lc++abi
+	<toolset>clang:<linkflags>-fopenmp
+	<toolset>clang:<linkflags>-stdlib=libc++
+	:
+	<include>./include
+	<include>$(LIBRARIES)/disposer/include
+	<include>$(LIBRARIES)/hana/include
+	<include>$(LIBRARIES)/spirit/include
+	<include>$(LIBRARIES)/boost
+	;

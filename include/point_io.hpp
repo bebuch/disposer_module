@@ -1,12 +1,11 @@
-/// \author Benjamin Buch (benni.buch@gmail.com)
-/// \date 07.05.2009
-/// \brief Input/Output for template disposer_module::point
-///
-/// Copyright (c) 2009-2015 Benjamin Buch (benni dot buch at gmail dot com)
-///
-/// Distributed under the Boost Software License, Version 1.0. (See accompanying
-/// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-///
+//-----------------------------------------------------------------------------
+// Copyright (c) 2009-2015 Benjamin Buch
+//
+// https://github.com/bebuch/disposer
+//
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
+//-----------------------------------------------------------------------------
 #ifndef _disposer_module_point_io_hpp_INCLUDED_
 #define _disposer_module_point_io_hpp_INCLUDED_
 

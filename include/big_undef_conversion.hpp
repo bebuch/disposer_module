@@ -1,12 +1,11 @@
-/// \author Benjamin Buch (benni.buch@googlemail.com)
-/// \date 14.12.2012
-/// \brief undef_conversion
-///
-/// Copyright (c) 2012-2015 Benjamin Buch (benni dot buch at gmail dot com)
-///
-/// Distributed under the Boost Software License, Version 1.0. (See accompanying
-/// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-///
+//-----------------------------------------------------------------------------
+// Copyright (c) 2012-2015 Benjamin Buch
+//
+// https://github.com/bebuch/disposer
+//
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
+//-----------------------------------------------------------------------------
 #ifndef _disposer_module_big_undef_conversion_hpp_INCLUDED_
 #define _disposer_module_big_undef_conversion_hpp_INCLUDED_
 

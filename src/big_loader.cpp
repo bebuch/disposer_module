@@ -213,7 +213,7 @@ namespace disposer_module{ namespace big_loader{
 			}
 		}
 
-		camera_sequence(id, result);
+		camera_sequence.put(id, result);
 	}
 
 	template < typename T >
@@ -234,7 +234,7 @@ namespace disposer_module{ namespace big_loader{
 						load_bitmap(*result->back(), tar, tarname, id, used_id, cam, pos);
 					}
 
-					sequence(id, result);
+					sequence.put(id, result);
 				}
 			});
 		}else{
@@ -247,7 +247,7 @@ namespace disposer_module{ namespace big_loader{
 					load_bitmap(*result->back(), id, used_id, cam, pos);
 				}
 
-				sequence(id, result);
+				sequence.put(id, result);
 			}
 		}
 	}
@@ -267,7 +267,7 @@ namespace disposer_module{ namespace big_loader{
 
 						load_bitmap(*result, tar, tarname, id, used_id, cam, pos);
 
-						image(id, result);
+						image.put(id, result);
 					}
 				}
 			});
@@ -278,7 +278,7 @@ namespace disposer_module{ namespace big_loader{
 
 					load_bitmap(*result, id, used_id, cam, pos);
 
-					image(id, result);
+					image.put(id, result);
 				}
 			}
 		}

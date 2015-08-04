@@ -115,7 +115,7 @@ namespace disposer_module{ namespace raster{
 				}
 			}
 
-			signals.camera_sequence(id, std::move(result));
+			signals.camera_sequence.put(id, std::move(result));
 		}
 
 		for(auto const& pair: slots.sequence.get(id)){
@@ -127,14 +127,14 @@ namespace disposer_module{ namespace raster{
 				(*result)[i] = apply_raster(*data[i]);
 			}
 
-			signals.sequence(id, std::move(result));
+			signals.sequence.put(id, std::move(result));
 		}
 
 		for(auto const& pair: slots.image.get(id)){
 			auto id = pair.first;
 			auto& data = pair.second.data();
 
-			signals.image(id, apply_raster(data));
+			signals.image.put(id, apply_raster(data));
 		}
 	}
 

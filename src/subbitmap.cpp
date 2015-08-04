@@ -142,7 +142,7 @@ namespace disposer_module{ namespace subbitmap{
 				}
 			}
 
-			signals.camera_sequence(id, std::move(result));
+			signals.camera_sequence.put(id, std::move(result));
 		}
 
 		for(auto const& pair: slots.sequence.get(id)){
@@ -154,14 +154,14 @@ namespace disposer_module{ namespace subbitmap{
 				(*result)[i] = subbitmap(*data[i]);
 			}
 
-			signals.sequence(id, std::move(result));
+			signals.sequence.put(id, std::move(result));
 		}
 
 		for(auto const& pair: slots.image.get(id)){
 			auto id = pair.first;
 			auto& data = pair.second.data();
 
-			signals.image(id, subbitmap(data));
+			signals.image.put(id, subbitmap(data));
 		}
 	}
 

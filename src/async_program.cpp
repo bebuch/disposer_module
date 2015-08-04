@@ -47,7 +47,7 @@ namespace disposer_module{ namespace async_program{
 			using namespace boost::iostreams;
 
 			if(!param.output){
-				future(id, std::async(std::launch::async, [this, id]{
+				future.put(id, std::async(std::launch::async, [this, id]{
 #if defined(BOOST_WINDOWS_API)
 					file_descriptor_sink sink("nul");
 #elif defined(BOOST_POSIX_API)
@@ -75,7 +75,7 @@ namespace disposer_module{ namespace async_program{
 					}
 				}));
 			}else{
-				future_output(id, std::async(std::launch::async, [this, id]{
+				future_output.put(id, std::async(std::launch::async, [this, id]{
 					auto pipe = create_pipe();
 					{
 						file_descriptor_sink sink(pipe.sink, close_handle);

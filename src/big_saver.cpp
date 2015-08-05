@@ -54,9 +54,9 @@ namespace disposer_module{ namespace big_saver{
 				inputs = disposer::make_input_list(camera_sequence, sequence, image);
 			}
 
-		disposer::module_input< camera_pointer_sequence< T > > camera_sequence{"camera_sequence"};
-		disposer::module_input< bitmap_pointer_sequence< T > > sequence{"sequence"};
-		disposer::module_input< bitmap< T > > image{"image"};
+		disposer::input< camera_pointer_sequence< T > > camera_sequence{"camera_sequence"};
+		disposer::input< bitmap_pointer_sequence< T > > sequence{"sequence"};
+		disposer::input< bitmap< T > > image{"image"};
 
 		void save(std::size_t id, save_type const& camera_sequence);
 

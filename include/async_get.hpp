@@ -28,9 +28,9 @@ namespace disposer_module{ namespace async_get{
 				outputs = disposer::make_output_list(result);
 			}
 
-		disposer::module_input< std::future< T > > future{"future"};
+		disposer::input< std::future< T > > future{"future"};
 
-		disposer::module_output< T > result{"result"};
+		disposer::output< T > result{"result"};
 
 		void trigger(std::size_t id)override{
 			for(auto& pair: future.get(id)){
@@ -47,7 +47,7 @@ namespace disposer_module{ namespace async_get{
 				inputs = disposer::make_input_list(future);
 			}
 
-		disposer::module_input< std::future< void > > future{"future"};
+		disposer::input< std::future< void > > future{"future"};
 
 		void trigger(std::size_t id)override{
 			for(auto& pair: future.get(id)){

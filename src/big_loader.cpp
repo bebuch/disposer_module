@@ -53,9 +53,9 @@ namespace disposer_module{ namespace big_loader{
 				outputs = disposer::make_output_list(camera_sequence, sequence, image);
 			}
 
-		disposer::module_output< camera_pointer_sequence< T > > camera_sequence{"camera_sequence"};
-		disposer::module_output< bitmap_pointer_sequence< T > > sequence{"sequence"};
-		disposer::module_output< bitmap< T > > image{"image"};
+		disposer::output< camera_pointer_sequence< T > > camera_sequence{"camera_sequence"};
+		disposer::output< bitmap_pointer_sequence< T > > sequence{"sequence"};
+		disposer::output< bitmap< T > > image{"image"};
 
 		std::string tar_name(std::size_t id);
 		std::string big_name(std::size_t cam, std::size_t pos);

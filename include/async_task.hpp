@@ -24,7 +24,7 @@ namespace disposer_module{ namespace async_task{
 				outputs = disposer::make_output_list(future);
 			}
 
-		disposer::module_output< std::future< T > > shared_future{"future"};
+		disposer::output< std::future< T > > shared_future{"future"};
 	};
 
 	void check_outputs(disposer::io_list const& outputs){

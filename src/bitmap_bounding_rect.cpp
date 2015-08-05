@@ -27,8 +27,8 @@ namespace disposer_module{ namespace bitmap_bounding_rect{
 				outputs = disposer::make_output_list(rect);
 			}
 
-		disposer::module_input< bitmap< float >, bitmap< double >, bitmap< long double> > image{"image"};
-		disposer::module_output< rect< std::size_t > > rect{"rect"};
+		disposer::input< bitmap< float >, bitmap< double >, bitmap< long double> > image{"image"};
+		disposer::output< rect< std::size_t > > rect{"rect"};
 
 		void trigger(std::size_t id)override;
 	};
@@ -53,7 +53,7 @@ namespace disposer_module{ namespace bitmap_bounding_rect{
 
 	struct visitor: boost::static_visitor< rect< std::size_t > >{
 		template < typename T >
-		rect< std::size_t > operator()(disposer::module_input_data< bitmap< T > > const& data)const{
+		rect< std::size_t > operator()(disposer::input_data< bitmap< T > > const& data)const{
 			using std::isnan;
 
 			auto& image = data.data();

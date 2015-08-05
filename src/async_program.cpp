@@ -38,8 +38,8 @@ namespace disposer_module{ namespace async_program{
 				outputs = disposer::make_output_list(future, future_output);
 			}
 
-		disposer::module_output< std::future< void > > future{"future"};
-		disposer::module_output< std::future< std::string > > future_output{"future_output"};
+		disposer::output< std::future< void > > future{"future"};
+		disposer::output< std::future< std::string > > future_output{"future_output"};
 
 		void trigger(std::size_t id)override{
 			using namespace boost::process;

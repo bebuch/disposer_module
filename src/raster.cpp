@@ -35,15 +35,15 @@ namespace disposer_module{ namespace raster{
 		bitmap< T > apply_raster(bitmap< T > const& image)const;
 
 		struct{
-			disposer::module_input< camera_pointer_sequence< T > > camera_sequence{"camera_sequence"};
-			disposer::module_input< bitmap_pointer_sequence< T > > sequence{"sequence"};
-			disposer::module_input< bitmap< T > > image{"image"};
+			disposer::input< camera_pointer_sequence< T > > camera_sequence{"camera_sequence"};
+			disposer::input< bitmap_pointer_sequence< T > > sequence{"sequence"};
+			disposer::input< bitmap< T > > image{"image"};
 		} slots;
 
 		struct{
-			disposer::module_output< camera_pointer_sequence< T > > camera_sequence{"camera_sequence"};
-			disposer::module_output< bitmap_pointer_sequence< T > > sequence{"sequence"};
-			disposer::module_output< bitmap< T > > image{"image"};
+			disposer::output< camera_pointer_sequence< T > > camera_sequence{"camera_sequence"};
+			disposer::output< bitmap_pointer_sequence< T > > sequence{"sequence"};
+			disposer::output< bitmap< T > > image{"image"};
 		} signals;
 
 		void trigger(std::size_t id)override;

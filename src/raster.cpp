@@ -32,7 +32,7 @@ namespace disposer_module{ namespace raster{
 				outputs = disposer::make_output_list(signals.camera_sequence, signals.sequence, signals.image);
 			}
 
-		std::shared_ptr< bitmap< T > > apply_raster(bitmap< T > const& image)const;
+		bitmap< T > apply_raster(bitmap< T > const& image)const;
 
 		struct{
 			disposer::module_input< camera_pointer_sequence< T > > camera_sequence{"camera_sequence"};
@@ -90,11 +90,11 @@ namespace disposer_module{ namespace raster{
 
 
 	template < typename T >
-	std::shared_ptr< bitmap< T > > module< T >::apply_raster(bitmap< T > const& image)const{
-		auto result = std::make_shared< bitmap< T > >((image.width() - 1) / param.raster + 1, (image.height() - 1) / param.raster + 1);
-		for(std::size_t y = 0; y < result->height(); ++y){
-			for(std::size_t x = 0; x < result->width(); ++x){
-				(*result)(x, y) = image(x * param.raster, y * param.raster);
+	bitmap< T > module< T >::apply_raster(bitmap< T > const& image)const{
+		bitmap< T > result((image.width() - 1) / param.raster + 1, (image.height() - 1) / param.raster + 1);
+		for(std::size_t y = 0; y < result.height(); ++y){
+			for(std::size_t x = 0; x < result.width(); ++x){
+				result(x, y) = image(x * param.raster, y * param.raster);
 			}
 		}
 		return result;
@@ -107,11 +107,11 @@ namespace disposer_module{ namespace raster{
 			auto id = pair.first;
 			auto& data = pair.second.data();
 
-			auto result = std::make_shared< camera_pointer_sequence< T > >(data.size());
+			camera_pointer_sequence< T > result(data.size());
 			for(std::size_t i = 0; i < data.size(); ++i){
-				(*result)[i] = std::make_shared< bitmap_pointer_sequence< T > >((*data[i]).size());
+				result[i] = std::make_shared< bitmap_pointer_sequence< T > >((*data[i]).size());
 				for(std::size_t j = 0; j < (*data[i]).size(); ++j){
-					(*(*result)[i])[j] = apply_raster(*(*data[i])[j]);
+					(*result[i])[j] = std::make_shared< bitmap< T > >(apply_raster(*(*data[i])[j]));
 				}
 			}
 
@@ -122,9 +122,9 @@ namespace disposer_module{ namespace raster{
 			auto id = pair.first;
 			auto& data = pair.second.data();
 
-			auto result = std::make_shared< bitmap_pointer_sequence< T > >(data.size());
+			bitmap_pointer_sequence< T > result(data.size());
 			for(std::size_t i = 0; i < data.size(); ++i){
-				(*result)[i] = apply_raster(*data[i]);
+				result[i] = std::make_shared< bitmap< T > >(apply_raster(*data[i]));
 			}
 
 			signals.sequence.put(id, std::move(result));

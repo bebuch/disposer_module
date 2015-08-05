@@ -186,7 +186,7 @@ namespace disposer_module{ namespace big_loader{
 	void module< T >::trigger_camera_sequence(std::size_t id){
 		auto used_id = param.fixed_id ? *param.fixed_id : id;
 
-		auto result = std::make_shared< camera_pointer_sequence< T > >();
+		camera_pointer_sequence< T > result;
 
 		if(param.tar){
 			auto tarname = param.dir + "/" + (*param.tar_pattern)(used_id);
@@ -194,26 +194,26 @@ namespace disposer_module{ namespace big_loader{
 				tar_reader tar(tarname);
 
 				for(std::size_t cam = param.camera_start; cam < param.camera_count + param.camera_start; ++cam){
-					result->emplace_back(std::make_shared< bitmap_pointer_sequence< T > >());
+					result.emplace_back(std::make_shared< bitmap_pointer_sequence< T > >());
 					for(std::size_t pos = param.sequence_start; pos < param.sequence_count + param.sequence_start; ++pos){
-						result->back()->emplace_back(std::make_shared< bitmap< T > >());
+						result.back()->emplace_back(std::make_shared< bitmap< T > >());
 
-						load_bitmap(*result->back()->back(), tar, tarname, id, used_id, cam, pos);
+						load_bitmap(*result.back()->back(), tar, tarname, id, used_id, cam, pos);
 					}
 				}
 			});
 		}else{
 			for(std::size_t cam = param.camera_start; cam < param.camera_count + param.camera_start; ++cam){
-				result->emplace_back(std::make_shared< bitmap_pointer_sequence< T > >());
+				result.emplace_back(std::make_shared< bitmap_pointer_sequence< T > >());
 				for(std::size_t pos = param.sequence_start; pos < param.sequence_count + param.sequence_start; ++pos){
-					result->back()->emplace_back(std::make_shared< bitmap< T > >());
+					result.back()->emplace_back(std::make_shared< bitmap< T > >());
 
-					load_bitmap(*result->back()->back(), id, used_id, cam, pos);
+					load_bitmap(*result.back()->back(), id, used_id, cam, pos);
 				}
 			}
 		}
 
-		camera_sequence.put(id, result);
+		camera_sequence.put(id, std::move(result));
 	}
 
 	template < typename T >
@@ -226,28 +226,28 @@ namespace disposer_module{ namespace big_loader{
 				tar_reader tar(tarname);
 
 				for(std::size_t cam = param.camera_start; cam < param.camera_count + param.camera_start; ++cam){
-					auto result = std::make_shared< bitmap_pointer_sequence< T > >();
+					bitmap_pointer_sequence< T > result;
 
 					for(std::size_t pos = param.sequence_start; pos < param.sequence_count + param.sequence_start; ++pos){
-						result->emplace_back(std::make_shared< bitmap< T > >());
+						result.emplace_back(std::make_shared< bitmap< T > >());
 
-						load_bitmap(*result->back(), tar, tarname, id, used_id, cam, pos);
+						load_bitmap(*result.back(), tar, tarname, id, used_id, cam, pos);
 					}
 
-					sequence.put(id, result);
+					sequence.put(id, std::move(result));
 				}
 			});
 		}else{
 			for(std::size_t cam = param.camera_start; cam < param.camera_count + param.camera_start; ++cam){
-				auto result = std::make_shared< bitmap_pointer_sequence< T > >();
+				bitmap_pointer_sequence< T > result;
 
 				for(std::size_t pos = param.sequence_start; pos < param.sequence_count + param.sequence_start; ++pos){
-					result->emplace_back(std::make_shared< bitmap< T > >());
+					result.emplace_back(std::make_shared< bitmap< T > >());
 
-					load_bitmap(*result->back(), id, used_id, cam, pos);
+					load_bitmap(*result.back(), id, used_id, cam, pos);
 				}
 
-				sequence.put(id, result);
+				sequence.put(id, std::move(result));
 			}
 		}
 	}
@@ -263,22 +263,22 @@ namespace disposer_module{ namespace big_loader{
 
 				for(std::size_t cam = param.camera_start; cam < param.camera_count + param.camera_start; ++cam){
 					for(std::size_t pos = param.sequence_start; pos < param.sequence_count + param.sequence_start; ++pos){
-						auto result = std::make_shared< bitmap< T > >();
+						bitmap< T > result;
 
-						load_bitmap(*result, tar, tarname, id, used_id, cam, pos);
+						load_bitmap(result, tar, tarname, id, used_id, cam, pos);
 
-						image.put(id, result);
+						image.put(id, std::move(result));
 					}
 				}
 			});
 		}else{
 			for(std::size_t cam = param.camera_start; cam < param.camera_count + param.camera_start; ++cam){
 				for(std::size_t pos = param.sequence_start; pos < param.sequence_count + param.sequence_start; ++pos){
-					auto result = std::make_shared< bitmap< T > >();
+					bitmap< T > result;
 
-					load_bitmap(*result, id, used_id, cam, pos);
+					load_bitmap(result, id, used_id, cam, pos);
 
-					image.put(id, result);
+					image.put(id, std::move(result));
 				}
 			}
 		}

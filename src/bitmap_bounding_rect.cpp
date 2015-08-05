@@ -53,7 +53,7 @@ namespace disposer_module{ namespace bitmap_bounding_rect{
 
 	struct visitor: boost::static_visitor< rect< std::size_t > >{
 		template < typename T >
-		rect< std::size_t > operator()(disposer::input_data< bitmap< T > > const& data)const{
+		rect< std::size_t > operator()(disposer::module_input_data< bitmap< T > > const& data)const{
 			using std::isnan;
 
 			auto& image = data.data();

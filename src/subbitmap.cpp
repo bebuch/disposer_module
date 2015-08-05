@@ -40,7 +40,7 @@ namespace disposer_module{ namespace subbitmap{
 				outputs = disposer::make_output_list(signals.camera_sequence, signals.sequence, signals.image);
 			}
 
-		std::shared_ptr< bitmap< T > > subbitmap(bitmap< T > const& image)const;
+		bitmap< T > subbitmap(bitmap< T > const& image)const;
 
 		struct{
 			disposer::module_input< camera_pointer_sequence< T > > camera_sequence{"camera_sequence"};
@@ -101,8 +101,8 @@ namespace disposer_module{ namespace subbitmap{
 
 
 	template < typename T >
-	std::shared_ptr< bitmap< T > > module< T >::subbitmap(bitmap< T > const& image)const{
-		auto result = std::make_shared< bitmap< T > >(param.width, param.height, param.default_value);
+	bitmap< T > module< T >::subbitmap(bitmap< T > const& image)const{
+		bitmap< T > result(param.width, param.height, param.default_value);
 
 		std::size_t const bx = param.x < 0 ? static_cast< std::size_t >(-param.x) : 0;
 		std::size_t const by = param.y < 0 ? static_cast< std::size_t >(-param.y) : 0;
@@ -120,7 +120,7 @@ namespace disposer_module{ namespace subbitmap{
 			std::copy(
 				&image(bx + param.x, y + param.y),
 				&image(ex + param.x, y + param.y),
-				&(*result)(bx, y)
+				&result(bx, y)
 			);
 		}
 
@@ -134,11 +134,11 @@ namespace disposer_module{ namespace subbitmap{
 			auto id = pair.first;
 			auto& data = pair.second.data();
 
-			auto result = std::make_shared< camera_pointer_sequence< T > >(data.size());
+			camera_pointer_sequence< T > result(data.size());
 			for(std::size_t i = 0; i < data.size(); ++i){
-				(*result)[i] = std::make_shared< bitmap_pointer_sequence< T > >((*data[i]).size());
+				result[i] = std::make_shared< bitmap_pointer_sequence< T > >((*data[i]).size());
 				for(std::size_t j = 0; j < (*data[i]).size(); ++j){
-					(*(*result)[i])[j] = subbitmap(*(*data[i])[j]);
+					(*result[i])[j] = std::make_shared< bitmap< T > >(subbitmap(*(*data[i])[j]));
 				}
 			}
 
@@ -149,9 +149,9 @@ namespace disposer_module{ namespace subbitmap{
 			auto id = pair.first;
 			auto& data = pair.second.data();
 
-			auto result = std::make_shared< bitmap_pointer_sequence< T > >(data.size());
+			bitmap_pointer_sequence< T > result(data.size());
 			for(std::size_t i = 0; i < data.size(); ++i){
-				(*result)[i] = subbitmap(*data[i]);
+				result[i] = std::make_shared< bitmap< T > >(subbitmap(*data[i]));
 			}
 
 			signals.sequence.put(id, std::move(result));

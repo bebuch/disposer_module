@@ -242,7 +242,15 @@ namespace disposer_module{ namespace async_program{
 			}
 		}
 
-		return std::make_unique< module >(type, chain, name, std::move(param));
+		auto result = std::make_unique< module >(type, chain, name, std::move(param));
+
+		if(is_future_output){
+			result->future_output.activate< std::future< std::string > >();
+		}else{
+			result->future.activate< std::future< void > >();
+		}
+
+		return std::move(result);
 	}
 
 	void init(){

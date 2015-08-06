@@ -265,43 +265,43 @@ namespace disposer_module{ namespace big_loader{
 
 		switch(param.output){
 			case output_t::sequence:
-				if(param.type_int8) result->sequence.activate< bitmap_sequence< std::int8_t > >();
-				if(param.type_uint8) result->sequence.activate< bitmap_sequence< std::uint8_t > >();
-				if(param.type_int16) result->sequence.activate< bitmap_sequence< std::int16_t > >();
-				if(param.type_uint16) result->sequence.activate< bitmap_sequence< std::uint16_t > >();
-				if(param.type_int32) result->sequence.activate< bitmap_sequence< std::int32_t > >();
-				if(param.type_uint32) result->sequence.activate< bitmap_sequence< std::uint32_t > >();
-				if(param.type_int64) result->sequence.activate< bitmap_sequence< std::int64_t > >();
-				if(param.type_uint64) result->sequence.activate< bitmap_sequence< std::uint64_t > >();
-				if(param.type_float) result->sequence.activate< bitmap_sequence< float > >();
-				if(param.type_double) result->sequence.activate< bitmap_sequence< double > >();
-				if(param.type_long_double) result->sequence.activate< bitmap_sequence< long double > >();
+				if(param.type_int8) result->sequence.activate< std::int8_t >();
+				if(param.type_uint8) result->sequence.activate< std::uint8_t >();
+				if(param.type_int16) result->sequence.activate< std::int16_t >();
+				if(param.type_uint16) result->sequence.activate< std::uint16_t >();
+				if(param.type_int32) result->sequence.activate< std::int32_t >();
+				if(param.type_uint32) result->sequence.activate< std::uint32_t >();
+				if(param.type_int64) result->sequence.activate< std::int64_t >();
+				if(param.type_uint64) result->sequence.activate< std::uint64_t >();
+				if(param.type_float) result->sequence.activate< float >();
+				if(param.type_double) result->sequence.activate< double >();
+				if(param.type_long_double) result->sequence.activate< long double >();
 			break;
 			case output_t::vector:
-				if(param.type_int8) result->vector.activate< bitmap_vector< std::int8_t > >();
-				if(param.type_uint8) result->vector.activate< bitmap_vector< std::uint8_t > >();
-				if(param.type_int16) result->vector.activate< bitmap_vector< std::int16_t > >();
-				if(param.type_uint16) result->vector.activate< bitmap_vector< std::uint16_t > >();
-				if(param.type_int32) result->vector.activate< bitmap_vector< std::int32_t > >();
-				if(param.type_uint32) result->vector.activate< bitmap_vector< std::uint32_t > >();
-				if(param.type_int64) result->vector.activate< bitmap_vector< std::int64_t > >();
-				if(param.type_uint64) result->vector.activate< bitmap_vector< std::uint64_t > >();
-				if(param.type_float) result->vector.activate< bitmap_vector< float > >();
-				if(param.type_double) result->vector.activate< bitmap_vector< double > >();
-				if(param.type_long_double) result->vector.activate< bitmap_vector< long double > >();
+				if(param.type_int8) result->vector.activate< std::int8_t >();
+				if(param.type_uint8) result->vector.activate< std::uint8_t >();
+				if(param.type_int16) result->vector.activate< std::int16_t >();
+				if(param.type_uint16) result->vector.activate< std::uint16_t >();
+				if(param.type_int32) result->vector.activate< std::int32_t >();
+				if(param.type_uint32) result->vector.activate< std::uint32_t >();
+				if(param.type_int64) result->vector.activate< std::int64_t >();
+				if(param.type_uint64) result->vector.activate< std::uint64_t >();
+				if(param.type_float) result->vector.activate< float >();
+				if(param.type_double) result->vector.activate< double >();
+				if(param.type_long_double) result->vector.activate< long double >();
 			break;
 			case output_t::image:
-				if(param.type_int8) result->image.activate< bitmap< std::int8_t > >();
-				if(param.type_uint8) result->image.activate< bitmap< std::uint8_t > >();
-				if(param.type_int16) result->image.activate< bitmap< std::int16_t > >();
-				if(param.type_uint16) result->image.activate< bitmap< std::uint16_t > >();
-				if(param.type_int32) result->image.activate< bitmap< std::int32_t > >();
-				if(param.type_uint32) result->image.activate< bitmap< std::uint32_t > >();
-				if(param.type_int64) result->image.activate< bitmap< std::int64_t > >();
-				if(param.type_uint64) result->image.activate< bitmap< std::uint64_t > >();
-				if(param.type_float) result->image.activate< bitmap< float > >();
-				if(param.type_double) result->image.activate< bitmap< double > >();
-				if(param.type_long_double) result->image.activate< bitmap< long double > >();
+				if(param.type_int8) result->image.activate< std::int8_t >();
+				if(param.type_uint8) result->image.activate< std::uint8_t >();
+				if(param.type_int16) result->image.activate< std::int16_t >();
+				if(param.type_uint16) result->image.activate< std::uint16_t >();
+				if(param.type_int32) result->image.activate< std::int32_t >();
+				if(param.type_uint32) result->image.activate< std::uint32_t >();
+				if(param.type_int64) result->image.activate< std::int64_t >();
+				if(param.type_uint64) result->image.activate< std::uint64_t >();
+				if(param.type_float) result->image.activate< float >();
+				if(param.type_double) result->image.activate< double >();
+				if(param.type_long_double) result->image.activate< long double >();
 			break;
 		}
 

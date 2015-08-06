@@ -44,36 +44,104 @@ namespace disposer_module{ namespace big_saver{
 		boost::optional< name_generator< std::size_t, std::size_t, std::size_t > > big_pattern;
 	};
 
-	template < typename T >
-	struct module: disposer::module_base{
-		using save_type = std::vector< std::vector< std::reference_wrapper< bitmap< T > const > > >;
+	using save_image = boost::variant<
+			std::reference_wrapper< bitmap< std::int8_t > const >,
+			std::reference_wrapper< bitmap< std::uint8_t > const >,
+			std::reference_wrapper< bitmap< std::int16_t > const >,
+			std::reference_wrapper< bitmap< std::uint16_t > const >,
+			std::reference_wrapper< bitmap< std::int32_t > const >,
+			std::reference_wrapper< bitmap< std::uint32_t > const >,
+			std::reference_wrapper< bitmap< std::int64_t > const >,
+			std::reference_wrapper< bitmap< std::uint64_t > const >,
+			std::reference_wrapper< bitmap< float > const >,
+			std::reference_wrapper< bitmap< double > const >,
+			std::reference_wrapper< bitmap< long double > const >
+		>;
 
+	using save_vector = std::vector< save_image >;
+
+	using save_sequence = std::vector< save_vector >;
+
+
+	struct module: disposer::module_base{
 		module(std::string const& type, std::string const& chain, std::string const& name, parameter&& param):
 			disposer::module_base(type, chain, name),
 			param(std::move(param)){
 				inputs = disposer::make_input_list(sequence, vector, image);
 			}
 
-		disposer::input< bitmap_sequence< T > > sequence{"sequence"};
-		disposer::input< bitmap_vector< T > > vector{"vector"};
-		disposer::input< bitmap< T > > image{"image"};
 
-		void save(std::size_t id, save_type const& bitmap_sequence);
+		disposer::container_input<
+			bitmap_sequence, 
+				std::int8_t,
+				std::uint8_t,
+				std::int16_t,
+				std::uint16_t,
+				std::int32_t,
+				std::uint32_t,
+				std::int64_t,
+				std::uint64_t,
+				float,
+				double,
+				long double
+			> sequence{"sequence"};
+
+		disposer::container_input<
+			bitmap_vector, 
+				std::int8_t,
+				std::uint8_t,
+				std::int16_t,
+				std::uint16_t,
+				std::int32_t,
+				std::uint32_t,
+				std::int64_t,
+				std::uint64_t,
+				float,
+				double,
+				long double
+			> vector{"vector"};
+
+		disposer::container_input<
+			bitmap,
+				std::int8_t,
+				std::uint8_t,
+				std::int16_t,
+				std::uint16_t,
+				std::int32_t,
+				std::uint32_t,
+				std::int64_t,
+				std::uint64_t,
+				float,
+				double,
+				long double
+			> image{"image"};
+
+
+		void save(std::size_t id, save_sequence const& bitmap_sequence);
+
 
 		std::string tar_name(std::size_t id);
 		std::string big_name(std::size_t cam, std::size_t pos);
 		std::string big_name(std::size_t id, std::size_t cam, std::size_t pos);
 
+
+		template < typename T >
 		void trigger_sequence(std::size_t id);
+
+		template < typename T >
 		void trigger_vector(std::size_t id);
+
+		template < typename T >
 		void trigger_image(std::size_t id);
 
+
 		void trigger(std::size_t id)override;
+
 
 		parameter const param;
 	};
 
-	template < typename T >
+
 	disposer::module_ptr make_module(
 		std::string const& type,
 		std::string const& chain,
@@ -157,26 +225,38 @@ namespace disposer_module{ namespace big_saver{
 			std::make_pair("pos", format{position_digits})
 		);
 
-		return std::make_unique< module< T > >(type, chain, name, std::move(param));
+		return std::make_unique< module >(type, chain, name, std::move(param));
 	}
 
 	void init(){
-		add_module_maker("big_saver_int8_t", &make_module< std::int8_t >);
-		add_module_maker("big_saver_uint8_t", &make_module< std::uint8_t >);
-		add_module_maker("big_saver_int16_t", &make_module< std::int16_t >);
-		add_module_maker("big_saver_uint16_t", &make_module< std::uint16_t >);
-		add_module_maker("big_saver_int32_t", &make_module< std::int32_t >);
-		add_module_maker("big_saver_uint32_t", &make_module< std::uint32_t >);
-		add_module_maker("big_saver_int64_t", &make_module< std::int64_t >);
-		add_module_maker("big_saver_uint64_t", &make_module< std::uint64_t >);
-		add_module_maker("big_saver_float", &make_module< float >);
-		add_module_maker("big_saver_double", &make_module< double >);
-		add_module_maker("big_saver_long_double", &make_module< long double >);
+		add_module_maker("big_saver", &make_module);
 	}
 
 
-	template < typename T >
-	void module< T >::save(std::size_t id, save_type const& bitmap_sequence){
+	struct big_stream_visitor: boost::static_visitor< void >{
+		big_stream_visitor(std::ostream& os): os(os){}
+
+		std::ostream& os;
+
+		template < typename T >
+		void operator()(T const& image_ref)const{
+			big::write(image_ref.get(), os);
+		}
+	};
+
+	struct big_file_visitor: boost::static_visitor< void >{
+		big_file_visitor(std::string&& name): name(std::move(name)){}
+
+		std::string const name;
+
+		template < typename T >
+		void operator()(T const& image_ref)const{
+			big::write(image_ref.get(), name);
+		}
+	};
+
+
+	void module::save(std::size_t id, save_sequence const& bitmap_sequence){
 		auto used_id = param.fixed_id ? *param.fixed_id : id;
 
 		if(param.tar){
@@ -190,7 +270,7 @@ namespace disposer_module{ namespace big_saver{
 						auto filename = (*param.big_pattern)(used_id, cam, pos);
 						disposer::log([this, &tarname, &filename, id](log::info& os){ os << type << " id " << id << ": write '" << tarname << "/" << filename << "'"; }, [&tar, &bitmap, &filename]{
 							tar.write(filename, [&bitmap](std::ostream& os){
-								big::write(bitmap.get(), os);
+								boost::apply_visitor(big_stream_visitor(os), bitmap);
 							});
 						});
 						++pos;
@@ -205,7 +285,7 @@ namespace disposer_module{ namespace big_saver{
 				for(auto& bitmap: sequence){
 					auto filename = param.dir + "/" + (*param.big_pattern)(used_id, cam, pos);
 					disposer::log([this, &filename, id](log::info& os){ os << type << " id " << id << ": write '" << filename << "'"; }, [&bitmap, &filename]{
-						big::write(bitmap.get(), filename);
+						boost::apply_visitor(big_file_visitor(std::move(filename)), bitmap);
 					});
 					++pos;
 				}
@@ -215,90 +295,101 @@ namespace disposer_module{ namespace big_saver{
 	}
 
 
-	template < typename T >
-	void module< T >::trigger_sequence(std::size_t id){
-		for(auto const& pair: sequence.get(id)){
-			auto id = pair.first;
-			auto& bitmap_sequence = pair.second.data();
+	struct sequence_visitor: boost::static_visitor< save_sequence >{
+		sequence_visitor(std::size_t id): id(id){}
 
-			save_type data;
-			for(auto& sequence: bitmap_sequence){
+		std::size_t const id;
+
+		template < typename T >
+		save_sequence operator()(T const& sequence)const{
+			save_sequence data;
+			for(auto& vector: sequence.data()){
 				data.emplace_back();
-				for(auto& bitmap: sequence){
+				for(auto& bitmap: vector){
 					data.back().emplace_back(bitmap);
 				}
 			}
 
-			save(id, data);
+			return data;
 		}
-	}
+	};
 
-	template < typename T >
-	void module< T >::trigger_vector(std::size_t id){
-		auto sequences = vector.get(id);
-		auto from = sequences.begin();
-
-		while(from != sequences.end()){
-			auto id = from->first;
-			auto to = sequences.upper_bound(id);
-
-			save_type data;
-			for(auto iter = from; iter != to; ++iter){
-				data.emplace_back();
-				for(auto& bitmap: iter->second.data()){
-					data.back().emplace_back(bitmap);
-				}
+	struct vector_visitor: boost::static_visitor< save_vector >{
+		template < typename T >
+		save_vector operator()(T const& vectors)const{
+			save_vector result;
+			for(auto& image: vectors.data()){
+				result.emplace_back(image);
 			}
 
-			save(id, data);
-
-			from = to;
+			return result;
 		}
-	}
+	};
 
-	template < typename T >
-	void module< T >::trigger_image(std::size_t id){
-		auto images = image.get(id);
-		auto from = images.begin();
-
-		while(from != images.end()){
-			auto id = from->first;
-			auto to = images.upper_bound(id);
-
-			std::size_t pos = 0;
-			save_type data;
-			for(auto iter = from; iter != to; ++iter){
-				if(pos == 0) data.emplace_back();
-				++pos;
-
-				if(pos == param.sequence_count) pos = 0;
-
-				data.back().emplace_back(iter->second.data());
-			}
-
-			if(pos != 0){
-				throw std::runtime_error(type + ": single image count does not match parameter 'sequence_count'");
-			}
-
-			save(id, data);
-
-			from = to;
+	struct image_visitor: boost::static_visitor< save_image >{
+		template < typename T >
+		save_image operator()(T const& image)const{
+			return image.data();
 		}
-	}
+	};
 
 
-	template < typename T >
-	void module< T >::trigger(std::size_t id){
+	void module::trigger(std::size_t id){
 		switch(param.input){
-			case input_t::sequence:
-				trigger_sequence(id);
-			break;
-			case input_t::vector:
-				trigger_vector(id);
-			break;
-			case input_t::image:
-				trigger_image(id);
-			break;
+			case input_t::sequence:{
+				for(auto const& pair: sequence.get(id)){
+					auto id = pair.first;
+					auto& bitmap_sequence = pair.second;
+
+					save(id, boost::apply_visitor(sequence_visitor(id), bitmap_sequence));
+				}
+			}break;
+			case input_t::vector:{
+				auto vectors = vector.get(id);
+				auto from = vectors.begin();
+
+				while(from != vectors.end()){
+					auto id = from->first;
+					auto to = vectors.upper_bound(id);
+
+					save_sequence data;
+					for(auto iter = from; iter != to; ++iter){
+						data.emplace_back(boost::apply_visitor(vector_visitor(), iter->second));
+					}
+
+					save(id, data);
+
+					from = to;
+				}
+			}break;
+			case input_t::image:{
+				auto images = image.get(id);
+				auto from = images.begin();
+
+				while(from != images.end()){
+					auto id = from->first;
+					auto to = images.upper_bound(id);
+
+					std::size_t pos = 0;
+					save_sequence data;
+					for(auto iter = from; iter != to; ++iter){
+						if(pos == 0) data.emplace_back();
+						++pos;
+
+						if(pos == param.sequence_count) pos = 0;
+
+						data.back().emplace_back(boost::apply_visitor(image_visitor(), iter->second));
+					}
+
+					if(pos != 0){
+						throw std::runtime_error(type + ": single image count does not match parameter 'sequence_count'");
+					}
+
+					save(id, data);
+
+					from = to;
+				}
+			}break;
 		}
 	}
 

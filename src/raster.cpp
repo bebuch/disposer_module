@@ -28,21 +28,21 @@ namespace disposer_module{ namespace raster{
 		module(std::string const& type, std::string const& chain, std::string const& name, parameter&& param):
 			disposer::module_base(type, chain, name),
 			param(std::move(param)){
-				inputs = disposer::make_input_list(slots.camera_sequence, slots.sequence, slots.image);
-				outputs = disposer::make_output_list(signals.camera_sequence, signals.sequence, signals.image);
+				inputs = disposer::make_input_list(slots.sequence, slots.vector, slots.image);
+				outputs = disposer::make_output_list(signals.sequence, signals.vector, signals.image);
 			}
 
 		bitmap< T > apply_raster(bitmap< T > const& image)const;
 
 		struct{
-			disposer::input< camera_pointer_sequence< T > > camera_sequence{"camera_sequence"};
-			disposer::input< bitmap_pointer_sequence< T > > sequence{"sequence"};
+			disposer::input< camera_sequence< T > > sequence{"sequence"};
+			disposer::input< bitmap_sequence< T > > vector{"vector"};
 			disposer::input< bitmap< T > > image{"image"};
 		} slots;
 
 		struct{
-			disposer::output< camera_pointer_sequence< T > > camera_sequence{"camera_sequence"};
-			disposer::output< bitmap_pointer_sequence< T > > sequence{"sequence"};
+			disposer::output< camera_sequence< T > > sequence{"sequence"};
+			disposer::output< bitmap_sequence< T > > vector{"vector"};
 			disposer::output< bitmap< T > > image{"image"};
 		} signals;
 
@@ -103,31 +103,31 @@ namespace disposer_module{ namespace raster{
 
 	template < typename T >
 	void module< T >::trigger(std::size_t id){
-		for(auto const& pair: slots.camera_sequence.get(id)){
-			auto id = pair.first;
-			auto& data = pair.second.data();
-
-			camera_pointer_sequence< T > result(data.size());
-			for(std::size_t i = 0; i < data.size(); ++i){
-				result[i] = std::make_shared< bitmap_pointer_sequence< T > >((*data[i]).size());
-				for(std::size_t j = 0; j < (*data[i]).size(); ++j){
-					(*result[i])[j] = std::make_shared< bitmap< T > >(apply_raster(*(*data[i])[j]));
-				}
-			}
-
-			signals.camera_sequence.put(id, std::move(result));
-		}
-
 		for(auto const& pair: slots.sequence.get(id)){
 			auto id = pair.first;
 			auto& data = pair.second.data();
 
-			bitmap_pointer_sequence< T > result(data.size());
+			camera_sequence< T > result(data.size());
 			for(std::size_t i = 0; i < data.size(); ++i){
-				result[i] = std::make_shared< bitmap< T > >(apply_raster(*data[i]));
+				result[i].resize(data[i].size());
+				for(std::size_t j = 0; j < data[i].size(); ++j){
+					result[i][j] = apply_raster(data[i][j]);
+				}
 			}
 
 			signals.sequence.put(id, std::move(result));
+		}
+
+		for(auto const& pair: slots.vector.get(id)){
+			auto id = pair.first;
+			auto& data = pair.second.data();
+
+			bitmap_sequence< T > result(data.size());
+			for(std::size_t i = 0; i < data.size(); ++i){
+				result[i] = apply_raster(data[i]);
+			}
+
+			signals.vector.put(id, std::move(result));
 		}
 
 		for(auto const& pair: slots.image.get(id)){

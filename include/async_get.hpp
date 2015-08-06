@@ -82,7 +82,7 @@ namespace disposer_module{ namespace async_get{
 	inline void init(){
 		add_module_maker("async_get", &make_module< void >);
 		add_module_maker("async_get_string", &make_module< std::string >);
-		add_module_maker("async_get_float_sequence", &make_module< std::shared_ptr< bitmap_const_pointer_sequence< float > const > >);
+		add_module_maker("async_get_float_sequence", &make_module< bitmap_sequence< float > >);
 	}
 
 

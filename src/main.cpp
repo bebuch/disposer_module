@@ -12,6 +12,8 @@
 
 #include <disposer/config.hpp>
 
+#include <boost/type_index.hpp>
+
 #include <iostream>
 
 
@@ -21,13 +23,12 @@ int main(){
 
 		auto chains = disposer::config::load("plan.ini");
 
-		chains.at("serial").trigger();
-		chains.at("parallel").trigger();
-		chains.at("toTar").trigger();
+		for(auto& chain: chains){
+			chain.second.trigger();
+		}
 	}catch(std::exception const& e){
-		std::cout << "Exception: " << e.what() << std::endl;
+		std::cout << "Exception: [" << boost::typeindex::type_id_runtime(e).pretty_name() << "] " << e.what() << std::endl;
 	}catch(...){
 		std::cout << "Unknown exception" << std::endl;
 	}
 }
-

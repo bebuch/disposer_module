@@ -21,8 +21,8 @@ namespace disposer_module{ namespace big_saver{
 
 
 	enum class input_t{
-		camera_sequence,
 		sequence,
+		vector,
 		image
 	};
 
@@ -51,11 +51,11 @@ namespace disposer_module{ namespace big_saver{
 		module(std::string const& type, std::string const& chain, std::string const& name, parameter&& param):
 			disposer::module_base(type, chain, name),
 			param(std::move(param)){
-				inputs = disposer::make_input_list(camera_sequence, sequence, image);
+				inputs = disposer::make_input_list(sequence, vector, image);
 			}
 
-		disposer::input< camera_pointer_sequence< T > > camera_sequence{"camera_sequence"};
-		disposer::input< bitmap_pointer_sequence< T > > sequence{"sequence"};
+		disposer::input< camera_sequence< T > > sequence{"sequence"};
+		disposer::input< bitmap_sequence< T > > vector{"vector"};
 		disposer::input< bitmap< T > > image{"image"};
 
 		void save(std::size_t id, save_type const& camera_sequence);
@@ -64,8 +64,8 @@ namespace disposer_module{ namespace big_saver{
 		std::string big_name(std::size_t cam, std::size_t pos);
 		std::string big_name(std::size_t id, std::size_t cam, std::size_t pos);
 
-		void trigger_camera_sequence(std::size_t id);
 		void trigger_sequence(std::size_t id);
+		void trigger_vector(std::size_t id);
 		void trigger_image(std::size_t id);
 
 		void trigger(std::size_t id)override;
@@ -94,11 +94,11 @@ namespace disposer_module{ namespace big_saver{
 		std::size_t input_count = std::count(use_input.begin(), use_input.end(), true);
 
 		if(input_count > 1){
-			throw std::logic_error(type + ": Can only use one input ('image', 'sequence' or 'camera_sequence')");
+			throw std::logic_error(type + ": Can only use one input ('image', 'vector' or 'sequence')");
 		}
 
 		if(input_count == 0){
-			throw std::logic_error(type + ": No input defined (use 'image', 'sequence' or 'camera_sequence')");
+			throw std::logic_error(type + ": No input defined (use 'image', 'vector' or 'sequence')");
 		}
 
 		parameter param;
@@ -120,9 +120,9 @@ namespace disposer_module{ namespace big_saver{
 		params.set(param.fixed_id, "fixed_id");
 
 		if(use_input[0]){
-			param.input = input_t::camera_sequence;
-		}else if(use_input[1]){
 			param.input = input_t::sequence;
+		}else if(use_input[1]){
+			param.input = input_t::vector;
 		}else{
 			param.input = input_t::image;
 			params.set(param.sequence_count, "sequence_count");
@@ -216,16 +216,16 @@ namespace disposer_module{ namespace big_saver{
 
 
 	template < typename T >
-	void module< T >::trigger_camera_sequence(std::size_t id){
-		for(auto const& pair: camera_sequence.get(id)){
+	void module< T >::trigger_sequence(std::size_t id){
+		for(auto const& pair: sequence.get(id)){
 			auto id = pair.first;
 			auto& camera_sequence = pair.second.data();
 
 			save_type data;
 			for(auto& sequence: camera_sequence){
 				data.emplace_back();
-				for(auto& bitmap: *sequence){
-					data.back().emplace_back(*bitmap);
+				for(auto& bitmap: sequence){
+					data.back().emplace_back(bitmap);
 				}
 			}
 
@@ -234,8 +234,8 @@ namespace disposer_module{ namespace big_saver{
 	}
 
 	template < typename T >
-	void module< T >::trigger_sequence(std::size_t id){
-		auto sequences = sequence.get(id);
+	void module< T >::trigger_vector(std::size_t id){
+		auto sequences = vector.get(id);
 		auto from = sequences.begin();
 
 		while(from != sequences.end()){
@@ -246,7 +246,7 @@ namespace disposer_module{ namespace big_saver{
 			for(auto iter = from; iter != to; ++iter){
 				data.emplace_back();
 				for(auto& bitmap: iter->second.data()){
-					data.back().emplace_back(*bitmap);
+					data.back().emplace_back(bitmap);
 				}
 			}
 
@@ -290,11 +290,11 @@ namespace disposer_module{ namespace big_saver{
 	template < typename T >
 	void module< T >::trigger(std::size_t id){
 		switch(param.input){
-			case input_t::camera_sequence:
-				trigger_camera_sequence(id);
-			break;
 			case input_t::sequence:
 				trigger_sequence(id);
+			break;
+			case input_t::vector:
+				trigger_vector(id);
 			break;
 			case input_t::image:
 				trigger_image(id);

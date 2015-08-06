@@ -182,7 +182,7 @@ namespace disposer_module{
 		void resize(size_type const& size, value_type const& value = value_type()){
 			throw_if_size_is_negative(size);
 			data_.resize(size.point_count(), value);
-			size_= size;
+			size_ = size;
 		}
 
 

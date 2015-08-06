@@ -9,7 +9,7 @@
 #include "big_loader.hpp"
 
 #include "log.hpp"
-#include "camera_sequence.hpp"
+#include "bitmap_sequence.hpp"
 #include "name_generator.hpp"
 #include "big_read.hpp"
 #include "tar.hpp"
@@ -65,7 +65,7 @@ namespace disposer_module{ namespace big_loader{
 			}
 
 		disposer::container_output<
-			camera_sequence,
+			bitmap_sequence,
 				std::int8_t,
 				std::uint8_t,
 				std::int16_t,
@@ -80,7 +80,7 @@ namespace disposer_module{ namespace big_loader{
 			> sequence{"sequence"};
 
 		disposer::container_output<
-			bitmap_sequence,
+			bitmap_vector,
 				std::int8_t,
 				std::uint8_t,
 				std::int16_t,
@@ -265,30 +265,30 @@ namespace disposer_module{ namespace big_loader{
 
 		switch(param.output){
 			case output_t::sequence:
-				if(param.type_int8) result->sequence.activate< camera_sequence< std::int8_t > >();
-				if(param.type_uint8) result->sequence.activate< camera_sequence< std::uint8_t > >();
-				if(param.type_int16) result->sequence.activate< camera_sequence< std::int16_t > >();
-				if(param.type_uint16) result->sequence.activate< camera_sequence< std::uint16_t > >();
-				if(param.type_int32) result->sequence.activate< camera_sequence< std::int32_t > >();
-				if(param.type_uint32) result->sequence.activate< camera_sequence< std::uint32_t > >();
-				if(param.type_int64) result->sequence.activate< camera_sequence< std::int64_t > >();
-				if(param.type_uint64) result->sequence.activate< camera_sequence< std::uint64_t > >();
-				if(param.type_float) result->sequence.activate< camera_sequence< float > >();
-				if(param.type_double) result->sequence.activate< camera_sequence< double > >();
-				if(param.type_long_double) result->sequence.activate< camera_sequence< long double > >();
+				if(param.type_int8) result->sequence.activate< bitmap_sequence< std::int8_t > >();
+				if(param.type_uint8) result->sequence.activate< bitmap_sequence< std::uint8_t > >();
+				if(param.type_int16) result->sequence.activate< bitmap_sequence< std::int16_t > >();
+				if(param.type_uint16) result->sequence.activate< bitmap_sequence< std::uint16_t > >();
+				if(param.type_int32) result->sequence.activate< bitmap_sequence< std::int32_t > >();
+				if(param.type_uint32) result->sequence.activate< bitmap_sequence< std::uint32_t > >();
+				if(param.type_int64) result->sequence.activate< bitmap_sequence< std::int64_t > >();
+				if(param.type_uint64) result->sequence.activate< bitmap_sequence< std::uint64_t > >();
+				if(param.type_float) result->sequence.activate< bitmap_sequence< float > >();
+				if(param.type_double) result->sequence.activate< bitmap_sequence< double > >();
+				if(param.type_long_double) result->sequence.activate< bitmap_sequence< long double > >();
 			break;
 			case output_t::vector:
-				if(param.type_int8) result->vector.activate< bitmap_sequence< std::int8_t > >();
-				if(param.type_uint8) result->vector.activate< bitmap_sequence< std::uint8_t > >();
-				if(param.type_int16) result->vector.activate< bitmap_sequence< std::int16_t > >();
-				if(param.type_uint16) result->vector.activate< bitmap_sequence< std::uint16_t > >();
-				if(param.type_int32) result->vector.activate< bitmap_sequence< std::int32_t > >();
-				if(param.type_uint32) result->vector.activate< bitmap_sequence< std::uint32_t > >();
-				if(param.type_int64) result->vector.activate< bitmap_sequence< std::int64_t > >();
-				if(param.type_uint64) result->vector.activate< bitmap_sequence< std::uint64_t > >();
-				if(param.type_float) result->vector.activate< bitmap_sequence< float > >();
-				if(param.type_double) result->vector.activate< bitmap_sequence< double > >();
-				if(param.type_long_double) result->vector.activate< bitmap_sequence< long double > >();
+				if(param.type_int8) result->vector.activate< bitmap_vector< std::int8_t > >();
+				if(param.type_uint8) result->vector.activate< bitmap_vector< std::uint8_t > >();
+				if(param.type_int16) result->vector.activate< bitmap_vector< std::int16_t > >();
+				if(param.type_uint16) result->vector.activate< bitmap_vector< std::uint16_t > >();
+				if(param.type_int32) result->vector.activate< bitmap_vector< std::int32_t > >();
+				if(param.type_uint32) result->vector.activate< bitmap_vector< std::uint32_t > >();
+				if(param.type_int64) result->vector.activate< bitmap_vector< std::int64_t > >();
+				if(param.type_uint64) result->vector.activate< bitmap_vector< std::uint64_t > >();
+				if(param.type_float) result->vector.activate< bitmap_vector< float > >();
+				if(param.type_double) result->vector.activate< bitmap_vector< double > >();
+				if(param.type_long_double) result->vector.activate< bitmap_vector< long double > >();
 			break;
 			case output_t::image:
 				if(param.type_int8) result->image.activate< bitmap< std::int8_t > >();
@@ -317,7 +317,7 @@ namespace disposer_module{ namespace big_loader{
 	void module::trigger_sequence(std::size_t id){
 		auto used_id = param.fixed_id ? *param.fixed_id : id;
 
-		camera_sequence< T > result;
+		bitmap_sequence< T > result;
 
 		if(param.tar){
 			auto tarname = param.dir + "/" + (*param.tar_pattern)(used_id);
@@ -344,7 +344,7 @@ namespace disposer_module{ namespace big_loader{
 			}
 		}
 
-		sequence.put< camera_sequence< T > >(id, std::move(result));
+		sequence.put< bitmap_sequence< T > >(id, std::move(result));
 	}
 
 	template < typename T >
@@ -357,7 +357,7 @@ namespace disposer_module{ namespace big_loader{
 				tar_reader tar(tarname);
 
 				for(std::size_t cam = param.camera_start; cam < param.camera_count + param.camera_start; ++cam){
-					bitmap_sequence< T > result;
+					bitmap_vector< T > result;
 
 					for(std::size_t pos = param.sequence_start; pos < param.sequence_count + param.sequence_start; ++pos){
 						result.emplace_back();
@@ -365,12 +365,12 @@ namespace disposer_module{ namespace big_loader{
 						load_bitmap(result.back(), tar, tarname, id, used_id, cam, pos);
 					}
 
-					vector.put< bitmap_sequence< T > >(id, std::move(result));
+					vector.put< bitmap_vector< T > >(id, std::move(result));
 				}
 			});
 		}else{
 			for(std::size_t cam = param.camera_start; cam < param.camera_count + param.camera_start; ++cam){
-				bitmap_sequence< T > result;
+				bitmap_vector< T > result;
 
 				for(std::size_t pos = param.sequence_start; pos < param.sequence_count + param.sequence_start; ++pos){
 					result.emplace_back();
@@ -378,7 +378,7 @@ namespace disposer_module{ namespace big_loader{
 					load_bitmap(result.back(), id, used_id, cam, pos);
 				}
 
-				vector.put< bitmap_sequence< T > >(id, std::move(result));
+				vector.put< bitmap_vector< T > >(id, std::move(result));
 			}
 		}
 	}

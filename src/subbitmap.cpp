@@ -8,7 +8,7 @@
 //-----------------------------------------------------------------------------
 #include "subbitmap.hpp"
 
-#include "camera_sequence.hpp"
+#include "bitmap_sequence.hpp"
 #include "make_string.hpp"
 
 #include <disposer/module_base.hpp>
@@ -43,14 +43,14 @@ namespace disposer_module{ namespace subbitmap{
 		bitmap< T > subbitmap(bitmap< T > const& image)const;
 
 		struct{
-			disposer::input< camera_sequence< T > > sequence{"sequence"};
-			disposer::input< bitmap_sequence< T > > vector{"vector"};
+			disposer::input< bitmap_sequence< T > > sequence{"sequence"};
+			disposer::input< bitmap_vector< T > > vector{"vector"};
 			disposer::input< bitmap< T > > image{"image"};
 		} slots;
 
 		struct{
-			disposer::output< camera_sequence< T > > sequence{"sequence"};
-			disposer::output< bitmap_sequence< T > > vector{"vector"};
+			disposer::output< bitmap_sequence< T > > sequence{"sequence"};
+			disposer::output< bitmap_vector< T > > vector{"vector"};
 			disposer::output< bitmap< T > > image{"image"};
 		} signals;
 
@@ -134,7 +134,7 @@ namespace disposer_module{ namespace subbitmap{
 			auto id = pair.first;
 			auto& data = pair.second.data();
 
-			camera_sequence< T > result(data.size());
+			bitmap_sequence< T > result(data.size());
 			for(std::size_t i = 0; i < data.size(); ++i){
 				result[i].resize(data[i].size());
 				for(std::size_t j = 0; j < data[i].size(); ++j){
@@ -149,7 +149,7 @@ namespace disposer_module{ namespace subbitmap{
 			auto id = pair.first;
 			auto& data = pair.second.data();
 
-			bitmap_sequence< T > result(data.size());
+			bitmap_vector< T > result(data.size());
 			for(std::size_t i = 0; i < data.size(); ++i){
 				result[i] = subbitmap(data[i]);
 			}

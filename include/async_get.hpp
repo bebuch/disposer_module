@@ -9,7 +9,7 @@
 #ifndef _disposer_module_async_get_hpp_INCLUDED_
 #define _disposer_module_async_get_hpp_INCLUDED_
 
-#include "bitmap_sequence.hpp"
+#include "bitmap_vector.hpp"
 
 #include <disposer/module_base.hpp>
 
@@ -82,7 +82,7 @@ namespace disposer_module{ namespace async_get{
 	inline void init(){
 		add_module_maker("async_get", &make_module< void >);
 		add_module_maker("async_get_string", &make_module< std::string >);
-		add_module_maker("async_get_float_sequence", &make_module< bitmap_sequence< float > >);
+		add_module_maker("async_get_float_sequence", &make_module< bitmap_vector< float > >);
 	}
 
 

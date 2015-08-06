@@ -9,7 +9,7 @@
 #include "big_saver.hpp"
 
 #include "log.hpp"
-#include "camera_sequence.hpp"
+#include "bitmap_sequence.hpp"
 #include "name_generator.hpp"
 #include "big_write.hpp"
 #include "tar.hpp"
@@ -54,11 +54,11 @@ namespace disposer_module{ namespace big_saver{
 				inputs = disposer::make_input_list(sequence, vector, image);
 			}
 
-		disposer::input< camera_sequence< T > > sequence{"sequence"};
-		disposer::input< bitmap_sequence< T > > vector{"vector"};
+		disposer::input< bitmap_sequence< T > > sequence{"sequence"};
+		disposer::input< bitmap_vector< T > > vector{"vector"};
 		disposer::input< bitmap< T > > image{"image"};
 
-		void save(std::size_t id, save_type const& camera_sequence);
+		void save(std::size_t id, save_type const& bitmap_sequence);
 
 		std::string tar_name(std::size_t id);
 		std::string big_name(std::size_t cam, std::size_t pos);
@@ -86,7 +86,7 @@ namespace disposer_module{ namespace big_saver{
 		if(is_start) throw disposer::module_not_as_start(type, chain);
 
 		std::array< bool, 3 > const use_input{{
-			inputs.find("camera_sequence") != inputs.end(),
+			inputs.find("bitmap_sequence") != inputs.end(),
 			inputs.find("sequence") != inputs.end(),
 			inputs.find("image") != inputs.end()
 		}};
@@ -176,15 +176,15 @@ namespace disposer_module{ namespace big_saver{
 
 
 	template < typename T >
-	void module< T >::save(std::size_t id, save_type const& camera_sequence){
+	void module< T >::save(std::size_t id, save_type const& bitmap_sequence){
 		auto used_id = param.fixed_id ? *param.fixed_id : id;
 
 		if(param.tar){
 			auto tarname = param.dir + "/" + (*param.tar_pattern)(used_id);
-			disposer::log([this, &tarname, id](log::info& os){ os << type << " id " << id << ": write '" << tarname << "'"; }, [this, id, used_id, &camera_sequence, &tarname]{
+			disposer::log([this, &tarname, id](log::info& os){ os << type << " id " << id << ": write '" << tarname << "'"; }, [this, id, used_id, &bitmap_sequence, &tarname]{
 				tar_writer tar(tarname);
 				std::size_t cam = param.camera_start;
-				for(auto& sequence: camera_sequence){
+				for(auto& sequence: bitmap_sequence){
 					std::size_t pos = param.sequence_start;
 					for(auto& bitmap: sequence){
 						auto filename = (*param.big_pattern)(used_id, cam, pos);
@@ -200,7 +200,7 @@ namespace disposer_module{ namespace big_saver{
 			});
 		}else{
 			std::size_t cam = param.camera_start;
-			for(auto& sequence: camera_sequence){
+			for(auto& sequence: bitmap_sequence){
 				std::size_t pos = param.sequence_start;
 				for(auto& bitmap: sequence){
 					auto filename = param.dir + "/" + (*param.big_pattern)(used_id, cam, pos);
@@ -219,10 +219,10 @@ namespace disposer_module{ namespace big_saver{
 	void module< T >::trigger_sequence(std::size_t id){
 		for(auto const& pair: sequence.get(id)){
 			auto id = pair.first;
-			auto& camera_sequence = pair.second.data();
+			auto& bitmap_sequence = pair.second.data();
 
 			save_type data;
-			for(auto& sequence: camera_sequence){
+			for(auto& sequence: bitmap_sequence){
 				data.emplace_back();
 				for(auto& bitmap: sequence){
 					data.back().emplace_back(bitmap);

@@ -9,18 +9,15 @@
 #ifndef _disposer_module_bitmap_sequence_hpp_INCLUDED_
 #define _disposer_module_bitmap_sequence_hpp_INCLUDED_
 
-#include "bitmap.hpp"
-
-#include <vector>
-#include <memory>
+#include "bitmap_vector.hpp"
 
 
 namespace disposer_module{
 
 
-	/// \brief Vector of disposer_module::bitmap< T >
+	/// \brief List of disposer_module::bitmap_vector< T >
 	template < typename T >
-	using bitmap_sequence = std::vector< bitmap< T > >;
+	using bitmap_sequence = std::vector< bitmap_vector< T > >;
 
 
 }

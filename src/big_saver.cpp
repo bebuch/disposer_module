@@ -86,8 +86,8 @@ namespace disposer_module{ namespace big_saver{
 		if(is_start) throw disposer::module_not_as_start(type, chain);
 
 		std::array< bool, 3 > const use_input{{
-			inputs.find("bitmap_sequence") != inputs.end(),
 			inputs.find("sequence") != inputs.end(),
+			inputs.find("vector") != inputs.end(),
 			inputs.find("image") != inputs.end()
 		}};
 

@@ -16,9 +16,13 @@
 
 #include <disposer/module_base.hpp>
 
+#include <boost/hana.hpp>
+
 
 namespace disposer_module{ namespace big_loader{
 
+
+	namespace hana = boost::hana;
 
 	enum class output_t{
 		sequence,
@@ -56,6 +60,90 @@ namespace disposer_module{ namespace big_loader{
 		boost::optional< name_generator< std::size_t > > tar_pattern;
 		boost::optional< name_generator< std::size_t, std::size_t, std::size_t > > big_pattern;
 	};
+
+
+	struct load{
+		load(std::string const& type, parameter const& param, std::size_t id, std::size_t used_id):
+			type(type), param(param), id(id), used_id(used_id) {}
+
+		std::string const& type;
+		parameter const& param;
+		std::size_t id;
+		std::size_t used_id;
+
+		template < typename T >
+		bitmap< T > load_bitmap(std::size_t cam, std::size_t pos)const{
+			bitmap< T > result;
+			auto filename = param.dir + "/" + (*param.big_pattern)(used_id, cam, pos);
+			disposer::log([this, &filename](log::info& os){ os << type << " id " << id << ": read '" << filename << "'"; }, [&result, &filename]{
+				big::read(result, filename);
+			});
+			return result;
+		}
+
+		template < typename T >
+		bitmap_vector< T > load_vector(std::size_t cam)const{
+			bitmap_vector< T > result;
+			result.reserve(param.sequence_count);
+			for(std::size_t pos = param.sequence_start; pos < param.sequence_count + param.sequence_start; ++pos){
+				result.push_back(load_bitmap< T >(cam, pos));
+			}
+			return result;
+		}
+
+		template < typename T >
+		bitmap_sequence< T > load_sequence()const{
+			bitmap_sequence< T > result;
+			result.reserve(param.camera_count);
+			for(std::size_t cam = param.camera_start; cam < param.camera_count + param.camera_start; ++cam){
+				result.push_back(load_vector< T >(cam));
+			}
+			return result;
+		}
+	};
+
+	struct tar_load{
+		tar_load(std::string const& type, parameter const& param, std::size_t id, std::size_t used_id, tar_reader& tar, std::string const& tarname):
+			type(type), param(param), id(id), used_id(used_id), tar(tar), tarname(tarname) {}
+
+		std::string const& type;
+		parameter const& param;
+		std::size_t id;
+		std::size_t used_id;
+		tar_reader& tar;
+		std::string const& tarname;
+
+		template < typename T >
+		bitmap< T > load_bitmap(std::size_t cam, std::size_t pos)const{
+			bitmap< T > result;
+			auto filename = (*param.big_pattern)(used_id, cam, pos);
+			disposer::log([this, &filename](log::info& os){ os << type << " id " << id << ": read '" << tarname << "'"; }, [this, &result, &filename]{
+				tar.read(filename, [&result](std::istream& is){ big::read(result, is); });
+			});
+			return result;
+		}
+
+		template < typename T >
+		bitmap_vector< T > load_vector(std::size_t cam)const{
+			bitmap_vector< T > result;
+			result.reserve(param.sequence_count);
+			for(std::size_t pos = param.sequence_start; pos < param.sequence_count + param.sequence_start; ++pos){
+				result.push_back(load_bitmap< T >(cam, pos));
+			}
+			return result;
+		}
+
+		template < typename T >
+		bitmap_sequence< T > load_sequence()const{
+			bitmap_sequence< T > result;
+			result.reserve(param.camera_count);
+			for(std::size_t cam = param.camera_start; cam < param.camera_count + param.camera_start; ++cam){
+				result.push_back(load_vector< T >(cam));
+			}
+			return result;
+		}
+	};
+
 
 	struct module: disposer::module_base{
 		module(std::string const& type, std::string const& chain, std::string const& name, parameter&& param):
@@ -129,24 +217,6 @@ namespace disposer_module{ namespace big_loader{
 
 
 		parameter const param;
-
-
-		struct tar_log{
-			module const& this_;
-			std::string const& tarname;
-			std::size_t const id;
-
-			void operator()(log::info& os)const{
-				os << this_.type << " id " << id << ": read '" << tarname << "'";
-			}
-		};
-
-
-		template < typename T >
-		void load_bitmap(bitmap< T >& bitmap, std::size_t id, std::size_t used_id, std::size_t cam, std::size_t pos);
-
-		template < typename T >
-		void load_bitmap(bitmap< T >& bitmap, tar_reader& tar, std::string const& tarname, std::size_t id, std::size_t used_id, std::size_t cam, std::size_t pos);
 	};
 
 
@@ -313,171 +383,79 @@ namespace disposer_module{ namespace big_loader{
 	}
 
 
-	template < typename T >
-	void module::trigger_sequence(std::size_t id){
-		auto used_id = param.fixed_id ? *param.fixed_id : id;
-
-		bitmap_sequence< T > result;
-
-		if(param.tar){
-			auto tarname = param.dir + "/" + (*param.tar_pattern)(used_id);
-			disposer::log(tar_log{*this, tarname, id}, [this, id, used_id, &tarname, &result]{
-				tar_reader tar(tarname);
-
-				for(std::size_t cam = param.camera_start; cam < param.camera_count + param.camera_start; ++cam){
-					result.emplace_back();
-					for(std::size_t pos = param.sequence_start; pos < param.sequence_count + param.sequence_start; ++pos){
-						result.back().emplace_back();
-
-						load_bitmap(result.back().back(), tar, tarname, id, used_id, cam, pos);
-					}
-				}
-			});
-		}else{
-			for(std::size_t cam = param.camera_start; cam < param.camera_count + param.camera_start; ++cam){
-				result.emplace_back();
-				for(std::size_t pos = param.sequence_start; pos < param.sequence_count + param.sequence_start; ++pos){
-					result.back().emplace_back();
-
-					load_bitmap(result.back().back(), id, used_id, cam, pos);
-				}
-			}
-		}
-
-		sequence.put< bitmap_sequence< T > >(id, std::move(result));
-	}
-
-	template < typename T >
-	void module::trigger_vector(std::size_t id){
-		auto used_id = param.fixed_id ? *param.fixed_id : id;
-
-		if(param.tar){
-			auto tarname = param.dir + "/" + (*param.tar_pattern)(used_id);
-			disposer::log(tar_log{*this, tarname, id}, [this, id, used_id, &tarname]{
-				tar_reader tar(tarname);
-
-				for(std::size_t cam = param.camera_start; cam < param.camera_count + param.camera_start; ++cam){
-					bitmap_vector< T > result;
-
-					for(std::size_t pos = param.sequence_start; pos < param.sequence_count + param.sequence_start; ++pos){
-						result.emplace_back();
-
-						load_bitmap(result.back(), tar, tarname, id, used_id, cam, pos);
-					}
-
-					vector.put< bitmap_vector< T > >(id, std::move(result));
-				}
-			});
-		}else{
-			for(std::size_t cam = param.camera_start; cam < param.camera_count + param.camera_start; ++cam){
-				bitmap_vector< T > result;
-
-				for(std::size_t pos = param.sequence_start; pos < param.sequence_count + param.sequence_start; ++pos){
-					result.emplace_back();
-
-					load_bitmap(result.back(), id, used_id, cam, pos);
-				}
-
-				vector.put< bitmap_vector< T > >(id, std::move(result));
-			}
-		}
-	}
-
-	template < typename T >
-	void module::trigger_image(std::size_t id){
-		auto used_id = param.fixed_id ? *param.fixed_id : id;
-
-		if(param.tar){
-			auto tarname = param.dir + "/" + (*param.tar_pattern)(used_id);
-			disposer::log(tar_log{*this, tarname, id}, [this, id, used_id, &tarname]{
-				tar_reader tar(tarname);
-
-				for(std::size_t cam = param.camera_start; cam < param.camera_count + param.camera_start; ++cam){
-					for(std::size_t pos = param.sequence_start; pos < param.sequence_count + param.sequence_start; ++pos){
-						bitmap< T > result;
-
-						load_bitmap(result, tar, tarname, id, used_id, cam, pos);
-
-						image.put< bitmap< T > >(id, std::move(result));
-					}
-				}
-			});
-		}else{
-			for(std::size_t cam = param.camera_start; cam < param.camera_count + param.camera_start; ++cam){
-				for(std::size_t pos = param.sequence_start; pos < param.sequence_count + param.sequence_start; ++pos){
-					bitmap< T > result;
-
-					load_bitmap(result, id, used_id, cam, pos);
-
-					image.put< bitmap< T > >(id, std::move(result));
-				}
-			}
-		}
-	}
-
-
 	void module::trigger(std::size_t id){
-		// TODO: First load and analyse header, then call the version with corresponding (and active) type
-		switch(param.output){
-			case output_t::sequence:
-				if(param.type_int8) trigger_sequence< std::int8_t >(id);
-				if(param.type_uint8) trigger_sequence< std::uint8_t >(id);
-				if(param.type_int16) trigger_sequence< std::int16_t >(id);
-				if(param.type_uint16) trigger_sequence< std::uint16_t >(id);
-				if(param.type_int32) trigger_sequence< std::int32_t >(id);
-				if(param.type_uint32) trigger_sequence< std::uint32_t >(id);
-				if(param.type_int64) trigger_sequence< std::int64_t >(id);
-				if(param.type_uint64) trigger_sequence< std::uint64_t >(id);
-				if(param.type_float) trigger_sequence< float >(id);
-				if(param.type_double) trigger_sequence< double >(id);
-				if(param.type_long_double) trigger_sequence< long double >(id);
-			break;
-			case output_t::vector:
-				if(param.type_int8) trigger_vector< std::int8_t >(id);
-				if(param.type_uint8) trigger_vector< std::uint8_t >(id);
-				if(param.type_int16) trigger_vector< std::int16_t >(id);
-				if(param.type_uint16) trigger_vector< std::uint16_t >(id);
-				if(param.type_int32) trigger_vector< std::int32_t >(id);
-				if(param.type_uint32) trigger_vector< std::uint32_t >(id);
-				if(param.type_int64) trigger_vector< std::int64_t >(id);
-				if(param.type_uint64) trigger_vector< std::uint64_t >(id);
-				if(param.type_float) trigger_vector< float >(id);
-				if(param.type_double) trigger_vector< double >(id);
-				if(param.type_long_double) trigger_vector< long double >(id);
-			break;
-			case output_t::image:
-				if(param.type_int8) trigger_image< std::int8_t >(id);
-				if(param.type_uint8) trigger_image< std::uint8_t >(id);
-				if(param.type_int16) trigger_image< std::int16_t >(id);
-				if(param.type_uint16) trigger_image< std::uint16_t >(id);
-				if(param.type_int32) trigger_image< std::int32_t >(id);
-				if(param.type_uint32) trigger_image< std::uint32_t >(id);
-				if(param.type_int64) trigger_image< std::int64_t >(id);
-				if(param.type_uint64) trigger_image< std::uint64_t >(id);
-				if(param.type_float) trigger_image< float >(id);
-				if(param.type_double) trigger_image< double >(id);
-				if(param.type_long_double) trigger_image< long double >(id);
-			break;
-		}
-	}
+		auto used_id = param.fixed_id ? *param.fixed_id : id;
 
+		if(param.tar){
+			auto tarname = param.dir + "/" + (*param.tar_pattern)(used_id);
+			disposer::log([this, id, &tarname](log::info& os){ os << type << " id " << id << ": read '" << tarname << "'"; }, [this, id, used_id, &tarname]{
+				tar_reader tar(tarname);
 
-	template < typename T >
-	void module::load_bitmap(bitmap< T >& bitmap, std::size_t id, std::size_t used_id, std::size_t cam, std::size_t pos){
-		auto filename = param.dir + "/" + (*param.big_pattern)(used_id, cam, pos);
-		disposer::log([this, &filename, id](log::info& os){ os << type << " id " << id << ": read '" << filename << "'"; }, [&bitmap, &filename]{
-			big::read(bitmap, filename);
-		});
-	}
+				auto worker = [this, id, used_id, &tar, &tarname](auto type_t){
+					switch(param.output){
+						case output_t::sequence: [this, id, used_id, &tar, &tarname]{
+							sequence.put< bitmap_sequence< typename decltype(type_t)::type > >(id, tar_load(type, param, id, used_id, tar, tarname).load_sequence< typename decltype(type_t)::type >());
+						}();
+						case output_t::vector: [this, id, used_id, &tar, &tarname]{
+							for(std::size_t cam = param.camera_start; cam < param.camera_count + param.camera_start; ++cam){
+								vector.put< bitmap_vector< typename decltype(type_t)::type > >(id, tar_load(type, param, id, used_id, tar, tarname).load_vector< typename decltype(type_t)::type >(cam));
+							}
+						}();
+						case output_t::image: [this, id, used_id, &tar, &tarname]{
+							for(std::size_t cam = param.camera_start; cam < param.camera_count + param.camera_start; ++cam){
+								for(std::size_t pos = param.sequence_start; pos < param.sequence_count + param.sequence_start; ++pos){
+									image.put< bitmap< typename decltype(type_t)::type > >(id, tar_load(type, param, id, used_id, tar, tarname).load_bitmap< typename decltype(type_t)::type >(cam, pos));
+								}
+							}
+						}();
+					}
+				};
 
-	template < typename T >
-	void module::load_bitmap(bitmap< T >& bitmap, tar_reader& tar, std::string const& tarname, std::size_t id, std::size_t used_id, std::size_t cam, std::size_t pos){
-		auto filename = (*param.big_pattern)(used_id, cam, pos);
-		disposer::log([this, &tarname, &filename, id](log::info& os){ os << type << " id " << id << ": read '" << tarname << "'"; }, [&tar, &bitmap, &filename]{
-			tar.read(filename, [&bitmap](std::istream& is){
-				big::read(bitmap, is);
+				if(param.type_int8) worker(hana::type< std::int8_t >);
+				if(param.type_uint8) worker(hana::type< std::uint8_t >);
+				if(param.type_int16) worker(hana::type< std::int16_t >);
+				if(param.type_uint16) worker(hana::type< std::uint16_t >);
+				if(param.type_int32) worker(hana::type< std::int32_t >);
+				if(param.type_uint32) worker(hana::type< std::uint32_t >);
+				if(param.type_int64) worker(hana::type< std::int64_t >);
+				if(param.type_uint64) worker(hana::type< std::uint64_t >);
+				if(param.type_float) worker(hana::type< float >);
+				if(param.type_double) worker(hana::type< double >);
+				if(param.type_long_double) worker(hana::type< long double >);
 			});
-		});
+		}else{
+			auto worker = [this, id, used_id](auto type_t){
+				switch(param.output){
+					case output_t::sequence: [this, id, used_id]{
+						sequence.put< bitmap_sequence< typename decltype(type_t)::type > >(id, load(type, param, id, used_id).load_sequence< typename decltype(type_t)::type >());
+					}();
+					case output_t::vector: [this, id, used_id]{
+						for(std::size_t cam = param.camera_start; cam < param.camera_count + param.camera_start; ++cam){
+							vector.put< bitmap_vector< typename decltype(type_t)::type > >(id, load(type, param, id, used_id).load_vector< typename decltype(type_t)::type >(cam));
+						}
+					}();
+					case output_t::image: [this, id, used_id]{
+						for(std::size_t cam = param.camera_start; cam < param.camera_count + param.camera_start; ++cam){
+							for(std::size_t pos = param.sequence_start; pos < param.sequence_count + param.sequence_start; ++pos){
+								image.put< bitmap< typename decltype(type_t)::type > >(id, load(type, param, id, used_id).load_bitmap< typename decltype(type_t)::type >(cam, pos));
+							}
+						}
+					}();
+				}
+			};
+
+			if(param.type_int8) worker(hana::type< std::int8_t >);
+			if(param.type_uint8) worker(hana::type< std::uint8_t >);
+			if(param.type_int16) worker(hana::type< std::int16_t >);
+			if(param.type_uint16) worker(hana::type< std::uint16_t >);
+			if(param.type_int32) worker(hana::type< std::int32_t >);
+			if(param.type_uint32) worker(hana::type< std::uint32_t >);
+			if(param.type_int64) worker(hana::type< std::int64_t >);
+			if(param.type_uint64) worker(hana::type< std::uint64_t >);
+			if(param.type_float) worker(hana::type< float >);
+			if(param.type_double) worker(hana::type< double >);
+			if(param.type_long_double) worker(hana::type< long double >);
+		}
 	}
 
 

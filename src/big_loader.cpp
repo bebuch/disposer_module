@@ -394,17 +394,17 @@ namespace disposer_module{ namespace big_loader{
 				auto worker = [this, id, used_id, &tar, &tarname](auto type_t){
 					switch(param.output){
 						case output_t::sequence:{
-							sequence.put< bitmap_sequence< typename decltype(type_t)::type > >(id, tar_load(type, param, id, used_id, tar, tarname).load_sequence< typename decltype(type_t)::type >());
+							sequence.put< typename decltype(type_t)::type >(id, tar_load(type, param, id, used_id, tar, tarname).load_sequence< typename decltype(type_t)::type >());
 						} break;
 						case output_t::vector:{
 							for(std::size_t cam = param.camera_start; cam < param.camera_count + param.camera_start; ++cam){
-								vector.put< bitmap_vector< typename decltype(type_t)::type > >(id, tar_load(type, param, id, used_id, tar, tarname).load_vector< typename decltype(type_t)::type >(cam));
+								vector.put< typename decltype(type_t)::type >(id, tar_load(type, param, id, used_id, tar, tarname).load_vector< typename decltype(type_t)::type >(cam));
 							}
 						} break;
 						case output_t::image:{
 							for(std::size_t cam = param.camera_start; cam < param.camera_count + param.camera_start; ++cam){
 								for(std::size_t pos = param.sequence_start; pos < param.sequence_count + param.sequence_start; ++pos){
-									image.put< bitmap< typename decltype(type_t)::type > >(id, tar_load(type, param, id, used_id, tar, tarname).load_bitmap< typename decltype(type_t)::type >(cam, pos));
+									image.put< typename decltype(type_t)::type >(id, tar_load(type, param, id, used_id, tar, tarname).load_bitmap< typename decltype(type_t)::type >(cam, pos));
 								}
 							}
 						} break;
@@ -427,17 +427,17 @@ namespace disposer_module{ namespace big_loader{
 			auto worker = [this, id, used_id](auto type_t){
 				switch(param.output){
 					case output_t::sequence:{
-						sequence.put< bitmap_sequence< typename decltype(type_t)::type > >(id, load(type, param, id, used_id).load_sequence< typename decltype(type_t)::type >());
+						sequence.put< typename decltype(type_t)::type >(id, load(type, param, id, used_id).load_sequence< typename decltype(type_t)::type >());
 					} break;
 					case output_t::vector:{
 						for(std::size_t cam = param.camera_start; cam < param.camera_count + param.camera_start; ++cam){
-							vector.put< bitmap_vector< typename decltype(type_t)::type > >(id, load(type, param, id, used_id).load_vector< typename decltype(type_t)::type >(cam));
+							vector.put< typename decltype(type_t)::type >(id, load(type, param, id, used_id).load_vector< typename decltype(type_t)::type >(cam));
 						}
 					} break;
 					case output_t::image:{
 						for(std::size_t cam = param.camera_start; cam < param.camera_count + param.camera_start; ++cam){
 							for(std::size_t pos = param.sequence_start; pos < param.sequence_count + param.sequence_start; ++pos){
-								image.put< bitmap< typename decltype(type_t)::type > >(id, load(type, param, id, used_id).load_bitmap< typename decltype(type_t)::type >(cam, pos));
+								image.put< typename decltype(type_t)::type >(id, load(type, param, id, used_id).load_bitmap< typename decltype(type_t)::type >(cam, pos));
 							}
 						}
 					} break;

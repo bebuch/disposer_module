@@ -70,14 +70,16 @@ namespace disposer_module{ namespace big{
 
 	template < typename BitmapType >
 	void read(BitmapType& bitmap, std::istream& is){
+		using value_type = std::remove_cv_t< std::remove_pointer_t< decltype(bitmap.data()) > >;
+
 		header header = read_header(is);
 
-		if(header.type != big::type< typename BitmapType::value_type >::value){
+		if(header.type != big::type_v< value_type >){
 			throw big_error("Type in file is not compatible");
 		}
 
 		// The last 4 bits in the type get the size of a single value
-		if((header.type & 0x000F) != sizeof(typename BitmapType::value_type)){
+		if((header.type & 0x000F) != sizeof(value_type)){
 			throw big_error("Size type in file is not compatible");
 		}
 
@@ -104,16 +106,18 @@ namespace disposer_module{ namespace big{
 
 	template < typename BitmapType >
 	void read_data(BitmapType& bitmap, std::istream& is){
+		using value_type = std::remove_cv_t< std::remove_pointer_t< decltype(bitmap.data()) > >;
+
 		is.read(
 			reinterpret_cast< std::ifstream::char_type* >(bitmap.data()),
-			bitmap.width() * bitmap.height() * sizeof(typename BitmapType::value_type)
+			bitmap.width() * bitmap.height() * sizeof(value_type)
 		);
 
 		if(!is.good()){
 			throw big_error("Can't read big content");
 		}
 
-		if(std::numeric_limits< typename BitmapType::value_type >::has_quiet_NaN){
+		if(std::numeric_limits< value_type >::has_quiet_NaN){
 			bitmap = convert_undef_to_nan(std::move(bitmap));
 		}
 	}

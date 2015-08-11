@@ -19,17 +19,17 @@ namespace disposer_module{ namespace big{
 
 
 	template < typename T >
-	inline bool isnan(T const& value){
+	constexpr bool isnan(T const& value){
 		return value != value;
 	}
 
 	constexpr float undef = 3.402823466e38f;
 
-	template < typename container >
-	container convert_undef_to_nan(container const& image){
-		typedef typename container::value_type value_type;
+	template < typename Container >
+	Container convert_undef_to_nan(Container const& image){
+		typedef typename Container::value_type value_type;
 
-		container result(image.size());
+		Container result(image.size());
 		std::transform(image.begin(), image.end(), result.begin(), [](value_type value){
 			return value >= undef ? std::numeric_limits< value_type >::quiet_NaN() : value;
 		});
@@ -37,11 +37,11 @@ namespace disposer_module{ namespace big{
 		return std::move(result);
 	}
 
-	template < typename container >
-	container convert_nan_to_undef(container const& image){
-		typedef typename container::value_type value_type;
+	template < typename Container >
+	Container convert_nan_to_undef(Container const& image){
+		typedef typename Container::value_type value_type;
 
-		container result(image.size());
+		Container result(image.size());
 		std::transform(image.begin(), image.end(), result.begin(), [](value_type value){
 			return isnan(value) ? undef : value;
 		});

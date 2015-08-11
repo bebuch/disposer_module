@@ -52,10 +52,12 @@ namespace disposer_module{ namespace big{
 
 	template < typename BitmapType >
 	void write(BitmapType const& bitmap, std::ostream& os){
+		using value_type = std::remove_cv_t< std::remove_pointer_t< decltype(bitmap.data()) > >;
+
 		// big header informations
 		std::uint16_t width  = static_cast< std::uint16_t >(bitmap.width());
 		std::uint16_t height = static_cast< std::uint16_t >(bitmap.height());
-		std::uint16_t type   = big::type< typename BitmapType::value_type >::value;
+		std::uint16_t type   = big::type_v< value_type >;
 		std::uint32_t placeholder = 0; // 4 bytes in header are reserved
 
 		// write the file header
@@ -68,11 +70,11 @@ namespace disposer_module{ namespace big{
 			throw big_error("Can't write big header");
 		}
 
-		auto bytes = bitmap.width() * bitmap.height() * sizeof(typename BitmapType::value_type);
+		auto bytes = bitmap.width() * bitmap.height() * sizeof(value_type);
 
 		os.write(
 			reinterpret_cast< std::ifstream::char_type const* >(
-				std::numeric_limits< typename BitmapType::value_type >::has_quiet_NaN ?
+				std::numeric_limits< value_type >::has_quiet_NaN ?
 				convert_nan_to_undef(bitmap).data() :
 				bitmap.data()
 			),

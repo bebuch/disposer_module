@@ -6,6 +6,7 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 //-----------------------------------------------------------------------------
+// TODO: add type in log messages
 #include "big_saver.hpp"
 
 #include "log.hpp"
@@ -71,50 +72,26 @@ namespace disposer_module{ namespace big_saver{
 			}
 
 
-		disposer::container_input<
-			bitmap_sequence, 
-				std::int8_t,
-				std::uint8_t,
-				std::int16_t,
-				std::uint16_t,
-				std::int32_t,
-				std::uint32_t,
-				std::int64_t,
-				std::uint64_t,
-				float,
-				double,
-				long double
-			> sequence{"sequence"};
+		using types = disposer::type_list<
+			std::int8_t,
+			std::uint8_t,
+			std::int16_t,
+			std::uint16_t,
+			std::int32_t,
+			std::uint32_t,
+			std::int64_t,
+			std::uint64_t,
+			float,
+			double,
+			long double
+		>;
 
-		disposer::container_input<
-			bitmap_vector, 
-				std::int8_t,
-				std::uint8_t,
-				std::int16_t,
-				std::uint16_t,
-				std::int32_t,
-				std::uint32_t,
-				std::int64_t,
-				std::uint64_t,
-				float,
-				double,
-				long double
-			> vector{"vector"};
 
-		disposer::container_input<
-			bitmap,
-				std::int8_t,
-				std::uint8_t,
-				std::int16_t,
-				std::uint16_t,
-				std::int32_t,
-				std::uint32_t,
-				std::int64_t,
-				std::uint64_t,
-				float,
-				double,
-				long double
-			> image{"image"};
+		disposer::container_input< bitmap_sequence, types > sequence{"sequence"};
+
+		disposer::container_input< bitmap_vector, types > vector{"vector"};
+
+		disposer::container_input< bitmap, types > image{"image"};
 
 
 		void save(std::size_t id, save_sequence const& bitmap_sequence);

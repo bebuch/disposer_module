@@ -198,21 +198,6 @@ namespace disposer_module{ namespace big_loader{
 			> image{"image"};
 
 
-		std::string tar_name(std::size_t id);
-		std::string big_name(std::size_t cam, std::size_t pos);
-		std::string big_name(std::size_t id, std::size_t cam, std::size_t pos);
-
-
-		template < typename T >
-		void trigger_sequence(std::size_t id);
-
-		template < typename T >
-		void trigger_vector(std::size_t id);
-
-		template < typename T >
-		void trigger_image(std::size_t id);
-
-
 		void trigger(std::size_t id)override;
 
 

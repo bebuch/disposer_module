@@ -31,21 +31,35 @@ namespace disposer_module{ namespace big_loader{
 		image
 	};
 
-	struct data{
-		enum type{
-			int8 = 0,
-			uint8,
-			int16,
-			uint16,
-			int32,
-			uint32,
-			int64,
-			uint64,
-			float_,
-			double_,
-			long_double
-		};
-	};
+	using types = disposer::type_list<
+		std::int8_t,
+		std::uint8_t,
+		std::int16_t,
+		std::uint16_t,
+		std::int32_t,
+		std::uint32_t,
+		std::int64_t,
+		std::uint64_t,
+		float,
+		double,
+		long double
+	>;
+
+	template < typename T > struct type_value;
+	template <> struct type_value< std::int8_t >{ static constexpr std::size_t value = 0; };
+	template <> struct type_value< std::uint8_t >{ static constexpr std::size_t value = 1; };
+	template <> struct type_value< std::int16_t >{ static constexpr std::size_t value = 2; };
+	template <> struct type_value< std::uint16_t >{ static constexpr std::size_t value = 3; };
+	template <> struct type_value< std::int32_t >{ static constexpr std::size_t value = 4; };
+	template <> struct type_value< std::uint32_t >{ static constexpr std::size_t value = 5; };
+	template <> struct type_value< std::int64_t >{ static constexpr std::size_t value = 6; };
+	template <> struct type_value< std::uint64_t >{ static constexpr std::size_t value = 7; };
+	template <> struct type_value< float >{ static constexpr std::size_t value = 8; };
+	template <> struct type_value< double >{ static constexpr std::size_t value = 9; };
+	template <> struct type_value< long double >{ static constexpr std::size_t value = 10; };
+
+	template < typename T >
+	constexpr std::size_t type_v = type_value< T >::value;
 
 	struct parameter{
 		bool tar;
@@ -69,8 +83,8 @@ namespace disposer_module{ namespace big_loader{
 	};
 
 
-	struct load{
-		load(std::string const& type, parameter const& param, std::size_t id, std::size_t used_id):
+	struct load_files{
+		load_files(std::string const& type, parameter const& param, std::size_t id, std::size_t used_id):
 			type(type), param(param), id(id), used_id(used_id) {}
 
 		std::string const& type;
@@ -113,8 +127,8 @@ namespace disposer_module{ namespace big_loader{
 		}
 	};
 
-	struct tar_load{
-		tar_load(std::string const& type, parameter const& param, std::size_t id, std::size_t used_id, tar_reader& tar, std::string const& tarname):
+	struct load_tar{
+		load_tar(std::string const& type, parameter const& param, std::size_t id, std::size_t used_id, tar_reader& tar, std::string const& tarname):
 			type(type), param(param), id(id), used_id(used_id), tar(tar), tarname(tarname) {}
 
 		std::string const& type;
@@ -168,21 +182,6 @@ namespace disposer_module{ namespace big_loader{
 			}
 
 
-		using types = disposer::type_list<
-			std::int8_t,
-			std::uint8_t,
-			std::int16_t,
-			std::uint16_t,
-			std::int32_t,
-			std::uint32_t,
-			std::int64_t,
-			std::uint64_t,
-			float,
-			double,
-			long double
-		>;
-
-
 		disposer::container_output< bitmap_sequence, types > sequence{"sequence"};
 
 		disposer::container_output< bitmap_vector, types > vector{"vector"};
@@ -190,7 +189,7 @@ namespace disposer_module{ namespace big_loader{
 		disposer::container_output< bitmap, types > image{"image"};
 
 
-		data::type get_type(std::istream& is, std::size_t id, std::string const& filename)const;
+		std::size_t get_type(std::istream& is, std::size_t id, std::string const& filename)const;
 
 		void trigger(std::size_t id)override;
 
@@ -236,31 +235,19 @@ namespace disposer_module{ namespace big_loader{
 
 		params.set(param.dir, "dir", ".");
 
-		params.set(param.type[data::int8], "type_int8", false);
-		params.set(param.type[data::uint8], "type_uint8", false);
-		params.set(param.type[data::int16], "type_int16", false);
-		params.set(param.type[data::uint16], "type_uint16", false);
-		params.set(param.type[data::int32], "type_int32", false);
-		params.set(param.type[data::uint32], "type_uint32", false);
-		params.set(param.type[data::int64], "type_int64", false);
-		params.set(param.type[data::uint64], "type_uint64", false);
-		params.set(param.type[data::float_], "type_float", false);
-		params.set(param.type[data::double_], "type_double", false);
-		params.set(param.type[data::long_double], "type_long_double", false);
+		params.set(param.type[type_v< std::int8_t >], "type_int8", false);
+		params.set(param.type[type_v< std::uint8_t >], "type_uint8", false);
+		params.set(param.type[type_v< std::int16_t >], "type_int16", false);
+		params.set(param.type[type_v< std::uint16_t >], "type_uint16", false);
+		params.set(param.type[type_v< std::int32_t >], "type_int32", false);
+		params.set(param.type[type_v< std::uint32_t >], "type_uint32", false);
+		params.set(param.type[type_v< std::int64_t >], "type_int64", false);
+		params.set(param.type[type_v< std::int64_t >], "type_uint64", false);
+		params.set(param.type[type_v< float >], "type_float", false);
+		params.set(param.type[type_v< double >], "type_double", false);
+		params.set(param.type[type_v< long double >], "type_long_double", false);
 
-		if(
-			!param.type[data::int8] &&
-			!param.type[data::uint8] &&
-			!param.type[data::int16] &&
-			!param.type[data::uint16] &&
-			!param.type[data::int32] &&
-			!param.type[data::uint32] &&
-			!param.type[data::int64] &&
-			!param.type[data::uint64] &&
-			!param.type[data::float_] &&
-			!param.type[data::double_] &&
-			!param.type[data::long_double]
-		){
+		if(param.type == std::array< bool, 11 >{{false}}){
 			throw std::logic_error(
 				type + 
 				": No type active (set at least one of 'type_int8', 'type_uint8', 'type_int16', 'type_uint16', 'type_int32', 'type_uint32', 'type_int64', 'type_uint64', 'type_float', 'type_double', 'type_long_double' to true)"
@@ -326,17 +313,17 @@ namespace disposer_module{ namespace big_loader{
 			}
 		};
 
-		if(result->param.type[data::int8]) activate(hana::type< std::int8_t >);
-		if(result->param.type[data::uint8]) activate(hana::type< std::uint8_t >);
-		if(result->param.type[data::int16]) activate(hana::type< std::int16_t >);
-		if(result->param.type[data::uint16]) activate(hana::type< std::uint16_t >);
-		if(result->param.type[data::int32]) activate(hana::type< std::int32_t >);
-		if(result->param.type[data::uint32]) activate(hana::type< std::uint32_t >);
-		if(result->param.type[data::int64]) activate(hana::type< std::int64_t >);
-		if(result->param.type[data::uint64]) activate(hana::type< std::uint64_t >);
-		if(result->param.type[data::float_]) activate(hana::type< float >);
-		if(result->param.type[data::double_]) activate(hana::type< double >);
-		if(result->param.type[data::long_double]) activate(hana::type< long double >);
+		if(result->param.type[type_v< std::int8_t >]) activate(hana::type< std::int8_t >);
+		if(result->param.type[type_v< std::uint8_t >]) activate(hana::type< std::uint8_t >);
+		if(result->param.type[type_v< std::int16_t >]) activate(hana::type< std::int16_t >);
+		if(result->param.type[type_v< std::uint16_t >]) activate(hana::type< std::uint16_t >);
+		if(result->param.type[type_v< std::int32_t >]) activate(hana::type< std::int32_t >);
+		if(result->param.type[type_v< std::uint32_t >]) activate(hana::type< std::uint32_t >);
+		if(result->param.type[type_v< std::int64_t >]) activate(hana::type< std::int64_t >);
+		if(result->param.type[type_v< std::int64_t >]) activate(hana::type< std::uint64_t >);
+		if(result->param.type[type_v< float >]) activate(hana::type< float >);
+		if(result->param.type[type_v< double >]) activate(hana::type< double >);
+		if(result->param.type[type_v< long double >]) activate(hana::type< long double >);
 
 		return std::move(result);
 	}
@@ -346,21 +333,21 @@ namespace disposer_module{ namespace big_loader{
 	}
 
 
-	data::type module::get_type(std::istream& is, std::size_t id, std::string const& filename)const{
+	std::size_t module::get_type(std::istream& is, std::size_t id, std::string const& filename)const{
 		return disposer::log([this, id, &filename](log::info& os){ os << type << " id " << id << ": read header of '" << filename << "'"; }, [&is, &filename]{
 			auto header = big::read_header(is);
 			switch(header.type){
-				case big::type_v< std::int8_t >: return data::int8;
-				case big::type_v< std::uint8_t >: return data::uint8;
-				case big::type_v< std::int16_t >: return data::int16;
-				case big::type_v< std::uint16_t >: return data::uint16;
-				case big::type_v< std::int32_t >: return data::int32;
-				case big::type_v< std::uint32_t >: return data::uint32;
-				case big::type_v< std::int64_t >: return data::int64;
-				case big::type_v< std::uint64_t >: return data::uint64;
-				case big::type_v< float >: return data::float_;
-				case big::type_v< double >: return data::double_;
-				case big::type_v< long double >: return data::long_double;
+				case big::type_v< std::int8_t >: return type_v< std::int8_t >;
+				case big::type_v< std::uint8_t >: return type_v< std::uint8_t >;
+				case big::type_v< std::int16_t >: return type_v< std::int16_t >;
+				case big::type_v< std::uint16_t >: return type_v< std::uint16_t >;
+				case big::type_v< std::int32_t >: return type_v< std::int32_t >;
+				case big::type_v< std::uint32_t >: return type_v< std::uint32_t >;
+				case big::type_v< std::int64_t >: return type_v< std::int64_t >;
+				case big::type_v< std::uint64_t >: return type_v< std::int64_t >;
+				case big::type_v< float >: return type_v< float >;
+				case big::type_v< double >: return type_v< double >;
+				case big::type_v< long double >: return type_v< long double >;
 			}
 
 			throw std::runtime_error("file '" + filename + "' has unknown big type");
@@ -371,84 +358,60 @@ namespace disposer_module{ namespace big_loader{
 	void module::trigger(std::size_t id){
 		auto used_id = param.fixed_id ? *param.fixed_id : id;
 
+		auto call_worker = [this, id](auto& loader, std::size_t data_type){
+			auto worker = [this, id, &loader](bool active, std::string const& name, auto type_t){
+				if(active){
+					switch(param.output){
+						case output_t::sequence:{
+							sequence.put< typename decltype(type_t)::type >(id, loader.template load_sequence< typename decltype(type_t)::type >());
+						} break;
+						case output_t::vector:{
+							for(std::size_t cam = param.camera_start; cam < param.camera_count + param.camera_start; ++cam){
+								vector.put< typename decltype(type_t)::type >(id, loader.template load_vector< typename decltype(type_t)::type >(cam));
+							}
+						} break;
+						case output_t::image:{
+							for(std::size_t cam = param.camera_start; cam < param.camera_count + param.camera_start; ++cam){
+								for(std::size_t pos = param.sequence_start; pos < param.sequence_count + param.sequence_start; ++pos){
+									image.put< typename decltype(type_t)::type >(id, loader.template load_bitmap< typename decltype(type_t)::type >(cam, pos));
+								}
+							}
+						} break;
+					}
+				}else{
+					throw std::runtime_error(type + ": First file is of type '" + name + "', but parameter 'type_" + name + "' is not true");
+				}
+			};
+
+			switch(data_type){
+				case type_v< std::int8_t >: worker(param.type[type_v< std::int8_t >], "int8", hana::type< std::int8_t >); break;
+				case type_v< std::uint8_t >: worker(param.type[type_v< std::uint8_t >], "uint8", hana::type< std::uint8_t >); break;
+				case type_v< std::int16_t >: worker(param.type[type_v< std::int16_t >], "int16", hana::type< std::int16_t >); break;
+				case type_v< std::uint16_t >: worker(param.type[type_v< std::uint16_t >], "uint16", hana::type< std::uint16_t >); break;
+				case type_v< std::int32_t >: worker(param.type[type_v< std::int32_t >], "int32", hana::type< std::int32_t >); break;
+				case type_v< std::uint32_t >: worker(param.type[type_v< std::uint32_t >], "uint32", hana::type< std::uint32_t >); break;
+				case type_v< std::int64_t >: worker(param.type[type_v< std::int64_t >], "int64", hana::type< std::int64_t >); break;
+				case type_v< std::uint64_t >: worker(param.type[type_v< std::uint64_t >], "uint64", hana::type< std::uint64_t >); break;
+				case type_v< float >: worker(param.type[type_v< float >], "float", hana::type< float >); break;
+				case type_v< double >: worker(param.type[type_v< double >], "double", hana::type< double >); break;
+				case type_v< long double >: worker(param.type[type_v< long double >], "long double", hana::type< long double >); break;
+			}
+		};
+
 		if(param.tar){
 			auto tarname = param.dir + "/" + (*param.tar_pattern)(used_id);
 			tar_reader tar(tarname);
 
-			tar_load loader(type, param, id, used_id, tar, tarname);
-			auto worker = [this, id, &loader](auto type_t){
-				switch(param.output){
-					case output_t::sequence:{
-						sequence.put< typename decltype(type_t)::type >(id, loader.load_sequence< typename decltype(type_t)::type >());
-					} break;
-					case output_t::vector:{
-						for(std::size_t cam = param.camera_start; cam < param.camera_count + param.camera_start; ++cam){
-							vector.put< typename decltype(type_t)::type >(id, loader.load_vector< typename decltype(type_t)::type >(cam));
-						}
-					} break;
-					case output_t::image:{
-						for(std::size_t cam = param.camera_start; cam < param.camera_count + param.camera_start; ++cam){
-							for(std::size_t pos = param.sequence_start; pos < param.sequence_count + param.sequence_start; ++pos){
-								image.put< typename decltype(type_t)::type >(id, loader.load_bitmap< typename decltype(type_t)::type >(cam, pos));
-							}
-						}
-					} break;
-				}
-			};
+			load_tar loader(type, param, id, used_id, tar, tarname);
 
-			auto call_worker = [this, &worker](bool active, std::string const& name, auto type_t){
-				if(active){
-					worker(type_t);
-				}else{
-					throw std::runtime_error(type + ": First file is of type '" + name + "', but parameter 'type_" + name + "' is not true");
-				}
-			};
+			auto data_type = [this, id, &loader, &tar, &tarname](){
+				auto filename = loader.filename(param.camera_start, param.sequence_start);
+				return get_type(tar.get(filename), id, tarname + "/" + filename);
+			}();
 
-			auto filename = loader.filename(param.camera_start, param.sequence_start);
-			auto data_type = get_type(tar.get(filename), id, tarname + "/" + filename);
-
-			switch(data_type){
-				case data::int8: call_worker(param.type[data::int8], "int8", hana::type< std::int8_t >); break;
-				case data::uint8: call_worker(param.type[data::uint8], "uint8", hana::type< std::uint8_t >); break;
-				case data::int16: call_worker(param.type[data::int16], "int16", hana::type< std::int16_t >); break;
-				case data::uint16: call_worker(param.type[data::uint16], "uint16", hana::type< std::uint16_t >); break;
-				case data::int32: call_worker(param.type[data::int32], "int32", hana::type< std::int32_t >); break;
-				case data::uint32: call_worker(param.type[data::uint32], "uint32", hana::type< std::uint32_t >); break;
-				case data::int64: call_worker(param.type[data::int64], "int64", hana::type< std::int64_t >); break;
-				case data::uint64: call_worker(param.type[data::uint64], "uint64", hana::type< std::uint64_t >); break;
-				case data::float_: call_worker(param.type[data::float_], "float", hana::type< float >); break;
-				case data::double_: call_worker(param.type[data::double_], "double", hana::type< double >); break;
-				case data::long_double: call_worker(param.type[data::long_double], "long double", hana::type< long double >); break;
-			}
+			call_worker(loader, data_type);
 		}else{
-			load loader(type, param, id, used_id);
-			auto worker = [this, id, &loader](auto type_t){
-				switch(param.output){
-					case output_t::sequence:{
-						sequence.put< typename decltype(type_t)::type >(id, loader.load_sequence< typename decltype(type_t)::type >());
-					} break;
-					case output_t::vector:{
-						for(std::size_t cam = param.camera_start; cam < param.camera_count + param.camera_start; ++cam){
-							vector.put< typename decltype(type_t)::type >(id, loader.load_vector< typename decltype(type_t)::type >(cam));
-						}
-					} break;
-					case output_t::image:{
-						for(std::size_t cam = param.camera_start; cam < param.camera_count + param.camera_start; ++cam){
-							for(std::size_t pos = param.sequence_start; pos < param.sequence_count + param.sequence_start; ++pos){
-								image.put< typename decltype(type_t)::type >(id, loader.load_bitmap< typename decltype(type_t)::type >(cam, pos));
-							}
-						}
-					} break;
-				}
-			};
-
-			auto call_worker = [this, &worker](bool active, std::string const& name, auto type_t){
-				if(active){
-					worker(type_t);
-				}else{
-					throw std::runtime_error(type + ": First file is of type '" + name + "', but parameter 'type_" + name + "' is not true");
-				}
-			};
+			load_files loader(type, param, id, used_id);
 
 			auto data_type = [this, id, &loader](){
 				auto filename = loader.filename(param.camera_start, param.sequence_start);
@@ -456,19 +419,7 @@ namespace disposer_module{ namespace big_loader{
 				return get_type(is, id, filename);
 			}();
 
-			switch(data_type){
-				case data::int8: call_worker(param.type[data::int8], "int8", hana::type< std::int8_t >); break;
-				case data::uint8: call_worker(param.type[data::uint8], "uint8", hana::type< std::uint8_t >); break;
-				case data::int16: call_worker(param.type[data::int16], "int16", hana::type< std::int16_t >); break;
-				case data::uint16: call_worker(param.type[data::uint16], "uint16", hana::type< std::uint16_t >); break;
-				case data::int32: call_worker(param.type[data::int32], "int32", hana::type< std::int32_t >); break;
-				case data::uint32: call_worker(param.type[data::uint32], "uint32", hana::type< std::uint32_t >); break;
-				case data::int64: call_worker(param.type[data::int64], "int64", hana::type< std::int64_t >); break;
-				case data::uint64: call_worker(param.type[data::uint64], "uint64", hana::type< std::uint64_t >); break;
-				case data::float_: call_worker(param.type[data::float_], "float", hana::type< float >); break;
-				case data::double_: call_worker(param.type[data::double_], "double", hana::type< double >); break;
-				case data::long_double: call_worker(param.type[data::long_double], "long double", hana::type< long double >); break;
-			}
+			call_worker(loader, data_type);
 		}
 	}
 

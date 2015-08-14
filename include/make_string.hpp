@@ -20,7 +20,7 @@ namespace disposer_module{
 
 
 		template < typename Stream >
-		inline void stream_output(Stream& s){}
+		inline void stream_output(Stream&){}
 
 		template < typename Stream, typename Head >
 		inline void stream_output(Stream& s, Head&& head){
@@ -34,10 +34,10 @@ namespace disposer_module{
 		}
 
 		template < typename Stream, typename Separator >
-		inline void stream_output_separated_by(Stream& s, Separator const& separator){}
+		inline void stream_output_separated_by(Stream&, Separator const&){}
 
 		template < typename Stream, typename Separator, typename Head >
-		inline void stream_output_separated_by(Stream& s, Separator const& separator, Head&& head){
+		inline void stream_output_separated_by(Stream& s, Separator const&, Head&& head){
 			s << std::forward< Head >(head);
 		}
 

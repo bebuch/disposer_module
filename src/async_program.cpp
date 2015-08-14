@@ -148,7 +148,7 @@ namespace disposer_module{ namespace async_program{
 		disposer::io_list const&,
 		disposer::io_list const& outputs,
 		disposer::parameter_processor& params,
-		bool is_start
+		bool
 	){
 		bool is_future = outputs.find("future") != outputs.end();
 		bool is_future_output = outputs.find("future_output") != outputs.end();

@@ -189,7 +189,6 @@ namespace disposer_module{
 			auto const size = read< field_name::size >(buffer);
 			auto const filename = cut_null(read< field_name::name >(buffer));
 
-// 			std::cout << mask_non_print(filename) << std::endl;
 			if(magic != "ustar"){
 				throw std::runtime_error("Tar: loaded file without magic 'ustar', magic is: '" + mask_non_print(magic) + "'");
 			}
@@ -197,7 +196,6 @@ namespace disposer_module{
 			if(checksum != calc_checksum(buffer)){
 				throw std::runtime_error("Tar: loaded file with wrong checksum");
 			}
-// 			std::cout << "text:   " << size << std::endl;
 
 			return std::make_tuple(std::move(filename), static_cast< std::size_t >(std::stol(size, 0, 8)));
 		}
@@ -236,7 +234,7 @@ namespace disposer_module{
 			out_.write(buffer.data(), buffer.size());
 		}
 
-		void write(std::string const& filename, std::function< void(std::ostream&) > const& writer) {
+		void write(std::string const& filename, std::function< void(std::ostream&) > const& writer){
 			std::ostringstream os(std::ios_base::out | std::ios_base::binary);
 			writer(os);
 			write(filename, os.str());
@@ -287,7 +285,6 @@ namespace disposer_module{
 
 			std::array< char, 512 > buffer;
 			while(is_){
-// 				std::cout << "start:  " << std::hex << is_.tellg() << std::endl;
 				is_.read(buffer.data(), 512);
 
 				if(buffer == empty_buffer){
@@ -307,13 +304,9 @@ namespace disposer_module{
 					throw std::runtime_error("Duplicate filename-entry while reading tar-file: " + filename);
 				}
 
-// 				std::cout << "header: " << std::hex << is_.tellg() << std::endl;
-// 				std::cout << "size:   " << std::dec << size << std::endl;
 				std::streampos file_size_in_tar = size + (512 - (size % 512)) % 512;
-// 				std::cout << is_.tellg() << ";" << size << ";" << file_size_in_tar << std::endl;
 				is_.seekg(is_.tellg() + file_size_in_tar);
 
-// 				std::cout << "seek:   " << std::hex << is_.tellg() << std::endl;
 
 				if(!is_){
 					throw std::runtime_error("Tar filename-entry with illegal size: " + filename);

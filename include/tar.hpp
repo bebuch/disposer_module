@@ -9,7 +9,9 @@
 #ifndef _disposer_module_tar_hpp_INCLUDED_
 #define _disposer_module_tar_hpp_INCLUDED_
 
+#include "isubstream.hpp"
 #include "make_string.hpp"
+#include "mask_non_print.hpp"
 
 #include <functional>
 #include <iostream>
@@ -187,15 +189,17 @@ namespace disposer_module{
 			auto const size = read< field_name::size >(buffer);
 			auto const filename = cut_null(read< field_name::name >(buffer));
 
+// 			std::cout << mask_non_print(filename) << std::endl;
+			if(magic != "ustar"){
+				throw std::runtime_error("Tar: loaded file without magic 'ustar', magic is: '" + mask_non_print(magic) + "'");
+			}
+
 			if(checksum != calc_checksum(buffer)){
 				throw std::runtime_error("Tar: loaded file with wrong checksum");
 			}
+// 			std::cout << "text:   " << size << std::endl;
 
-			if(magic != "ustar"){
-				throw std::runtime_error("Tar: loaded file without magic 'ustar', magic is: '" + magic + "'");
-			}
-
-			return std::make_tuple(std::move(filename), static_cast< std::size_t >(std::stol(size)));
+			return std::make_tuple(std::move(filename), static_cast< std::size_t >(std::stol(size, 0, 8)));
 		}
 
 
@@ -253,39 +257,42 @@ namespace disposer_module{
 	/// \brief Write a simple tar file
 	class tar_reader{
 	public:
-		tar_reader(std::string const& filename){
-			std::ifstream is(filename.c_str(), std::ios_base::in | std::ios_base::binary);
-			init(is);
+		tar_reader(std::string const& filename):
+			isptr_(std::make_unique< std::ifstream >(filename.c_str(), std::ios_base::in | std::ios_base::binary)),
+			is_(*isptr_.get())
+		{
+			init();
 		}
 
-		tar_reader(std::istream& is){
-			init(is);
+		tar_reader(std::istream& is):
+			is_(is)
+		{
+			init();
 		}
 
-		std::string get(std::string const& filename){
+		std::istream& get(std::string const& filename){
 			auto iter = files_.find(filename);
 			if(iter == files_.end()){
 				throw std::runtime_error("Filename-entry not fount in tar-file: " + filename);
 			}
-			return std::string(iter->second.begin(), iter->second.end());
+
+			iter->second.seekg(0);
+			return iter->second;
 		}
 
-		void read(std::string const& filename, std::function< void(std::istream&) > const& reader) {
-			std::istringstream is(get(filename), std::ios_base::in | std::ios_base::binary);
-			reader(is);
-		}
 
 	private:
-		void init(std::istream& is){
+		void init(){
 			static constexpr std::array< char, 512 > empty_buffer{};
 
 			std::array< char, 512 > buffer;
-			while(is){
-				is.read(buffer.data(), 512);
+			while(is_){
+// 				std::cout << "start:  " << std::hex << is_.tellg() << std::endl;
+				is_.read(buffer.data(), 512);
 
 				if(buffer == empty_buffer){
-					is.read(buffer.data(), 512);
-					if(buffer != empty_buffer || !is){
+					is_.read(buffer.data(), 512);
+					if(buffer != empty_buffer || !is_){
 						throw std::runtime_error("Corrupt tar-file.");
 					}
 					break;
@@ -295,25 +302,33 @@ namespace disposer_module{
 				std::size_t size;
 				std::tie(filename, size) = impl::tar::read_posix_header(buffer);
 
-				auto result = files_.emplace(std::move(filename), std::vector< char >(size));
+				auto result = files_.emplace(std::piecewise_construct, std::forward_as_tuple(filename), std::forward_as_tuple(is_.rdbuf(), is_.tellg(), size));
 				if(!result.second){
 					throw std::runtime_error("Duplicate filename-entry while reading tar-file: " + filename);
 				}
 
-				auto& content = result.first->second;
-				is.read(content.data(), size);
+// 				std::cout << "header: " << std::hex << is_.tellg() << std::endl;
+// 				std::cout << "size:   " << std::dec << size << std::endl;
+				std::streampos file_size_in_tar = size + (512 - (size % 512)) % 512;
+// 				std::cout << is_.tellg() << ";" << size << ";" << file_size_in_tar << std::endl;
+				is_.seekg(is_.tellg() + file_size_in_tar);
 
-				std::size_t end_record_bytes = (512 - (size % 512)) % 512;
-				if(end_record_bytes > 0) is.read(buffer.data(), end_record_bytes);
+// 				std::cout << "seek:   " << std::hex << is_.tellg() << std::endl;
 
-				if(!is){
+				if(!is_){
 					throw std::runtime_error("Tar filename-entry with illegal size: " + filename);
 				}
 			}
 		}
 
+		/// \brief Stream if read via filename
+		std::unique_ptr< std::ifstream > isptr_;
+
+		/// \brief Input stream of the tar-file
+		std::istream& is_;
+
 		/// \brief Map of filenames and contents
-		std::map< std::string, std::vector< char > > files_;
+		std::map< std::string, isubstream > files_;
 	};
 
 

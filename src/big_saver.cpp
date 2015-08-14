@@ -222,9 +222,9 @@ namespace disposer_module{ namespace big_saver{
 	};
 
 	struct big_file_visitor: boost::static_visitor< void >{
-		big_file_visitor(std::string&& name): name(std::move(name)){}
+		big_file_visitor(std::string const& name): name(name){}
 
-		std::string const name;
+		std::string const& name;
 
 		template < typename T >
 		void operator()(T const& image_ref)const{
@@ -262,7 +262,7 @@ namespace disposer_module{ namespace big_saver{
 				for(auto& bitmap: sequence){
 					auto filename = param.dir + "/" + (*param.big_pattern)(used_id, cam, pos);
 					disposer::log([this, &filename, id](log::info& os){ os << type << " id " << id << ": write '" << filename << "'"; }, [&bitmap, &filename]{
-						boost::apply_visitor(big_file_visitor(std::move(filename)), bitmap);
+						boost::apply_visitor(big_file_visitor(filename), bitmap);
 					});
 					++pos;
 				}

@@ -312,47 +312,31 @@ namespace disposer_module{ namespace big_loader{
 
 		auto result = std::make_unique< module >(type, chain, name, std::move(param));
 
-		switch(param.output){
-			case output_t::sequence:
-				if(param.type[data::int8]) result->sequence.activate< std::int8_t >();
-				if(param.type[data::uint8]) result->sequence.activate< std::uint8_t >();
-				if(param.type[data::int16]) result->sequence.activate< std::int16_t >();
-				if(param.type[data::uint16]) result->sequence.activate< std::uint16_t >();
-				if(param.type[data::int32]) result->sequence.activate< std::int32_t >();
-				if(param.type[data::uint32]) result->sequence.activate< std::uint32_t >();
-				if(param.type[data::int64]) result->sequence.activate< std::int64_t >();
-				if(param.type[data::uint64]) result->sequence.activate< std::uint64_t >();
-				if(param.type[data::float_]) result->sequence.activate< float >();
-				if(param.type[data::double_]) result->sequence.activate< double >();
-				if(param.type[data::long_double]) result->sequence.activate< long double >();
-			break;
-			case output_t::vector:
-				if(param.type[data::int8]) result->vector.activate< std::int8_t >();
-				if(param.type[data::uint8]) result->vector.activate< std::uint8_t >();
-				if(param.type[data::int16]) result->vector.activate< std::int16_t >();
-				if(param.type[data::uint16]) result->vector.activate< std::uint16_t >();
-				if(param.type[data::int32]) result->vector.activate< std::int32_t >();
-				if(param.type[data::uint32]) result->vector.activate< std::uint32_t >();
-				if(param.type[data::int64]) result->vector.activate< std::int64_t >();
-				if(param.type[data::uint64]) result->vector.activate< std::uint64_t >();
-				if(param.type[data::float_]) result->vector.activate< float >();
-				if(param.type[data::double_]) result->vector.activate< double >();
-				if(param.type[data::long_double]) result->vector.activate< long double >();
-			break;
-			case output_t::image:
-				if(param.type[data::int8]) result->image.activate< std::int8_t >();
-				if(param.type[data::uint8]) result->image.activate< std::uint8_t >();
-				if(param.type[data::int16]) result->image.activate< std::int16_t >();
-				if(param.type[data::uint16]) result->image.activate< std::uint16_t >();
-				if(param.type[data::int32]) result->image.activate< std::int32_t >();
-				if(param.type[data::uint32]) result->image.activate< std::uint32_t >();
-				if(param.type[data::int64]) result->image.activate< std::int64_t >();
-				if(param.type[data::uint64]) result->image.activate< std::uint64_t >();
-				if(param.type[data::float_]) result->image.activate< float >();
-				if(param.type[data::double_]) result->image.activate< double >();
-				if(param.type[data::long_double]) result->image.activate< long double >();
-			break;
-		}
+		auto activate = [&result](auto type_t){
+			switch(result->param.output){
+				case output_t::sequence:
+					result->sequence.activate< typename decltype(type_t)::type >();
+				break;
+				case output_t::vector:
+					result->vector.activate< typename decltype(type_t)::type >();
+				break;
+				case output_t::image:
+					result->image.activate< typename decltype(type_t)::type >();
+				break;
+			}
+		};
+
+		if(result->param.type[data::int8]) activate(hana::type< std::int8_t >);
+		if(result->param.type[data::uint8]) activate(hana::type< std::uint8_t >);
+		if(result->param.type[data::int16]) activate(hana::type< std::int16_t >);
+		if(result->param.type[data::uint16]) activate(hana::type< std::uint16_t >);
+		if(result->param.type[data::int32]) activate(hana::type< std::int32_t >);
+		if(result->param.type[data::uint32]) activate(hana::type< std::uint32_t >);
+		if(result->param.type[data::int64]) activate(hana::type< std::int64_t >);
+		if(result->param.type[data::uint64]) activate(hana::type< std::uint64_t >);
+		if(result->param.type[data::float_]) activate(hana::type< float >);
+		if(result->param.type[data::double_]) activate(hana::type< double >);
+		if(result->param.type[data::long_double]) activate(hana::type< long double >);
 
 		return std::move(result);
 	}

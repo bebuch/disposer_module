@@ -47,10 +47,12 @@ namespace disposer_module{ namespace big_loader{
 		long double
 	>;
 
+	constexpr auto hana_type_list = disposer::hana_type_list< type_list >;
+
 	template < typename T >
 	constexpr std::size_t type_v = type_position_v< T, type_list >;
 
-	constexpr std::array< char const*, 11 > type_name{{
+	constexpr std::array< char const*, type_list::size > type_name{{
 		"int8",
 		"uint8",
 		"int16",
@@ -76,7 +78,7 @@ namespace disposer_module{ namespace big_loader{
 
 		std::string dir;
 
-		std::array< bool, 11 > type;
+		std::array< bool, type_list::size > type;
 
 		boost::optional< std::size_t > fixed_id;
 
@@ -239,19 +241,12 @@ namespace disposer_module{ namespace big_loader{
 
 		params.set(param.dir, "dir", ".");
 
-		params.set(param.type[type_v< std::int8_t >], "type_int8", false);
-		params.set(param.type[type_v< std::uint8_t >], "type_uint8", false);
-		params.set(param.type[type_v< std::int16_t >], "type_int16", false);
-		params.set(param.type[type_v< std::uint16_t >], "type_uint16", false);
-		params.set(param.type[type_v< std::int32_t >], "type_int32", false);
-		params.set(param.type[type_v< std::uint32_t >], "type_uint32", false);
-		params.set(param.type[type_v< std::int64_t >], "type_int64", false);
-		params.set(param.type[type_v< std::int64_t >], "type_uint64", false);
-		params.set(param.type[type_v< float >], "type_float", false);
-		params.set(param.type[type_v< double >], "type_double", false);
-		params.set(param.type[type_v< long double >], "type_long_double", false);
+		hana::for_each(hana_type_list, [&params, &param](auto type_t){
+			using data_type = typename decltype(type_t)::type;
+			params.set(param.type[type_v< data_type >], std::string("type_") + type_name[type_v< data_type >], false);
+		});
 
-		if(param.type == std::array< bool, 11 >{{false}}){
+		if(param.type == std::array< bool, type_list::size >{{false}}){
 			throw std::logic_error(
 				type + 
 				": No type active (set at least one of 'type_int8', 'type_uint8', 'type_int16', 'type_uint16', 'type_int32', 'type_uint32', 'type_int64', 'type_uint64', 'type_float', 'type_double', 'type_long_double' to true)"
@@ -317,17 +312,10 @@ namespace disposer_module{ namespace big_loader{
 			}
 		};
 
-		if(result->param.type[type_v< std::int8_t >]) activate(hana::type< std::int8_t >);
-		if(result->param.type[type_v< std::uint8_t >]) activate(hana::type< std::uint8_t >);
-		if(result->param.type[type_v< std::int16_t >]) activate(hana::type< std::int16_t >);
-		if(result->param.type[type_v< std::uint16_t >]) activate(hana::type< std::uint16_t >);
-		if(result->param.type[type_v< std::int32_t >]) activate(hana::type< std::int32_t >);
-		if(result->param.type[type_v< std::uint32_t >]) activate(hana::type< std::uint32_t >);
-		if(result->param.type[type_v< std::int64_t >]) activate(hana::type< std::int64_t >);
-		if(result->param.type[type_v< std::int64_t >]) activate(hana::type< std::uint64_t >);
-		if(result->param.type[type_v< float >]) activate(hana::type< float >);
-		if(result->param.type[type_v< double >]) activate(hana::type< double >);
-		if(result->param.type[type_v< long double >]) activate(hana::type< long double >);
+		hana::for_each(hana_type_list, [&result, &activate](auto type_t){
+			using data_type = typename decltype(type_t)::type;
+			if(result->param.type[type_v< data_type >]) activate(type_t);
+		});
 
 		return std::move(result);
 	}

@@ -3,10 +3,6 @@ path-constant LIBRARIES
 	: /media/data/libraries/src
 	;
 
-use-project /boost
-	: $(LIBRARIES)/boost
-	;
-
 use-project /disposer
 	: $(LIBRARIES)/disposer
 	;
@@ -15,10 +11,6 @@ exe disposer_module
 	:
 	[ glob src/*.cpp ]
 	/disposer//disposer
-	/boost//system
-	/boost//filesystem
-	/boost//thread
-	/boost//iostreams
 	:
 	<warnings>all
 	<c++-template-depth>1024
@@ -26,6 +18,8 @@ exe disposer_module
 	<toolset>gcc:<cxxflags>-std=c++14
 	<toolset>gcc:<cxxflags>-fconstexpr-depth=1024
 	<toolset>gcc:<cxxflags>-fopenmp
+	<toolset>gcc:<cxxflags>-Wall
+	<toolset>gcc:<cxxflags>-Wextra
 	<toolset>gcc:<cxxflags>-Wno-unused-local-typedefs
 	<toolset>gcc:<cxxflags>-Wno-deprecated-declarations
 	<toolset>gcc:<linkflags>-lpthread
@@ -34,6 +28,8 @@ exe disposer_module
 	<toolset>clang:<cxxflags>-std=c++14
 	<toolset>clang:<cxxflags>-fconstexpr-depth=1024
 	<toolset>clang:<cxxflags>-fopenmp
+	<toolset>clang:<cxxflags>-Wall
+	<toolset>clang:<cxxflags>-Wextra
 	<toolset>clang:<cxxflags>-Wno-deprecated-register
 	<toolset>clang:<cxxflags>-Wno-unused-local-typedef
 	<toolset>clang:<cxxflags>-stdlib=libc++
@@ -44,8 +40,37 @@ exe disposer_module
 	<toolset>clang:<linkflags>-stdlib=libc++
 	:
 	<include>./include
-	<include>$(LIBRARIES)/disposer/include
-	<include>$(LIBRARIES)/hana/include
-	<include>$(LIBRARIES)/spirit/include
-	<include>$(LIBRARIES)/boost
+	<include>$(LIBRARIES)/boost_dev/type_index/include
+	<include>$(LIBRARIES)/boost_dev/optional/include
+	<include>$(LIBRARIES)/boost_dev/lexical_cast/include
+	<include>$(LIBRARIES)/boost_dev/range/include
+	<include>$(LIBRARIES)/boost_dev/hana/include
+	<include>$(LIBRARIES)/boost_dev/spirit/include
+	<include>$(LIBRARIES)/boost_dev/fusion/include
+	<include>$(LIBRARIES)/boost_dev/variant/include
+	<include>$(LIBRARIES)/boost_dev/config/include
+	<include>$(LIBRARIES)/boost_dev/assert/include
+	<include>$(LIBRARIES)/boost_dev/static_assert/include
+	<include>$(LIBRARIES)/boost_dev/core/include
+	<include>$(LIBRARIES)/boost_dev/exception/include
+	<include>$(LIBRARIES)/boost_dev/throw_exception/include
+	<include>$(LIBRARIES)/boost_dev/type_traits/include
+	<include>$(LIBRARIES)/boost_dev/mpl/include
+	<include>$(LIBRARIES)/boost_dev/preprocessor/include
+	<include>$(LIBRARIES)/boost_dev/detail/include
+	<include>$(LIBRARIES)/boost_dev/move/include
+	<include>$(LIBRARIES)/boost_dev/iterator/include
+	<include>$(LIBRARIES)/boost_dev/utility/include
+	<include>$(LIBRARIES)/boost_dev/concept_check/include
+	<include>$(LIBRARIES)/boost_dev/numeric_conversion/include
+	<include>$(LIBRARIES)/boost_dev/integer/include
+	<include>$(LIBRARIES)/boost_dev/array/include
+	<include>$(LIBRARIES)/boost_dev/container/include
+	<include>$(LIBRARIES)/boost_dev/math/include
+	<include>$(LIBRARIES)/boost_dev/functional/include
+	<include>$(LIBRARIES)/boost_dev/regex/include
+	<include>$(LIBRARIES)/boost_dev/function_types/include
+	<include>$(LIBRARIES)/boost_dev/predef/include
+	<include>$(LIBRARIES)/boost_dev/smart_ptr/include
+	<include>$(LIBRARIES)/boost_dev/typeof/include
 	;

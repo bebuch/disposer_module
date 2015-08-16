@@ -11,7 +11,9 @@
 #include "log.hpp"
 #include "mask_non_print.hpp"
 
-#include <disposer/module_base.hpp>
+#include <disposer/io.hpp>
+
+#include <boost/dll.hpp>
 
 
 
@@ -52,9 +54,11 @@ namespace disposer_module{ namespace add_to_log{
 		return std::make_unique< module >(type, chain, name);
 	}
 
-	void init(){
-		add_module_maker("add_to_log", &make_module);
+	void init(disposer::disposer& disposer){
+		disposer.add_module_maker("add_to_log", &make_module);
 	}
+
+	BOOST_DLL_AUTO_ALIAS(init)
 
 
 } }

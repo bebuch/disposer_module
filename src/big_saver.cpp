@@ -14,7 +14,9 @@
 #include "big_write.hpp"
 #include "tar.hpp"
 
-#include <disposer/module_base.hpp>
+#include <disposer/io.hpp>
+
+#include <boost/dll.hpp>
 
 
 namespace disposer_module{ namespace big_saver{
@@ -204,10 +206,6 @@ namespace disposer_module{ namespace big_saver{
 		return std::make_unique< module >(type, chain, name, std::move(param));
 	}
 
-	void init(){
-		add_module_maker("big_saver", &make_module);
-	}
-
 
 	struct big_stream_visitor: boost::static_visitor< void >{
 		big_stream_visitor(std::ostream& os): os(os){}
@@ -368,6 +366,13 @@ namespace disposer_module{ namespace big_saver{
 			}break;
 		}
 	}
+
+
+	void init(disposer::disposer& disposer){
+		disposer.add_module_maker("big_saver", &make_module);
+	}
+
+	BOOST_DLL_AUTO_ALIAS(init)
 
 
 } }

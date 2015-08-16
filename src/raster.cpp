@@ -11,9 +11,11 @@
 #include "bitmap_sequence.hpp"
 #include "make_string.hpp"
 
-#include <disposer/module_base.hpp>
+#include <disposer/io.hpp>
 
 #include <cstdint>
+
+#include <boost/dll.hpp>
 
 
 namespace disposer_module{ namespace raster{
@@ -74,20 +76,6 @@ namespace disposer_module{ namespace raster{
 		return std::make_unique< module< T > >(type, chain, name, std::move(param));
 	}
 
-	void init(){
-		add_module_maker("raster_int8_t", &make_module< std::int8_t >);
-		add_module_maker("raster_uint8_t", &make_module< std::uint8_t >);
-		add_module_maker("raster_int16_t", &make_module< std::int16_t >);
-		add_module_maker("raster_uint16_t", &make_module< std::uint16_t >);
-		add_module_maker("raster_int32_t", &make_module< std::int32_t >);
-		add_module_maker("raster_uint32_t", &make_module< std::uint32_t >);
-		add_module_maker("raster_int64_t", &make_module< std::int64_t >);
-		add_module_maker("raster_uint64_t", &make_module< std::uint64_t >);
-		add_module_maker("raster_float", &make_module< float >);
-		add_module_maker("raster_double", &make_module< double >);
-		add_module_maker("raster_long_double", &make_module< long double >);
-	}
-
 
 	template < typename T >
 	bitmap< T > module< T >::apply_raster(bitmap< T > const& image)const{
@@ -137,6 +125,23 @@ namespace disposer_module{ namespace raster{
 			signals.image.put(id, apply_raster(data));
 		}
 	}
+
+
+	void init(disposer::disposer& disposer){
+		disposer.add_module_maker("raster_int8_t", &make_module< std::int8_t >);
+		disposer.add_module_maker("raster_uint8_t", &make_module< std::uint8_t >);
+		disposer.add_module_maker("raster_int16_t", &make_module< std::int16_t >);
+		disposer.add_module_maker("raster_uint16_t", &make_module< std::uint16_t >);
+		disposer.add_module_maker("raster_int32_t", &make_module< std::int32_t >);
+		disposer.add_module_maker("raster_uint32_t", &make_module< std::uint32_t >);
+		disposer.add_module_maker("raster_int64_t", &make_module< std::int64_t >);
+		disposer.add_module_maker("raster_uint64_t", &make_module< std::uint64_t >);
+		disposer.add_module_maker("raster_float", &make_module< float >);
+		disposer.add_module_maker("raster_double", &make_module< double >);
+		disposer.add_module_maker("raster_long_double", &make_module< long double >);
+	}
+
+	BOOST_DLL_AUTO_ALIAS(init)
 
 
 } }

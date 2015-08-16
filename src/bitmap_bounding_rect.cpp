@@ -11,10 +11,12 @@
 #include "bitmap.hpp"
 #include "rect.hpp"
 
-#include <disposer/module_base.hpp>
+#include <disposer/io.hpp>
 
 #include <cstdint>
 #include <cmath>
+
+#include <boost/dll.hpp>
 
 
 namespace disposer_module{ namespace bitmap_bounding_rect{
@@ -45,10 +47,6 @@ namespace disposer_module{ namespace bitmap_bounding_rect{
 		if(is_start) throw disposer::module_not_as_start(type, chain);
 
 		return std::make_unique< module >(type, chain, name);
-	}
-
-	void init(){
-		add_module_maker("bitmap_bounding_rect", &make_module);
 	}
 
 	struct visitor: boost::static_visitor< rect< std::size_t > >{
@@ -129,6 +127,12 @@ namespace disposer_module{ namespace bitmap_bounding_rect{
 			rect.put(id, boost::apply_visitor(visitor{}, pair.second));
 		}
 	}
+
+	void init(disposer::disposer& disposer){
+		disposer.add_module_maker("bitmap_bounding_rect", &make_module);
+	}
+
+	BOOST_DLL_AUTO_ALIAS(init)
 
 
 } }

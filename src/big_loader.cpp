@@ -14,10 +14,12 @@
 #include "big_read.hpp"
 #include "tar.hpp"
 
-#include <disposer/module_base.hpp>
+#include <disposer/io.hpp>
 #include <disposer/type_position.hpp>
 
 #include <boost/hana.hpp>
+
+#include <boost/dll.hpp>
 
 
 namespace disposer_module{ namespace big_loader{
@@ -320,10 +322,6 @@ namespace disposer_module{ namespace big_loader{
 		return std::move(result);
 	}
 
-	void init(){
-		add_module_maker("big_loader", &make_module);
-	}
-
 
 	std::size_t module::get_type(std::istream& is, std::size_t id, std::string const& filename)const{
 		return disposer::log([this, id, &filename](log::info& os){ os << type << " id " << id << ": read header of '" << filename << "'"; }, [&is, &filename]{
@@ -418,6 +416,13 @@ namespace disposer_module{ namespace big_loader{
 			call_worker(loader, data_type);
 		}
 	}
+
+
+	void init(disposer::disposer& disposer){
+		disposer.add_module_maker("big_loader", &make_module);
+	}
+
+	BOOST_DLL_AUTO_ALIAS(init)
 
 
 } }

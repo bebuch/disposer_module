@@ -9,10 +9,13 @@
 #ifndef _disposer_module_add_to_log_hpp_INCLUDED_
 #define _disposer_module_add_to_log_hpp_INCLUDED_
 
+#include <disposer/disposer.hpp>
+
+
 namespace disposer_module{ namespace add_to_log{
 
 
-	void init();
+	void init(disposer::disposer&);
 
 
 } }

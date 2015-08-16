@@ -9,11 +9,13 @@
 #ifndef _disposer_module_subbitmap_hpp_INCLUDED_
 #define _disposer_module_subbitmap_hpp_INCLUDED_
 
+#include <disposer/disposer.hpp>
+
 
 namespace disposer_module{ namespace subbitmap{
 
 
-	void init();
+	void init(disposer::disposer&);
 
 
 } }

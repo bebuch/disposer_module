@@ -9,11 +9,13 @@
 #ifndef _disposer_module_big_saver_hpp_INCLUDED_
 #define _disposer_module_big_saver_hpp_INCLUDED_
 
+#include <disposer/disposer.hpp>
+
 
 namespace disposer_module{ namespace big_saver{
 
 
-	void init();
+	void init(disposer::disposer&);
 
 
 } }

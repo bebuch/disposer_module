@@ -7,11 +7,16 @@ use-project /disposer
 	: $(LIBRARIES)/disposer
 	;
 
-exe disposer_module
+use-project /boost
+	: $(LIBRARIES)/boost
+	;
+
+project disposer_module
 	:
-	[ glob src/*.cpp ]
-	/disposer//disposer
+	source-location src
 	:
+	requirements <include>include
+
 	<warnings>all
 	<c++-template-depth>1024
 
@@ -23,6 +28,9 @@ exe disposer_module
 	<toolset>gcc:<cxxflags>-Wno-unused-local-typedefs
 	<toolset>gcc:<cxxflags>-Wno-deprecated-declarations
 	<toolset>gcc:<linkflags>-lpthread
+	<toolset>gcc:<linkflags>-ldl
+	<toolset>gcc:<linkflags>-rdynamic
+	<toolset>gcc:<linkflags>-fvisibility=hidden
 	<toolset>gcc:<linkflags>-fopenmp
 
 	<toolset>clang:<cxxflags>-std=c++14
@@ -36,10 +44,12 @@ exe disposer_module
 	<toolset>clang:<cxxflags>-DBOOST_ASIO_HAS_STD_CHRONO
 	<toolset>clang:<linkflags>-lpthread
 	<toolset>clang:<linkflags>-lc++abi
+	<toolset>clang:<linkflags>-ldl
+	<toolset>clang:<linkflags>-rdynamic
+	<toolset>clang:<linkflags>-fvisibility=hidden
 	<toolset>clang:<linkflags>-fopenmp
 	<toolset>clang:<linkflags>-stdlib=libc++
-	:
-	<include>./include
+
 	<include>$(LIBRARIES)/boost_dev/type_index/include
 	<include>$(LIBRARIES)/boost_dev/optional/include
 	<include>$(LIBRARIES)/boost_dev/lexical_cast/include
@@ -73,4 +83,50 @@ exe disposer_module
 	<include>$(LIBRARIES)/boost_dev/predef/include
 	<include>$(LIBRARIES)/boost_dev/smart_ptr/include
 	<include>$(LIBRARIES)/boost_dev/typeof/include
+	<include>$(LIBRARIES)/boost_dev/Boost.DLL/include
+	<include>$(LIBRARIES)/boost_dev/system/include
+	<include>$(LIBRARIES)/boost_dev/filesystem/include
+	<include>$(LIBRARIES)/boost_dev/io/include
+	<include>$(LIBRARIES)/boost_dev/function/include
+	<include>$(LIBRARIES)/boost_dev/bind/include
+	<include>$(LIBRARIES)/boost_dev/align/include
+	:
+	usage-requirements <include>include
+	;
+
+exe disposer_module
+	:
+	main.cpp
+	/disposer//disposer
+	/boost//filesystem
+	;
+
+lib big_loader
+	:
+	big_loader.cpp
+	/disposer//disposer
+	;
+
+lib big_saver
+	:
+	big_saver.cpp
+	/disposer//disposer
+	;
+
+lib raster
+	:
+	raster.cpp
+	/disposer//disposer
+	;
+
+lib subbitmap
+	:
+	subbitmap.cpp
+	/disposer//disposer
+	;
+
+lib bitmap_bounding_rect
+	:
+	bitmap_bounding_rect.cpp
+	/disposer//disposer
 	;

@@ -10,18 +10,33 @@
 
 #include "name_generator.hpp"
 
-#include <disposer/config.hpp>
+#include <disposer/disposer.hpp>
 
 #include <boost/type_index.hpp>
+#include <boost/filesystem.hpp>
+#include <boost/dll.hpp>
 
+#include <regex>
 #include <iostream>
 
 
 int main(){
-	try{
-		disposer_module::init();
+	namespace fs = boost::filesystem;
 
-		auto chains = disposer::config::load("plan.ini");
+	try{
+		std::list< boost::dll::shared_library > modules;
+
+		disposer::disposer head;
+
+		std::regex regex(".*\\.so");
+		for(auto const& file: fs::directory_iterator(boost::dll::program_location().remove_filename())){
+			if(!is_regular_file(file)) continue;
+			if(!std::regex_match(file.path().filename().string(), regex)) continue;
+			modules.emplace_back(file.path().string());
+			modules.back().get_alias< void(disposer::disposer&) >("init")(head);
+		}
+
+		auto chains = head.load("plan.ini");
 
 		for(auto& chain: chains){
 			chain.second.trigger();

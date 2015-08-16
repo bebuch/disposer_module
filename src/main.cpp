@@ -6,13 +6,10 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 //-----------------------------------------------------------------------------
-#include "init.hpp"
-
-#include "name_generator.hpp"
+#include "log.hpp"
 
 #include <disposer/disposer.hpp>
 
-#include <boost/type_index.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/dll.hpp>
 
@@ -32,8 +29,10 @@ int main(){
 		for(auto const& file: fs::directory_iterator(boost::dll::program_location().remove_filename())){
 			if(!is_regular_file(file)) continue;
 			if(!std::regex_match(file.path().filename().string(), regex)) continue;
-			modules.emplace_back(file.path().string());
-			modules.back().get_alias< void(disposer::disposer&) >("init")(head);
+			disposer::log([&file](disposer_module::log::info& os){ os << "load shared library '" << file.path().string() << "'"; }, [&]{
+				modules.emplace_back(file.path().string());
+				modules.back().get_alias< void(disposer::disposer&) >("init")(head);
+			});
 		}
 
 		auto chains = head.load("plan.ini");
@@ -42,8 +41,8 @@ int main(){
 			chain.second.trigger();
 		}
 	}catch(std::exception const& e){
-		std::cout << "Exception: [" << boost::typeindex::type_id_runtime(e).pretty_name() << "] " << e.what() << std::endl;
+		std::cerr << "Exception: [" << boost::typeindex::type_id_runtime(e).pretty_name() << "] " << e.what() << std::endl;
 	}catch(...){
-		std::cout << "Unknown exception" << std::endl;
+		std::cerr << "Unknown exception" << std::endl;
 	}
 }

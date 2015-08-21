@@ -83,7 +83,7 @@ project disposer_module
 	<include>$(LIBRARIES)/boost_dev/predef/include
 	<include>$(LIBRARIES)/boost_dev/smart_ptr/include
 	<include>$(LIBRARIES)/boost_dev/typeof/include
-	<include>$(LIBRARIES)/boost_dev/Boost.DLL/include
+	<include>$(LIBRARIES)/boost_dev/dll/include
 	<include>$(LIBRARIES)/boost_dev/system/include
 	<include>$(LIBRARIES)/boost_dev/filesystem/include
 	<include>$(LIBRARIES)/boost_dev/io/include

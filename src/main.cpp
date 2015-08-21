@@ -23,22 +23,22 @@ int main(){
 	try{
 		std::list< boost::dll::shared_library > modules;
 
-		disposer::disposer head;
+		::disposer::disposer disposer;
 
 		std::regex regex(".*\\.so");
 		for(auto const& file: fs::directory_iterator(boost::dll::program_location().remove_filename())){
 			if(!is_regular_file(file)) continue;
 			if(!std::regex_match(file.path().filename().string(), regex)) continue;
-			disposer::log([&file](disposer_module::log::info& os){ os << "load shared library '" << file.path().string() << "'"; }, [&]{
+			::disposer::log([&file](disposer_module::log::info& os){ os << "load shared library '" << file.path().string() << "'"; }, [&]{
 				modules.emplace_back(file.path().string());
-				modules.back().get_alias< void(disposer::disposer&) >("init")(head);
+				modules.back().get_alias< void(::disposer::disposer&) >("init")(disposer);
 			});
 		}
 
-		auto chains = head.load("plan.ini");
+		disposer.load("plan.ini");
 
-		for(auto& chain: chains){
-			chain.second.trigger();
+		for(auto& chain: disposer.chains()){
+			disposer.trigger(chain);
 		}
 	}catch(std::exception const& e){
 		std::cerr << "Exception: [" << boost::typeindex::type_id_runtime(e).pretty_name() << "] " << e.what() << std::endl;

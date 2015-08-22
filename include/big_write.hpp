@@ -61,10 +61,10 @@ namespace disposer_module{ namespace big{
 		std::uint32_t placeholder = 0; // 4 bytes in header are reserved
 
 		// write the file header
-		os.write(reinterpret_cast< std::istream::char_type const* >(&width),  2);
-		os.write(reinterpret_cast< std::istream::char_type const* >(&height), 2);
-		os.write(reinterpret_cast< std::istream::char_type const* >(&type),   2);
-		os.write(reinterpret_cast< std::istream::char_type const* >(&placeholder), 4);
+		os.write(reinterpret_cast< char const* >(&width),  2);
+		os.write(reinterpret_cast< char const* >(&height), 2);
+		os.write(reinterpret_cast< char const* >(&type),   2);
+		os.write(reinterpret_cast< char const* >(&placeholder), 4);
 
 		if(!os.good()){
 			throw big_error("Can't write big header");
@@ -73,7 +73,7 @@ namespace disposer_module{ namespace big{
 		auto bytes = bitmap.width() * bitmap.height() * sizeof(value_type);
 
 		os.write(
-			reinterpret_cast< std::ifstream::char_type const* >(
+			reinterpret_cast< char const* >(
 				std::numeric_limits< value_type >::has_quiet_NaN ?
 				convert_nan_to_undef(bitmap).data() :
 				bitmap.data()

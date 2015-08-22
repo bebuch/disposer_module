@@ -92,10 +92,10 @@ namespace disposer_module{ namespace big{
 		header header; // big header informations
 
 		// read the file header (10 Byte)
-		is.read(reinterpret_cast< std::ifstream::char_type* >(&header.width),  2);
-		is.read(reinterpret_cast< std::ifstream::char_type* >(&header.height), 2);
-		is.read(reinterpret_cast< std::ifstream::char_type* >(&header.type),   2);
-		is.read(reinterpret_cast< std::ifstream::char_type* >(&header.placeholder), 4);
+		is.read(reinterpret_cast< char* >(&header.width),  2);
+		is.read(reinterpret_cast< char* >(&header.height), 2);
+		is.read(reinterpret_cast< char* >(&header.type),   2);
+		is.read(reinterpret_cast< char* >(&header.placeholder), 4);
 
 		if(!is.good()){
 			throw big_error("Can't read big header");
@@ -109,7 +109,7 @@ namespace disposer_module{ namespace big{
 		using value_type = std::remove_cv_t< std::remove_pointer_t< decltype(bitmap.data()) > >;
 
 		is.read(
-			reinterpret_cast< std::ifstream::char_type* >(bitmap.data()),
+			reinterpret_cast< char* >(bitmap.data()),
 			bitmap.width() * bitmap.height() * sizeof(value_type)
 		);
 

@@ -220,17 +220,21 @@ namespace disposer_module{
 		}
 
 		void write(std::string const& filename, std::string const& content){
+			write(filename, content.data(), content.size());
+		}
+
+		void write(std::string const& filename, char const* content, std::size_t size){
 			if(!filenames_.emplace(filename).second){
 				throw std::runtime_error("Duplicate filename in tar-file: " + filename);
 			}
 
-			auto const header = impl::tar::make_posix_header(filename, content.size());
+			auto const header = impl::tar::make_posix_header(filename, size);
 
-			std::size_t end_record_bytes = (512 - (content.size() % 512)) % 512;
+			std::size_t end_record_bytes = (512 - (size % 512)) % 512;
 			std::vector< char > buffer(end_record_bytes);
 
 			out_.write(header.data(), header.size());
-			out_.write(content.data(), content.size());
+			out_.write(content, size);
 			out_.write(buffer.data(), buffer.size());
 		}
 

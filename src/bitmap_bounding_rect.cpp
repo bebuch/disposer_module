@@ -23,8 +23,8 @@ namespace disposer_module{ namespace bitmap_bounding_rect{
 
 
 	struct module: disposer::module_base{
-		module(std::string const& type, std::string const& chain, std::string const& name):
-			disposer::module_base(type, chain, name){
+		module(disposer::make_data const& data):
+			disposer::module_base(data){
 				inputs = disposer::make_input_list(image);
 				outputs = disposer::make_output_list(rect);
 			}
@@ -35,18 +35,10 @@ namespace disposer_module{ namespace bitmap_bounding_rect{
 		void trigger(std::size_t id)override;
 	};
 
-	disposer::module_ptr make_module(
-		std::string const& type,
-		std::string const& chain,
-		std::string const& name,
-		disposer::io_list const&,
-		disposer::io_list const&,
-		disposer::parameter_processor&,
-		bool is_start
-	){
-		if(is_start) throw disposer::module_not_as_start(type, chain);
+	disposer::module_ptr make_module(disposer::make_data& data){
+		if(data.is_first()) throw disposer::module_not_as_start(data);
 
-		return std::make_unique< module >(type, chain, name);
+		return std::make_unique< module >(data);
 	}
 
 	struct visitor: boost::static_visitor< rect< std::size_t > >{

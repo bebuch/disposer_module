@@ -27,8 +27,8 @@ namespace disposer_module{ namespace raster{
 
 	template < typename T >
 	struct module: disposer::module_base{
-		module(std::string const& type, std::string const& chain, std::string const& name, parameter&& param):
-			disposer::module_base(type, chain, name),
+		module(disposer::make_data const& data, parameter&& param):
+			disposer::module_base(data),
 			param(std::move(param)){
 				inputs = disposer::make_input_list(slots.sequence, slots.vector, slots.image);
 				outputs = disposer::make_output_list(signals.sequence, signals.vector, signals.image);
@@ -54,26 +54,18 @@ namespace disposer_module{ namespace raster{
 	};
 
 	template < typename T >
-	disposer::module_ptr make_module(
-		std::string const& type,
-		std::string const& chain,
-		std::string const& name,
-		disposer::io_list const&,
-		disposer::io_list const&,
-		disposer::parameter_processor& params,
-		bool is_start
-	){
-		if(is_start) throw disposer::module_not_as_start(type, chain);
+	disposer::module_ptr make_module(disposer::make_data& data){
+		if(data.is_first()) throw disposer::module_not_as_start(data);
 
 		parameter param;
 
-		params.set(param.raster, "raster");
+		data.params.set(param.raster, "raster");
 
 		if(param.raster == 0){
-			throw std::logic_error(make_string(type + ": raster (value: ", param.raster, ") needs to be greater than 0"));
+			throw std::logic_error(make_string(data.type_name + ": raster (value: ", param.raster, ") needs to be greater than 0"));
 		}
 
-		return std::make_unique< module< T > >(type, chain, name, std::move(param));
+		return std::make_unique< module< T > >(data, std::move(param));
 	}
 
 

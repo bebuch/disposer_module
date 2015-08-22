@@ -35,8 +35,8 @@ namespace disposer_module{ namespace subbitmap{
 
 	template < typename T >
 	struct module: disposer::module_base{
-		module(std::string const& type, std::string const& chain, std::string const& name, parameter< T >&& param):
-			disposer::module_base(type, chain, name),
+		module(disposer::make_data const& data, parameter< T >&& param):
+			disposer::module_base(data),
 			param(std::move(param)){
 				inputs = disposer::make_input_list(slots.sequence, slots.vector, slots.image);
 				outputs = disposer::make_output_list(signals.sequence, signals.vector, signals.image);
@@ -62,29 +62,21 @@ namespace disposer_module{ namespace subbitmap{
 	};
 
 	template < typename T >
-	disposer::module_ptr make_module(
-		std::string const& type,
-		std::string const& chain,
-		std::string const& name,
-		disposer::io_list const&,
-		disposer::io_list const&,
-		disposer::parameter_processor& params,
-		bool is_start
-	){
-		if(is_start) throw disposer::module_not_as_start(type, chain);
+	disposer::module_ptr make_module(disposer::make_data& data){
+		if(data.is_first()) throw disposer::module_not_as_start(data);
 
 		parameter< T > param;
 
-		params.set(param.x, "x");
-		params.set(param.y, "y");
+		data.params.set(param.x, "x");
+		data.params.set(param.y, "y");
 
-		params.set(param.width, "width");
-		params.set(param.height, "height");
+		data.params.set(param.width, "width");
+		data.params.set(param.height, "height");
 
 		// for integral is NaN defined as 0
-		params.set(param.default_value, "default_value", std::numeric_limits< T >::quiet_NaN());
+		data.params.set(param.default_value, "default_value", std::numeric_limits< T >::quiet_NaN());
 
-		return std::make_unique< module< T > >(type, chain, name, std::move(param));
+		return std::make_unique< module< T > >(data, std::move(param));
 	}
 
 

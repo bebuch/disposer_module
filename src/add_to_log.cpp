@@ -21,8 +21,8 @@ namespace disposer_module{ namespace add_to_log{
 
 
 	struct module: disposer::module_base{
-		module(std::string const& type, std::string const& chain, std::string const& name):
-			disposer::module_base(type, chain, name){
+		module(disposer::make_data const& data):
+			disposer::module_base(make_params){
 				inputs = disposer::make_input_list(string);
 			}
 
@@ -40,18 +40,10 @@ namespace disposer_module{ namespace add_to_log{
 		}
 	};
 
-	disposer::module_ptr make_module(
-		std::string const& type,
-		std::string const& chain,
-		std::string const& name,
-		disposer::io_list const&,
-		disposer::io_list const&,
-		disposer::parameter_processor&,
-		bool is_start
-	){
-		if(is_start) throw disposer::module_not_as_start(type, chain);
+	disposer::module_ptr make_module(disposer::make_data& data){
+		if(data.is_first()) throw disposer::module_not_as_start(data);
 
-		return std::make_unique< module >(type, chain, name);
+		return std::make_unique< module >(data);
 	}
 
 	void init(disposer::disposer& disposer){

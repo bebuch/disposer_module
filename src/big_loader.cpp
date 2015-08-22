@@ -54,7 +54,7 @@ namespace disposer_module{ namespace big_loader{
 	template < typename T >
 	constexpr std::size_t type_v = type_position_v< T, type_list >;
 
-	constexpr std::array< char const*, type_list::size > type_name{{
+	constexpr std::array< char const*, type_list::size > io_type_names{{
 		"int8",
 		"uint8",
 		"int16",
@@ -92,10 +92,10 @@ namespace disposer_module{ namespace big_loader{
 
 
 	struct load_files{
-		load_files(std::string const& type, parameter const& param, std::size_t id, std::size_t used_id):
-			type(type), param(param), id(id), used_id(used_id) {}
+		load_files(std::string const& type_name, parameter const& param, std::size_t id, std::size_t used_id):
+			type_name(type_name), param(param), id(id), used_id(used_id) {}
 
-		std::string const& type;
+		std::string const& type_name;
 		parameter const& param;
 		std::size_t id;
 		std::size_t used_id;
@@ -108,7 +108,7 @@ namespace disposer_module{ namespace big_loader{
 		bitmap< T > load_bitmap(std::size_t cam, std::size_t pos)const{
 			bitmap< T > result;
 			auto name = filename(cam, pos);
-			disposer::log([this, &name](log::info& os){ os << type << " id " << id << ": read '" << name << "'"; }, [&result, &name]{
+			disposer::log([this, &name](log::info& os){ os << type_name << " id " << id << ": read '" << name << "'"; }, [&result, &name]{
 				big::read(result, name);
 			});
 			return result;
@@ -136,10 +136,10 @@ namespace disposer_module{ namespace big_loader{
 	};
 
 	struct load_tar{
-		load_tar(std::string const& type, parameter const& param, std::size_t id, std::size_t used_id, tar_reader& tar, std::string const& tarname):
-			type(type), param(param), id(id), used_id(used_id), tar(tar), tarname(tarname) {}
+		load_tar(std::string const& type_name, parameter const& param, std::size_t id, std::size_t used_id, tar_reader& tar, std::string const& tarname):
+			type_name(type_name), param(param), id(id), used_id(used_id), tar(tar), tarname(tarname) {}
 
-		std::string const& type;
+		std::string const& type_name;
 		parameter const& param;
 		std::size_t id;
 		std::size_t used_id;
@@ -154,7 +154,7 @@ namespace disposer_module{ namespace big_loader{
 		bitmap< T > load_bitmap(std::size_t cam, std::size_t pos)const{
 			bitmap< T > result;
 			auto name = filename(cam, pos);
-			disposer::log([this, &name](log::info& os){ os << type << " id " << id << ": read '" << tarname << "/" << name << "'"; }, [this, &result, &name]{
+			disposer::log([this, &name](log::info& os){ os << type_name << " id " << id << ": read '" << tarname << "/" << name << "'"; }, [this, &result, &name]{
 				big::read(result, tar.get(name));
 			});
 			return result;
@@ -183,8 +183,8 @@ namespace disposer_module{ namespace big_loader{
 
 
 	struct module: disposer::module_base{
-		module(std::string const& type, std::string const& chain, std::string const& name, parameter&& param):
-			disposer::module_base(type, chain, name),
+		module(disposer::make_data const& data, parameter&& param):
+			disposer::module_base(data),
 			param(std::move(param)){
 				outputs = disposer::make_output_list(sequence, vector, image);
 			}
@@ -206,51 +206,43 @@ namespace disposer_module{ namespace big_loader{
 	};
 
 
-	disposer::module_ptr make_module(
-		std::string const& type,
-		std::string const& chain,
-		std::string const& name,
-		disposer::io_list const&,
-		disposer::io_list const& outputs,
-		disposer::parameter_processor& params,
-		bool
-	){
+	disposer::module_ptr make_module(disposer::make_data& data){
 		std::array< bool, 3 > const use_output{{
-			outputs.find("sequence") != outputs.end(),
-			outputs.find("vector") != outputs.end(),
-			outputs.find("image") != outputs.end()
+			data.outputs.find("sequence") != data.outputs.end(),
+			data.outputs.find("vector") != data.outputs.end(),
+			data.outputs.find("image") != data.outputs.end()
 		}};
 
 		std::size_t output_count = std::count(use_output.begin(), use_output.end(), true);
 
 		if(output_count > 1){
-			throw std::logic_error(type + ": Can only use one output ('image', 'vector' or 'sequence')");
+			throw std::logic_error(data.type_name + ": Can only use one output ('image', 'vector' or 'sequence')");
 		}
 
 		if(output_count == 0){
-			throw std::logic_error(type + ": No output defined (use 'image', 'vector' or 'sequence')");
+			throw std::logic_error(data.type_name + ": No output defined (use 'image', 'vector' or 'sequence')");
 		}
 
 		parameter param;
 
-		params.set(param.tar, "tar", false);
+		data.params.set(param.tar, "tar", false);
 
-		params.set(param.sequence_count, "sequence_count");
-		params.set(param.camera_count, "camera_count");
+		data.params.set(param.sequence_count, "sequence_count");
+		data.params.set(param.camera_count, "camera_count");
 
-		params.set(param.sequence_start, "sequence_start", 0);
-		params.set(param.camera_start, "camera_start", 0);
+		data.params.set(param.sequence_start, "sequence_start", 0);
+		data.params.set(param.camera_start, "camera_start", 0);
 
-		params.set(param.dir, "dir", ".");
+		data.params.set(param.dir, "dir", ".");
 
-		hana::for_each(hana_type_list, [&params, &param](auto type_t){
+		hana::for_each(hana_type_list, [&data, &param](auto type_t){
 			using data_type = typename decltype(type_t)::type;
-			params.set(param.type[type_v< data_type >], std::string("type_") + type_name[type_v< data_type >], false);
+			data.params.set(param.type[type_v< data_type >], std::string("type_") + io_type_names[type_v< data_type >], false);
 		});
 
 		if(param.type == std::array< bool, type_list::size >{{false}}){
 			throw std::logic_error(
-				type + 
+				data.type_name + 
 				": No type active (set at least one of 'type_int8', 'type_uint8', 'type_int16', 'type_uint16', 'type_int32', 'type_uint32', 'type_int64', 'type_uint64', 'type_float', 'type_double', 'type_long_double' to true)"
 			);
 		}
@@ -258,11 +250,11 @@ namespace disposer_module{ namespace big_loader{
 		std::size_t id_digits;
 		std::size_t camera_digits;
 		std::size_t position_digits;
-		params.set(id_digits, "id_digits", 3);
-		params.set(camera_digits, "camera_digits", 1);
-		params.set(position_digits, "position_digits", 3);
+		data.params.set(id_digits, "id_digits", 3);
+		data.params.set(camera_digits, "camera_digits", 1);
+		data.params.set(position_digits, "position_digits", 3);
 
-		params.set(param.fixed_id, "fixed_id");
+		data.params.set(param.fixed_id, "fixed_id");
 
 		if(use_output[0]){
 			param.output = output_t::sequence;
@@ -284,21 +276,21 @@ namespace disposer_module{ namespace big_loader{
 
 		if(param.tar){
 			param.tar_pattern = make_name_generator(
-				params.get< std::string >("tar_pattern", "${id}.tar"),
+				data.params.get< std::string >("tar_pattern", "${id}.tar"),
 				{{true}},
 				std::make_pair("id", format{id_digits})
 			);
 		}
 
 		param.big_pattern = make_name_generator(
-			params.get("big_pattern", param.tar ? std::string("${cam}_${pos}.big") : std::string("${id}_${cam}_${pos}.big")),
+			data.params.get("big_pattern", param.tar ? std::string("${cam}_${pos}.big") : std::string("${id}_${cam}_${pos}.big")),
 			{{!param.tar, true, true}},
 			std::make_pair("id", format{id_digits}),
 			std::make_pair("cam", format{camera_digits}),
 			std::make_pair("pos", format{position_digits})
 		);
 
-		auto result = std::make_unique< module >(type, chain, name, std::move(param));
+		auto result = std::make_unique< module >(data, std::move(param));
 
 		auto activate = [&result](auto type_t){
 			switch(result->param.output){
@@ -324,7 +316,7 @@ namespace disposer_module{ namespace big_loader{
 
 
 	std::size_t module::get_type(std::istream& is, std::size_t id, std::string const& filename)const{
-		return disposer::log([this, id, &filename](log::info& os){ os << type << " id " << id << ": read header of '" << filename << "'"; }, [&is, &filename]{
+		return disposer::log([this, id, &filename](log::info& os){ os << type_name << " id " << id << ": read header of '" << filename << "'"; }, [&is, &filename]{
 			auto header = big::read_header(is);
 			switch(header.type){
 				case big::type_v< std::int8_t >: return type_v< std::int8_t >;
@@ -349,7 +341,7 @@ namespace disposer_module{ namespace big_loader{
 		auto used_id = param.fixed_id ? *param.fixed_id : id;
 
 		auto call_worker = [this, id](auto& loader, std::size_t data_type){
-			disposer::log([this, id, data_type](log::info& os){ os << type << " id " << id << ": data type is '" << type_name[data_type] << "'"; });
+			disposer::log([this, id, data_type](log::info& os){ os << type_name << " id " << id << ": data type is '" << io_type_names[data_type] << "'"; });
 
 			auto worker = [this, id, &loader](auto type_t){
 				using data_type = typename decltype(type_t)::type;
@@ -373,7 +365,7 @@ namespace disposer_module{ namespace big_loader{
 						} break;
 					}
 				}else{
-					throw std::runtime_error(type + ": First file is of type '" + type_name[type_v< data_type >] + "', but parameter 'type_" + type_name[type_v< data_type >] + "' is not true");
+					throw std::runtime_error(type_name + ": First file is of type '" + io_type_names[type_v< data_type >] + "', but parameter 'type_" + io_type_names[type_v< data_type >] + "' is not true");
 				}
 			};
 
@@ -396,7 +388,7 @@ namespace disposer_module{ namespace big_loader{
 			auto tarname = param.dir + "/" + (*param.tar_pattern)(used_id);
 			tar_reader tar(tarname);
 
-			load_tar loader(type, param, id, used_id, tar, tarname);
+			load_tar loader(type_name, param, id, used_id, tar, tarname);
 
 			auto data_type = [this, id, &loader, &tar, &tarname](){
 				auto filename = loader.filename(param.camera_start, param.sequence_start);
@@ -405,7 +397,7 @@ namespace disposer_module{ namespace big_loader{
 
 			call_worker(loader, data_type);
 		}else{
-			load_files loader(type, param, id, used_id);
+			load_files loader(type_name, param, id, used_id);
 
 			auto data_type = [this, id, &loader](){
 				auto filename = loader.filename(param.camera_start, param.sequence_start);

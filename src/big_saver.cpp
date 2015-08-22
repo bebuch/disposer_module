@@ -66,8 +66,8 @@ namespace disposer_module{ namespace big_saver{
 
 
 	struct module: disposer::module_base{
-		module(std::string const& type, std::string const& chain, std::string const& name, parameter&& param):
-			disposer::module_base(type, chain, name),
+		module(disposer::make_data const& data, parameter&& param):
+			disposer::module_base(data),
 			param(std::move(param)){
 				inputs = disposer::make_input_list(sequence, vector, image);
 			}
@@ -120,50 +120,42 @@ namespace disposer_module{ namespace big_saver{
 	};
 
 
-	disposer::module_ptr make_module(
-		std::string const& type,
-		std::string const& chain,
-		std::string const& name,
-		disposer::io_list const& inputs,
-		disposer::io_list const&,
-		disposer::parameter_processor& params,
-		bool is_start
-	){
-		if(is_start) throw disposer::module_not_as_start(type, chain);
+	disposer::module_ptr make_module(disposer::make_data& data){
+		if(data.is_first()) throw disposer::module_not_as_start(data);
 
 		std::array< bool, 3 > const use_input{{
-			inputs.find("sequence") != inputs.end(),
-			inputs.find("vector") != inputs.end(),
-			inputs.find("image") != inputs.end()
+			data.inputs.find("sequence") != data.inputs.end(),
+			data.inputs.find("vector") != data.inputs.end(),
+			data.inputs.find("image") != data.inputs.end()
 		}};
 
 		std::size_t input_count = std::count(use_input.begin(), use_input.end(), true);
 
 		if(input_count > 1){
-			throw std::logic_error(type + ": Can only use one input ('image', 'vector' or 'sequence')");
+			throw std::logic_error(data.type_name + ": Can only use one input ('image', 'vector' or 'sequence')");
 		}
 
 		if(input_count == 0){
-			throw std::logic_error(type + ": No input defined (use 'image', 'vector' or 'sequence')");
+			throw std::logic_error(data.type_name + ": No input defined (use 'image', 'vector' or 'sequence')");
 		}
 
 		parameter param;
 
-		params.set(param.tar, "tar", false);
+		data.params.set(param.tar, "tar", false);
 
-		params.set(param.sequence_start, "sequence_start", 0);
-		params.set(param.camera_start, "camera_start", 0);
+		data.params.set(param.sequence_start, "sequence_start", 0);
+		data.params.set(param.camera_start, "camera_start", 0);
 
-		params.set(param.dir, "dir", ".");
+		data.params.set(param.dir, "dir", ".");
 
 		std::size_t id_digits;
 		std::size_t camera_digits;
 		std::size_t position_digits;
-		params.set(id_digits, "id_digits", 3);
-		params.set(camera_digits, "camera_digits", 1);
-		params.set(position_digits, "position_digits", 3);
+		data.params.set(id_digits, "id_digits", 3);
+		data.params.set(camera_digits, "camera_digits", 1);
+		data.params.set(position_digits, "position_digits", 3);
 
-		params.set(param.fixed_id, "fixed_id");
+		data.params.set(param.fixed_id, "fixed_id");
 
 		if(use_input[0]){
 			param.input = input_t::sequence;
@@ -171,9 +163,9 @@ namespace disposer_module{ namespace big_saver{
 			param.input = input_t::vector;
 		}else{
 			param.input = input_t::image;
-			params.set(param.sequence_count, "sequence_count");
+			data.params.set(param.sequence_count, "sequence_count");
 			if(param.sequence_count == 0){
-				throw std::logic_error(make_string(type + ": sequence_count (value: ", param.sequence_count, ") needs to be greater than 0"));
+				throw std::logic_error(make_string(data.type_name + ": sequence_count (value: ", param.sequence_count, ") needs to be greater than 0"));
 			}
 		}
 
@@ -189,21 +181,21 @@ namespace disposer_module{ namespace big_saver{
 
 		if(param.tar){
 			param.tar_pattern = make_name_generator(
-				params.get< std::string >("tar_pattern", "${id}.tar"),
+				data.params.get< std::string >("tar_pattern", "${id}.tar"),
 				{{true}},
 				std::make_pair("id", format{id_digits})
 			);
 		}
 
 		param.big_pattern = make_name_generator(
-			params.get("big_pattern", param.tar ? std::string("${cam}_${pos}.big") : std::string("${id}_${cam}_${pos}.big")),
+			data.params.get("big_pattern", param.tar ? std::string("${cam}_${pos}.big") : std::string("${id}_${cam}_${pos}.big")),
 			{{!param.tar, true, true}},
 			std::make_pair("id", format{id_digits}),
 			std::make_pair("cam", format{camera_digits}),
 			std::make_pair("pos", format{position_digits})
 		);
 
-		return std::make_unique< module >(type, chain, name, std::move(param));
+		return std::make_unique< module >(data, std::move(param));
 	}
 
 
@@ -244,14 +236,14 @@ namespace disposer_module{ namespace big_saver{
 
 		if(param.tar){
 			auto tarname = param.dir + "/" + (*param.tar_pattern)(used_id);
-			disposer::log([this, &tarname, id](log::info& os){ os << type << " id " << id << ": write '" << tarname << "'"; }, [this, id, used_id, &bitmap_sequence, &tarname]{
+			disposer::log([this, &tarname, id](log::info& os){ os << type_name << " id " << id << ": write '" << tarname << "'"; }, [this, id, used_id, &bitmap_sequence, &tarname]{
 				tar_writer tar(tarname);
 				std::size_t cam = param.camera_start;
 				for(auto& sequence: bitmap_sequence){
 					std::size_t pos = param.sequence_start;
 					for(auto& bitmap: sequence){
 						auto filename = (*param.big_pattern)(used_id, cam, pos);
-						disposer::log([this, &tarname, &filename, id](log::info& os){ os << type << " id " << id << ": write '" << tarname << "/" << filename << "'"; }, [&tar, &bitmap, &filename]{
+						disposer::log([this, &tarname, &filename, id](log::info& os){ os << type_name << " id " << id << ": write '" << tarname << "/" << filename << "'"; }, [&tar, &bitmap, &filename]{
 							tar.write(filename, [&bitmap](std::ostream& os){
 								boost::apply_visitor(big_stream_visitor(os), bitmap);
 							}, boost::apply_visitor(big_streamsize_visitor(), bitmap));
@@ -267,7 +259,7 @@ namespace disposer_module{ namespace big_saver{
 				std::size_t pos = param.sequence_start;
 				for(auto& bitmap: sequence){
 					auto filename = param.dir + "/" + (*param.big_pattern)(used_id, cam, pos);
-					disposer::log([this, &filename, id](log::info& os){ os << type << " id " << id << ": write '" << filename << "'"; }, [&bitmap, &filename]{
+					disposer::log([this, &filename, id](log::info& os){ os << type_name << " id " << id << ": write '" << filename << "'"; }, [&bitmap, &filename]{
 						boost::apply_visitor(big_file_visitor(filename), bitmap);
 					});
 					++pos;
@@ -365,7 +357,7 @@ namespace disposer_module{ namespace big_saver{
 					}
 
 					if(pos != 0){
-						throw std::runtime_error(type + ": single image count does not match parameter 'sequence_count'");
+						throw std::runtime_error(type_name + ": single image count does not match parameter 'sequence_count'");
 					}
 
 					save(id, data);

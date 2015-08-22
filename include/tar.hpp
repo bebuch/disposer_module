@@ -219,11 +219,21 @@ namespace disposer_module{
 			out_.write(dummy, 1024);
 		}
 
+		void write(std::string const& filename, char const* content, std::size_t size){
+			write(filename, [&](std::ostream& os){ os.write(content, size); }, size);
+		}
+
 		void write(std::string const& filename, std::string const& content){
 			write(filename, content.data(), content.size());
 		}
 
-		void write(std::string const& filename, char const* content, std::size_t size){
+		void write(std::string const& filename, std::function< void(std::ostream&) > const& writer){
+			std::ostringstream os(std::ios_base::out | std::ios_base::binary);
+			writer(os);
+			write(filename, os.str());
+		}
+
+		void write(std::string const& filename, std::function< void(std::ostream&) > const& writer, std::size_t size){
 			if(!filenames_.emplace(filename).second){
 				throw std::runtime_error("Duplicate filename in tar-file: " + filename);
 			}
@@ -233,15 +243,17 @@ namespace disposer_module{
 			std::size_t end_record_bytes = (512 - (size % 512)) % 512;
 			std::vector< char > buffer(end_record_bytes);
 
+			auto start = out_.tellp();
 			out_.write(header.data(), header.size());
-			out_.write(content, size);
-			out_.write(buffer.data(), buffer.size());
-		}
 
-		void write(std::string const& filename, std::function< void(std::ostream&) > const& writer){
-			std::ostringstream os(std::ios_base::out | std::ios_base::binary);
-			writer(os);
-			write(filename, os.str());
+			writer(out_);
+			auto wrote_size = static_cast< std::size_t >(out_.tellp() - start + 512);
+			if(wrote_size != size){
+				out_.seekp(start);
+				throw std::runtime_error(make_string("While writing '", filename, "' to tar-file: Writer function wrote ", wrote_size, " bytes, but ", size, " where expected"));
+			}
+
+			out_.write(buffer.data(), buffer.size());
 		}
 
 	private:

@@ -218,6 +218,15 @@ namespace disposer_module{ namespace big_saver{
 		}
 	};
 
+	struct big_streamsize_visitor: boost::static_visitor< std::size_t >{
+		template < typename T >
+		std::size_t operator()(T const& image_ref)const{
+			using value_type = std::remove_cv_t< std::remove_pointer_t< decltype(image_ref.get().data()) > >;
+			auto content_bytes = image_ref.get().width() * image_ref.get().height() * sizeof(value_type);
+			return 10 + content_bytes;
+		}
+	};
+
 	struct big_file_visitor: boost::static_visitor< void >{
 		big_file_visitor(std::string const& name): name(name){}
 
@@ -245,7 +254,7 @@ namespace disposer_module{ namespace big_saver{
 						disposer::log([this, &tarname, &filename, id](log::info& os){ os << type << " id " << id << ": write '" << tarname << "/" << filename << "'"; }, [&tar, &bitmap, &filename]{
 							tar.write(filename, [&bitmap](std::ostream& os){
 								boost::apply_visitor(big_stream_visitor(os), bitmap);
-							});
+							}, boost::apply_visitor(big_streamsize_visitor(), bitmap));
 						});
 						++pos;
 					}

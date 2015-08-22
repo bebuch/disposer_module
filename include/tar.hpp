@@ -247,7 +247,7 @@ namespace disposer_module{
 			out_.write(header.data(), header.size());
 
 			writer(out_);
-			auto wrote_size = static_cast< std::size_t >(out_.tellp() - start + 512);
+			auto wrote_size = static_cast< std::size_t >(out_.tellp() - start) - 512;
 			if(wrote_size != size){
 				out_.seekp(start);
 				throw std::runtime_error(make_string("While writing '", filename, "' to tar-file: Writer function wrote ", wrote_size, " bytes, but ", size, " where expected"));

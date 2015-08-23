@@ -28,7 +28,7 @@ namespace disposer_module{ namespace add_to_log{
 
 		disposer::input< std::string > string{"string"};
 
-		void trigger(std::size_t id){
+		void trigger(){
 			for(auto& pair: string.get(id)){
 				auto id = pair.first;
 				auto& data = pair.second.data();

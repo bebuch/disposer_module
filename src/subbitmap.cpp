@@ -56,7 +56,7 @@ namespace disposer_module{ namespace subbitmap{
 			disposer::output< bitmap< T > > image{"image"};
 		} signals;
 
-		void trigger(std::size_t id)override;
+		void trigger()override;
 
 		parameter< T > const param;
 	};
@@ -109,7 +109,7 @@ namespace disposer_module{ namespace subbitmap{
 
 
 	template < typename T >
-	void module< T >::trigger(std::size_t id){
+	void module< T >::trigger(){
 		for(auto const& pair: slots.sequence.get(id)){
 			auto id = pair.first;
 			auto& data = pair.second.data();

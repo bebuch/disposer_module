@@ -113,7 +113,7 @@ namespace disposer_module{ namespace big_saver{
 		void trigger_image(std::size_t id);
 
 
-		void trigger(std::size_t id)override;
+		void trigger()override;
 
 
 		parameter const param;
@@ -309,7 +309,7 @@ namespace disposer_module{ namespace big_saver{
 	};
 
 
-	void module::trigger(std::size_t id){
+	void module::trigger(){
 		switch(param.input){
 			case input_t::sequence:{
 				for(auto const& pair: sequence.get(id)){

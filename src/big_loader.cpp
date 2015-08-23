@@ -108,7 +108,7 @@ namespace disposer_module{ namespace big_loader{
 
 		std::size_t get_type(std::istream& is, std::string const& filename)const;
 
-		void trigger(std::size_t id)override;
+		void trigger()override;
 
 
 		parameter const param;
@@ -334,13 +334,13 @@ namespace disposer_module{ namespace big_loader{
 	}
 
 
-	void module::trigger(std::size_t id){
+	void module::trigger(){
 		auto used_id = param.fixed_id ? *param.fixed_id : id;
 
-		auto call_worker = [this, id](auto& loader, std::size_t data_type){
-			disposer::log([this, id, data_type](log::info& os){ os << type_name << " id " << id << ": data type is '" << io_type_names[data_type] << "'"; });
+		auto call_worker = [this](auto& loader, std::size_t data_type){
+			disposer::log([this, data_type](log::info& os){ os << type_name << " id " << id << ": data type is '" << io_type_names[data_type] << "'"; });
 
-			auto worker = [this, id, &loader](auto type_t){
+			auto worker = [this, &loader](auto type_t){
 				using data_type = typename decltype(type_t)::type;
 
 				if(param.type[type_v< data_type >]){

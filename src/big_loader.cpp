@@ -91,97 +91,6 @@ namespace disposer_module{ namespace big_loader{
 	};
 
 
-	struct load_files{
-		load_files(std::string const& type_name, parameter const& param, std::size_t id, std::size_t used_id):
-			type_name(type_name), param(param), id(id), used_id(used_id) {}
-
-		std::string const& type_name;
-		parameter const& param;
-		std::size_t id;
-		std::size_t used_id;
-
-		std::string filename(std::size_t cam, std::size_t pos)const{
-			return param.dir + "/" + (*param.big_pattern)(used_id, cam, pos);
-		}
-
-		template < typename T >
-		bitmap< T > load_bitmap(std::size_t cam, std::size_t pos)const{
-			bitmap< T > result;
-			auto name = filename(cam, pos);
-			disposer::log([this, &name](log::info& os){ os << type_name << " id " << id << ": read '" << name << "'"; }, [&result, &name]{
-				big::read(result, name);
-			});
-			return result;
-		}
-
-		template < typename T >
-		bitmap_vector< T > load_vector(std::size_t cam)const{
-			bitmap_vector< T > result;
-			result.reserve(param.sequence_count);
-			for(std::size_t pos = param.sequence_start; pos < param.sequence_count + param.sequence_start; ++pos){
-				result.push_back(load_bitmap< T >(cam, pos));
-			}
-			return result;
-		}
-
-		template < typename T >
-		bitmap_sequence< T > load_sequence()const{
-			bitmap_sequence< T > result;
-			result.reserve(param.camera_count);
-			for(std::size_t cam = param.camera_start; cam < param.camera_count + param.camera_start; ++cam){
-				result.push_back(load_vector< T >(cam));
-			}
-			return result;
-		}
-	};
-
-	struct load_tar{
-		load_tar(std::string const& type_name, parameter const& param, std::size_t id, std::size_t used_id, tar_reader& tar, std::string const& tarname):
-			type_name(type_name), param(param), id(id), used_id(used_id), tar(tar), tarname(tarname) {}
-
-		std::string const& type_name;
-		parameter const& param;
-		std::size_t id;
-		std::size_t used_id;
-		tar_reader& tar;
-		std::string const& tarname;
-
-		std::string filename(std::size_t cam, std::size_t pos)const{
-			return (*param.big_pattern)(used_id, cam, pos);
-		}
-
-		template < typename T >
-		bitmap< T > load_bitmap(std::size_t cam, std::size_t pos)const{
-			bitmap< T > result;
-			auto name = filename(cam, pos);
-			disposer::log([this, &name](log::info& os){ os << type_name << " id " << id << ": read '" << tarname << "/" << name << "'"; }, [this, &result, &name]{
-				big::read(result, tar.get(name));
-			});
-			return result;
-		}
-
-		template < typename T >
-		bitmap_vector< T > load_vector(std::size_t cam)const{
-			bitmap_vector< T > result;
-			result.reserve(param.sequence_count);
-			for(std::size_t pos = param.sequence_start; pos < param.sequence_count + param.sequence_start; ++pos){
-				result.push_back(load_bitmap< T >(cam, pos));
-			}
-			return result;
-		}
-
-		template < typename T >
-		bitmap_sequence< T > load_sequence()const{
-			bitmap_sequence< T > result;
-			result.reserve(param.camera_count);
-			for(std::size_t cam = param.camera_start; cam < param.camera_count + param.camera_start; ++cam){
-				result.push_back(load_vector< T >(cam));
-			}
-			return result;
-		}
-	};
-
-
 	struct module: disposer::module_base{
 		module(disposer::make_data const& data, parameter&& param):
 			disposer::module_base(data),
@@ -197,7 +106,7 @@ namespace disposer_module{ namespace big_loader{
 		disposer::container_output< bitmap, type_list > image{"image"};
 
 
-		std::size_t get_type(std::istream& is, std::size_t id, std::string const& filename)const;
+		std::size_t get_type(std::istream& is, std::string const& filename)const;
 
 		void trigger(std::size_t id)override;
 
@@ -315,8 +224,96 @@ namespace disposer_module{ namespace big_loader{
 	}
 
 
-	std::size_t module::get_type(std::istream& is, std::size_t id, std::string const& filename)const{
-		return disposer::log([this, id, &filename](log::info& os){ os << type_name << " id " << id << ": read header of '" << filename << "'"; }, [&is, &filename]{
+	struct load_files{
+		load_files(module const& loader, std::size_t used_id):
+			loader(loader), used_id(used_id) {}
+
+		module const& loader;
+		std::size_t used_id;
+
+		std::string filename(std::size_t cam, std::size_t pos)const{
+			return loader.param.dir + "/" + (*loader.param.big_pattern)(used_id, cam, pos);
+		}
+
+		template < typename T >
+		bitmap< T > load_bitmap(std::size_t cam, std::size_t pos)const{
+			bitmap< T > result;
+			auto name = filename(cam, pos);
+			loader.log([this, &name](log::info& os){ os << "read '" << name << "'"; }, [&result, &name]{
+				big::read(result, name);
+			});
+			return result;
+		}
+
+		template < typename T >
+		bitmap_vector< T > load_vector(std::size_t cam)const{
+			bitmap_vector< T > result;
+			result.reserve(loader.param.sequence_count);
+			for(std::size_t pos = loader.param.sequence_start; pos < loader.param.sequence_count + loader.param.sequence_start; ++pos){
+				result.push_back(load_bitmap< T >(cam, pos));
+			}
+			return result;
+		}
+
+		template < typename T >
+		bitmap_sequence< T > load_sequence()const{
+			bitmap_sequence< T > result;
+			result.reserve(loader.param.camera_count);
+			for(std::size_t cam = loader.param.camera_start; cam < loader.param.camera_count + loader.param.camera_start; ++cam){
+				result.push_back(load_vector< T >(cam));
+			}
+			return result;
+		}
+	};
+
+
+	struct load_tar{
+		load_tar(module const& loader, std::size_t used_id, tar_reader& tar, std::string const& tarname):
+			loader(loader), used_id(used_id), tar(tar), tarname(tarname) {}
+
+		module const& loader;
+		std::size_t used_id;
+		tar_reader& tar;
+		std::string const& tarname;
+
+		std::string filename(std::size_t cam, std::size_t pos)const{
+			return (*loader.param.big_pattern)(used_id, cam, pos);
+		}
+
+		template < typename T >
+		bitmap< T > load_bitmap(std::size_t cam, std::size_t pos)const{
+			bitmap< T > result;
+			auto name = filename(cam, pos);
+			disposer::log([this, &name](log::info& os){ os << "read '" << tarname << "/" << name << "'"; }, [this, &result, &name]{
+				big::read(result, tar.get(name));
+			});
+			return result;
+		}
+
+		template < typename T >
+		bitmap_vector< T > load_vector(std::size_t cam)const{
+			bitmap_vector< T > result;
+			result.reserve(loader.param.sequence_count);
+			for(std::size_t pos = loader.param.sequence_start; pos < loader.param.sequence_count + loader.param.sequence_start; ++pos){
+				result.push_back(load_bitmap< T >(cam, pos));
+			}
+			return result;
+		}
+
+		template < typename T >
+		bitmap_sequence< T > load_sequence()const{
+			bitmap_sequence< T > result;
+			result.reserve(loader.param.camera_count);
+			for(std::size_t cam = loader.param.camera_start; cam < loader.param.camera_count + loader.param.camera_start; ++cam){
+				result.push_back(load_vector< T >(cam));
+			}
+			return result;
+		}
+	};
+
+
+	std::size_t module::get_type(std::istream& is, std::string const& filename)const{
+		return log([this, &filename](log::info& os){ os << "read header of '" << filename << "'"; }, [&is, &filename]{
 			auto header = big::read_header(is);
 			switch(header.type){
 				case big::type_v< std::int8_t >: return type_v< std::int8_t >;
@@ -388,21 +385,21 @@ namespace disposer_module{ namespace big_loader{
 			auto tarname = param.dir + "/" + (*param.tar_pattern)(used_id);
 			tar_reader tar(tarname);
 
-			load_tar loader(type_name, param, id, used_id, tar, tarname);
+			load_tar loader(*this, used_id, tar, tarname);
 
-			auto data_type = [this, id, &loader, &tar, &tarname](){
+			auto data_type = [this, &loader, &tar, &tarname](){
 				auto filename = loader.filename(param.camera_start, param.sequence_start);
-				return get_type(tar.get(filename), id, tarname + "/" + filename);
+				return get_type(tar.get(filename), tarname + "/" + filename);
 			}();
 
 			call_worker(loader, data_type);
 		}else{
-			load_files loader(type_name, param, id, used_id);
+			load_files loader(*this, used_id);
 
-			auto data_type = [this, id, &loader](){
+			auto data_type = [this, &loader](){
 				auto filename = loader.filename(param.camera_start, param.sequence_start);
 				std::ifstream is(filename);
-				return get_type(is, id, filename);
+				return get_type(is, filename);
 			}();
 
 			call_worker(loader, data_type);

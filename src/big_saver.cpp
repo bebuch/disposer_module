@@ -68,9 +68,8 @@ namespace disposer_module{ namespace big_saver{
 	struct module: disposer::module_base{
 		module(disposer::make_data const& data, parameter&& param):
 			disposer::module_base(data),
-			param(std::move(param)){
-				inputs = disposer::make_input_list(sequence, vector, image);
-			}
+			param(std::move(param))
+			{}
 
 
 		using types = disposer::type_list<
@@ -114,6 +113,11 @@ namespace disposer_module{ namespace big_saver{
 
 
 		void trigger()override;
+
+
+		virtual disposer::input_list inputs()noexcept override{
+			return {sequence, vector, image};
+		}
 
 
 		parameter const param;

@@ -37,12 +37,12 @@ namespace disposer_module{ namespace subbitmap{
 	struct module: disposer::module_base{
 		module(disposer::make_data const& data, parameter< T >&& param):
 			disposer::module_base(data),
-			param(std::move(param)){
-				inputs = disposer::make_input_list(slots.sequence, slots.vector, slots.image);
-				outputs = disposer::make_output_list(signals.sequence, signals.vector, signals.image);
-			}
+			param(std::move(param))
+			{}
+
 
 		bitmap< T > subbitmap(bitmap< T > const& image)const;
+
 
 		struct{
 			disposer::input< bitmap_sequence< T > > sequence{"sequence"};
@@ -56,7 +56,18 @@ namespace disposer_module{ namespace subbitmap{
 			disposer::output< bitmap< T > > image{"image"};
 		} signals;
 
+
 		void trigger()override;
+
+
+		virtual disposer::input_list inputs()noexcept override{
+			return {slots.sequence, slots.vector, slots.image};
+		}
+
+		virtual disposer::output_list outputs()noexcept override{
+			return {signals.sequence, signals.vector, signals.image};
+		}
+
 
 		parameter< T > const param;
 	};

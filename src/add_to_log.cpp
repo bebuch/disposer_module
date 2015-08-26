@@ -22,13 +22,12 @@ namespace disposer_module{ namespace add_to_log{
 
 	struct module: disposer::module_base{
 		module(disposer::make_data const& data):
-			disposer::module_base(make_params){
-				inputs = disposer::make_input_list(string);
-			}
+			disposer::module_base(make_params)
+			{}
 
 		disposer::input< std::string > string{"string"};
 
-		void trigger(){
+		virtual void trigger()override{
 			for(auto& pair: string.get(id)){
 				auto id = pair.first;
 				auto& data = pair.second.data();
@@ -37,6 +36,10 @@ namespace disposer_module{ namespace add_to_log{
 					os << type << ": id=" << id << " chain '" << chain << "' module '" << name << "' data='" << mask_non_print(data) << "'";
 				});
 			}
+		}
+
+		virtual disposer::input_list inputs()noexcept override{
+			return {string};
 		}
 	};
 

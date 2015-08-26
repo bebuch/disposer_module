@@ -94,9 +94,8 @@ namespace disposer_module{ namespace big_loader{
 	struct module: disposer::module_base{
 		module(disposer::make_data const& data, parameter&& param):
 			disposer::module_base(data),
-			param(std::move(param)){
-				outputs = disposer::make_output_list(sequence, vector, image);
-			}
+			param(std::move(param))
+			{}
 
 
 		disposer::container_output< bitmap_sequence, type_list > sequence{"sequence"};
@@ -108,7 +107,13 @@ namespace disposer_module{ namespace big_loader{
 
 		std::size_t get_type(std::istream& is, std::string const& filename)const;
 
+
 		void trigger()override;
+
+
+		virtual disposer::output_list outputs()noexcept override{
+			return {sequence, vector, image};
+		}
 
 
 		parameter const param;

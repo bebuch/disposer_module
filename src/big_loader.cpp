@@ -95,7 +95,6 @@ namespace disposer_module{ namespace big_loader{
 		module(disposer::make_data const& data, parameter&& param):
 			disposer::module_base(
 				data,
-				{},
 				{sequence, vector, image}
 			),
 			param(std::move(param))

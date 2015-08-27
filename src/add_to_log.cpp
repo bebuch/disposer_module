@@ -24,8 +24,7 @@ namespace disposer_module{ namespace add_to_log{
 		module(disposer::make_data const& data):
 			disposer::module_base(
 				make_params,
-				{string},
-				{}
+				{string}
 			){}
 
 		disposer::input< std::string > string{"string"};

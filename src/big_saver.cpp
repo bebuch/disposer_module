@@ -69,8 +69,7 @@ namespace disposer_module{ namespace big_saver{
 		module(disposer::make_data const& data, parameter&& param):
 			disposer::module_base(
 				data,
-				{sequence, vector, image},
-				{}
+				{sequence, vector, image}
 			),
 			param(std::move(param))
 			{}

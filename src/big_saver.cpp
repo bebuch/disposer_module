@@ -6,15 +6,14 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 //-----------------------------------------------------------------------------
-#include "big_saver.hpp"
-
 #include "log.hpp"
 #include "bitmap_sequence.hpp"
 #include "name_generator.hpp"
 #include "big_write.hpp"
 #include "tar.hpp"
 
-#include <disposer/io.hpp>
+#include <disposer/module.hpp>
+#include <disposer/type_position.hpp>
 
 #include <boost/dll.hpp>
 

@@ -6,17 +6,15 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 //-----------------------------------------------------------------------------
-#include "subbitmap.hpp"
-
 #include "bitmap_sequence.hpp"
 #include "make_string.hpp"
 
-#include <disposer/io.hpp>
+#include <disposer/module.hpp>
+
+#include <boost/dll.hpp>
 
 #include <cstdint>
 #include <limits>
-
-#include <boost/dll.hpp>
 
 
 namespace disposer_module{ namespace subbitmap{

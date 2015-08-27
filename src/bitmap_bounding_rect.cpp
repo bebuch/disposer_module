@@ -6,17 +6,15 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 //-----------------------------------------------------------------------------
-#include "bitmap_bounding_rect.hpp"
-
 #include "bitmap.hpp"
 #include "rect.hpp"
 
-#include <disposer/io.hpp>
+#include <disposer/module.hpp>
+
+#include <boost/dll.hpp>
 
 #include <cstdint>
 #include <cmath>
-
-#include <boost/dll.hpp>
 
 
 namespace disposer_module{ namespace bitmap_bounding_rect{

@@ -24,11 +24,7 @@ namespace disposer_module{ namespace bitmap_bounding_rect{
 
 	struct module: disposer::module_base{
 		module(disposer::make_data const& data):
-			disposer::module_base(
-				data,
-				{image},
-				{rect}
-			){}
+			disposer::module_base(data, {image}, {rect}){}
 
 
 		disposer::input< bitmap< float >, bitmap< double >, bitmap< long double> > image{"image"};

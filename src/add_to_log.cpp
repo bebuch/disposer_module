@@ -22,8 +22,11 @@ namespace disposer_module{ namespace add_to_log{
 
 	struct module: disposer::module_base{
 		module(disposer::make_data const& data):
-			disposer::module_base(make_params)
-			{}
+			disposer::module_base(
+				make_params,
+				{string},
+				{}
+			){}
 
 		disposer::input< std::string > string{"string"};
 
@@ -36,10 +39,6 @@ namespace disposer_module{ namespace add_to_log{
 					os << type << ": id=" << id << " chain '" << chain << "' module '" << name << "' data='" << mask_non_print(data) << "'";
 				});
 			}
-		}
-
-		virtual disposer::input_list inputs()noexcept override{
-			return {string};
 		}
 	};
 

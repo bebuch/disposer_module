@@ -28,7 +28,11 @@ namespace disposer_module{ namespace raster{
 	template < typename T >
 	struct module: disposer::module_base{
 		module(disposer::make_data const& data, parameter&& param):
-			disposer::module_base(data),
+			disposer::module_base(
+				data,
+				{slots.sequence, slots.vector, slots.image},
+				{signals.sequence, signals.vector, signals.image}
+			),
 			param(std::move(param))
 			{}
 
@@ -50,15 +54,6 @@ namespace disposer_module{ namespace raster{
 
 
 		void trigger()override;
-
-
-		virtual disposer::input_list inputs()noexcept override{
-			return {slots.sequence, slots.vector, slots.image};
-		}
-
-		virtual disposer::output_list outputs()noexcept override{
-			return {signals.sequence, signals.vector, signals.image};
-		}
 
 
 		parameter const param;

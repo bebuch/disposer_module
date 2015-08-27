@@ -24,8 +24,11 @@ namespace disposer_module{ namespace bitmap_bounding_rect{
 
 	struct module: disposer::module_base{
 		module(disposer::make_data const& data):
-			disposer::module_base(data)
-			{}
+			disposer::module_base(
+				data,
+				{image},
+				{rect}
+			){}
 
 
 		disposer::input< bitmap< float >, bitmap< double >, bitmap< long double> > image{"image"};
@@ -33,15 +36,6 @@ namespace disposer_module{ namespace bitmap_bounding_rect{
 
 
 		void trigger()override;
-
-
-		virtual disposer::input_list inputs()noexcept override{
-			return {image};
-		}
-
-		virtual disposer::output_list outputs()noexcept override{
-			return {rect};
-		}
 	};
 
 	disposer::module_ptr make_module(disposer::make_data& data){

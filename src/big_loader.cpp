@@ -93,7 +93,11 @@ namespace disposer_module{ namespace big_loader{
 
 	struct module: disposer::module_base{
 		module(disposer::make_data const& data, parameter&& param):
-			disposer::module_base(data),
+			disposer::module_base(
+				data,
+				{},
+				{sequence, vector, image}
+			),
 			param(std::move(param))
 			{}
 
@@ -109,11 +113,6 @@ namespace disposer_module{ namespace big_loader{
 
 
 		void trigger()override;
-
-
-		virtual disposer::output_list outputs()noexcept override{
-			return {sequence, vector, image};
-		}
 
 
 		parameter const param;

@@ -25,7 +25,7 @@ namespace disposer_module{ namespace bitmap_bounding_rect{
 			disposer::module_base(data, {image}, {rect}){}
 
 
-		disposer::input< bitmap< float >, bitmap< double >, bitmap< long double> > image{"image"};
+		disposer::container_input< bitmap, float, double, long double > image{"image"};
 		disposer::output< rect< std::size_t > > rect{"rect"};
 
 

@@ -11,6 +11,7 @@
 
 #include <disposer/module.hpp>
 
+#include <boost/hana.hpp>
 #include <boost/dll.hpp>
 
 #include <cstdint>
@@ -20,7 +21,26 @@
 namespace disposer_module{ namespace subbitmap{
 
 
-	template < typename T >
+	namespace hana = boost::hana;
+
+
+	using disposer::type_position_v;
+
+	using type_list = disposer::type_list<
+		std::int8_t,
+		std::uint8_t,
+		std::int16_t,
+		std::uint16_t,
+		std::int32_t,
+		std::uint32_t,
+		std::int64_t,
+		std::uint64_t,
+		float,
+		double,
+		long double
+	>;
+
+
 	struct parameter{
 		std::int32_t x;
 		std::int32_t y;
@@ -28,12 +48,12 @@ namespace disposer_module{ namespace subbitmap{
 		std::size_t width;
 		std::size_t height;
 
-		T default_value;
+		disposer::type_unroll_t< std::tuple, type_list > default_value;
 	};
 
-	template < typename T >
+
 	struct module: disposer::module_base{
-		module(disposer::make_data const& data, parameter< T >&& param):
+		module(disposer::make_data const& data, parameter&& param):
 			disposer::module_base(
 				data,
 				{slots.sequence, slots.vector, slots.image},
@@ -43,33 +63,41 @@ namespace disposer_module{ namespace subbitmap{
 			{}
 
 
+		virtual void input_ready()override{
+			signals.sequence.activate_types(slots.sequence.active_types());
+			signals.vector.activate_types(slots.vector.active_types());
+			signals.image.activate_types(slots.image.active_types());
+		}
+
+
+		template < typename T >
 		bitmap< T > subbitmap(bitmap< T > const& image)const;
 
 
 		struct{
-			disposer::input< bitmap_sequence< T > > sequence{"sequence"};
-			disposer::input< bitmap_vector< T > > vector{"vector"};
-			disposer::input< bitmap< T > > image{"image"};
+			disposer::container_input< bitmap_sequence, type_list > sequence{"sequence"};
+			disposer::container_input< bitmap_vector, type_list > vector{"vector"};
+			disposer::container_input< bitmap, type_list > image{"image"};
 		} slots;
 
 		struct{
-			disposer::output< bitmap_sequence< T > > sequence{"sequence"};
-			disposer::output< bitmap_vector< T > > vector{"vector"};
-			disposer::output< bitmap< T > > image{"image"};
+			disposer::container_output< bitmap_sequence, type_list > sequence{"sequence"};
+			disposer::container_output< bitmap_vector, type_list > vector{"vector"};
+			disposer::container_output< bitmap, type_list > image{"image"};
 		} signals;
 
 
 		void trigger()override;
 
 
-		parameter< T > const param;
+		parameter const param;
 	};
 
-	template < typename T >
+
 	disposer::module_ptr make_module(disposer::make_data& data){
 		if(data.is_first()) throw disposer::module_not_as_start(data);
 
-		parameter< T > param;
+		parameter param;
 
 		data.params.set(param.x, "x");
 		data.params.set(param.y, "y");
@@ -78,15 +106,18 @@ namespace disposer_module{ namespace subbitmap{
 		data.params.set(param.height, "height");
 
 		// for integral is NaN defined as 0
-		data.params.set(param.default_value, "default_value", std::numeric_limits< T >::quiet_NaN());
+		hana::for_each(disposer::hana_type_list< type_list >, [&data, &param](auto type_t){
+			using type = typename decltype(type_t)::type;
+			data.params.set(std::get< type >(param.default_value), "default_value", std::numeric_limits< type >::quiet_NaN());
+		});
 
-		return std::make_unique< module< T > >(data, std::move(param));
+		return std::make_unique< module >(data, std::move(param));
 	}
 
 
 	template < typename T >
-	bitmap< T > module< T >::subbitmap(bitmap< T > const& image)const{
-		bitmap< T > result(param.width, param.height, param.default_value);
+	bitmap< T > module::subbitmap(bitmap< T > const& image)const{
+		bitmap< T > result(param.width, param.height, std::get< T >(param.default_value));
 
 		std::size_t const bx = param.x < 0 ? static_cast< std::size_t >(-param.x) : 0;
 		std::size_t const by = param.y < 0 ? static_cast< std::size_t >(-param.y) : 0;
@@ -112,56 +143,80 @@ namespace disposer_module{ namespace subbitmap{
 	}
 
 
-	template < typename T >
-	void module< T >::trigger(){
-		for(auto const& pair: slots.sequence.get(id)){
-			auto id = pair.first;
-			auto& data = pair.second.data();
+	struct visitor: boost::static_visitor< void >{
+		visitor(subbitmap::module& module, std::size_t id): module(module), id(id){}
+
+		subbitmap::module& module;
+		std::size_t const id;
+	};
+
+	struct sequence_visitor: visitor{
+		using visitor::visitor;
+
+		template < typename T >
+		void operator()(disposer::input_data< bitmap_sequence< T > > const& sequence){
+			auto& data = sequence.data();
 
 			bitmap_sequence< T > result(data.size());
 			for(std::size_t i = 0; i < data.size(); ++i){
 				result[i].resize(data[i].size());
 				for(std::size_t j = 0; j < data[i].size(); ++j){
-					result[i][j] = subbitmap(data[i][j]);
+					result[i][j] = module.subbitmap(data[i][j]);
 				}
 			}
 
-			signals.sequence.put(id, std::move(result));
+			module.signals.sequence.put< T >(id, std::move(result));
 		}
+	};
 
-		for(auto const& pair: slots.vector.get(id)){
-			auto id = pair.first;
-			auto& data = pair.second.data();
+	struct vector_visitor: visitor{
+		using visitor::visitor;
+
+		template < typename T >
+		void operator()(disposer::input_data< bitmap_vector< T > > const& vector){
+			auto& data = vector.data();
 
 			bitmap_vector< T > result(data.size());
 			for(std::size_t i = 0; i < data.size(); ++i){
-				result[i] = subbitmap(data[i]);
+				result[i] = module.subbitmap(data[i]);
 			}
 
-			signals.vector.put(id, std::move(result));
+			module.signals.vector.put< T >(id, std::move(result));
+		}
+	};
+
+	struct image_visitor: visitor{
+		using visitor::visitor;
+
+		template < typename T >
+		void operator()(disposer::input_data< bitmap< T > > const& image){
+			auto& data = image.data();
+
+			module.signals.image.put< T >(id, module.subbitmap(data));
+		}
+	};
+
+
+	void module::trigger(){
+		for(auto const& pair: slots.sequence.get(id)){
+			sequence_visitor visitor(*this, pair.first);
+			boost::apply_visitor(visitor, pair.second);
+		}
+
+		for(auto const& pair: slots.vector.get(id)){
+			vector_visitor visitor(*this, pair.first);
+			boost::apply_visitor(visitor, pair.second);
 		}
 
 		for(auto const& pair: slots.image.get(id)){
-			auto id = pair.first;
-			auto& data = pair.second.data();
-
-			signals.image.put(id, subbitmap(data));
+			image_visitor visitor(*this, pair.first);
+			boost::apply_visitor(visitor, pair.second);
 		}
 	}
 
 
 	void init(disposer::disposer& disposer){
-		disposer.add_module_maker("subbitmap_int8_t", &make_module< std::int8_t >);
-		disposer.add_module_maker("subbitmap_uint8_t", &make_module< std::uint8_t >);
-		disposer.add_module_maker("subbitmap_int16_t", &make_module< std::int16_t >);
-		disposer.add_module_maker("subbitmap_uint16_t", &make_module< std::uint16_t >);
-		disposer.add_module_maker("subbitmap_int32_t", &make_module< std::int32_t >);
-		disposer.add_module_maker("subbitmap_uint32_t", &make_module< std::uint32_t >);
-		disposer.add_module_maker("subbitmap_int64_t", &make_module< std::int64_t >);
-		disposer.add_module_maker("subbitmap_uint64_t", &make_module< std::uint64_t >);
-		disposer.add_module_maker("subbitmap_float", &make_module< float >);
-		disposer.add_module_maker("subbitmap_double", &make_module< double >);
-		disposer.add_module_maker("subbitmap_long_double", &make_module< long double >);
+		disposer.add_module_maker("subbitmap", &make_module);
 	}
 
 	BOOST_DLL_AUTO_ALIAS(init)

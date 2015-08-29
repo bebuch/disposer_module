@@ -63,13 +63,6 @@ namespace disposer_module{ namespace subbitmap{
 			{}
 
 
-		virtual void input_ready()override{
-			signals.sequence.activate_types(slots.sequence.active_types());
-			signals.vector.activate_types(slots.vector.active_types());
-			signals.image.activate_types(slots.image.active_types());
-		}
-
-
 		template < typename T >
 		bitmap< T > subbitmap(bitmap< T > const& image)const;
 
@@ -88,6 +81,13 @@ namespace disposer_module{ namespace subbitmap{
 
 
 		void trigger()override;
+
+
+		void input_ready()override{
+			signals.sequence.activate_types(slots.sequence.active_types());
+			signals.vector.activate_types(slots.vector.active_types());
+			signals.image.activate_types(slots.image.active_types());
+		}
 
 
 		parameter const param;

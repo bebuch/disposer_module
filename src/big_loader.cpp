@@ -108,6 +108,9 @@ namespace disposer_module{ namespace big_loader{
 		void trigger()override;
 
 
+		void input_ready()override;
+
+
 		parameter const param;
 	};
 
@@ -196,28 +199,29 @@ namespace disposer_module{ namespace big_loader{
 			std::make_pair("pos", format{position_digits})
 		);
 
-		auto result = std::make_unique< module >(data, std::move(param));
+		return std::make_unique< module >(data, std::move(param));
+	}
 
-		auto activate = [&result](auto type_t){
-			switch(result->param.output){
+
+	void module::input_ready(){
+		auto activate = [this](auto type_t){
+			switch(param.output){
 				case output_t::sequence:
-					result->sequence.activate< typename decltype(type_t)::type >();
+					sequence.activate< typename decltype(type_t)::type >();
 				break;
 				case output_t::vector:
-					result->vector.activate< typename decltype(type_t)::type >();
+					vector.activate< typename decltype(type_t)::type >();
 				break;
 				case output_t::image:
-					result->image.activate< typename decltype(type_t)::type >();
+					image.activate< typename decltype(type_t)::type >();
 				break;
 			}
 		};
 
-		hana::for_each(hana_type_list, [&result, &activate](auto type_t){
+		hana::for_each(hana_type_list, [this, &activate](auto type_t){
 			using data_type = typename decltype(type_t)::type;
-			if(result->param.type[type_v< data_type >]) activate(type_t);
+			if(param.type[type_v< data_type >]) activate(type_t);
 		});
-
-		return std::move(result);
 	}
 
 

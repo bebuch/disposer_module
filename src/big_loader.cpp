@@ -281,7 +281,7 @@ namespace disposer_module{ namespace big_loader{
 		bitmap< T > load_bitmap(std::size_t cam, std::size_t pos)const{
 			bitmap< T > result;
 			auto name = filename(cam, pos);
-			disposer::log([this, &name](log::info& os){ os << "read '" << tarname << "/" << name << "'"; }, [this, &result, &name]{
+			loader.log([this, &name](log::info& os){ os << "read '" << tarname << "/" << name << "'"; }, [this, &result, &name]{
 				big::read(result, tar.get(name));
 			});
 			return result;
@@ -335,7 +335,7 @@ namespace disposer_module{ namespace big_loader{
 		auto used_id = param.fixed_id ? *param.fixed_id : id;
 
 		auto call_worker = [this](auto& loader, std::size_t data_type){
-			disposer::log([this, data_type](log::info& os){ os << type_name << " id " << id << ": data type is '" << io_type_names[data_type] << "'"; });
+			log([this, data_type](log::info& os){ os << type_name << " id " << id << ": data type is '" << io_type_names[data_type] << "'"; });
 
 			auto worker = [this, &loader](auto type_t){
 				using data_type = typename decltype(type_t)::type;

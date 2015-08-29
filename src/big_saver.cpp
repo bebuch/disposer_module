@@ -234,14 +234,14 @@ namespace disposer_module{ namespace big_saver{
 
 		if(param.tar){
 			auto tarname = param.dir + "/" + (*param.tar_pattern)(used_id);
-			disposer::log([this, &tarname, id](log::info& os){ os << type_name << " id " << id << ": write '" << tarname << "'"; }, [this, id, used_id, &bitmap_sequence, &tarname]{
+			log([this, &tarname, id](log::info& os){ os << "write '" << tarname << "'"; }, [this, id, used_id, &bitmap_sequence, &tarname]{
 				tar_writer tar(tarname);
 				std::size_t cam = param.camera_start;
 				for(auto& sequence: bitmap_sequence){
 					std::size_t pos = param.sequence_start;
 					for(auto& bitmap: sequence){
 						auto filename = (*param.big_pattern)(used_id, cam, pos);
-						disposer::log([this, &tarname, &filename, id](log::info& os){ os << type_name << " id " << id << ": write '" << tarname << "/" << filename << "'"; }, [&tar, &bitmap, &filename]{
+						log([this, &tarname, &filename, id](log::info& os){ os << "write '" << tarname << "/" << filename << "'"; }, [&tar, &bitmap, &filename]{
 							tar.write(filename, [&bitmap](std::ostream& os){
 								boost::apply_visitor(big_stream_visitor(os), bitmap);
 							}, boost::apply_visitor(big_streamsize_visitor(), bitmap));
@@ -257,7 +257,7 @@ namespace disposer_module{ namespace big_saver{
 				std::size_t pos = param.sequence_start;
 				for(auto& bitmap: sequence){
 					auto filename = param.dir + "/" + (*param.big_pattern)(used_id, cam, pos);
-					disposer::log([this, &filename, id](log::info& os){ os << type_name << " id " << id << ": write '" << filename << "'"; }, [&bitmap, &filename]{
+					log([this, &filename, id](log::info& os){ os << "write '" << filename << "'"; }, [&bitmap, &filename]{
 						boost::apply_visitor(big_file_visitor(filename), bitmap);
 					});
 					++pos;

@@ -368,17 +368,17 @@ namespace disposer_module{ namespace big_loader{
 			};
 
 			switch(data_type){
-				case type_v< std::int8_t >: worker(hana::type< std::int8_t >); break;
-				case type_v< std::uint8_t >: worker(hana::type< std::uint8_t >); break;
-				case type_v< std::int16_t >: worker(hana::type< std::int16_t >); break;
-				case type_v< std::uint16_t >: worker(hana::type< std::uint16_t >); break;
-				case type_v< std::int32_t >: worker(hana::type< std::int32_t >); break;
-				case type_v< std::uint32_t >: worker(hana::type< std::uint32_t >); break;
-				case type_v< std::int64_t >: worker(hana::type< std::int64_t >); break;
-				case type_v< std::uint64_t >: worker(hana::type< std::uint64_t >); break;
-				case type_v< float >: worker(hana::type< float >); break;
-				case type_v< double >: worker(hana::type< double >); break;
-				case type_v< long double >: worker(hana::type< long double >); break;
+				case type_v< std::int8_t >: worker(hana::type_c< std::int8_t >); break;
+				case type_v< std::uint8_t >: worker(hana::type_c< std::uint8_t >); break;
+				case type_v< std::int16_t >: worker(hana::type_c< std::int16_t >); break;
+				case type_v< std::uint16_t >: worker(hana::type_c< std::uint16_t >); break;
+				case type_v< std::int32_t >: worker(hana::type_c< std::int32_t >); break;
+				case type_v< std::uint32_t >: worker(hana::type_c< std::uint32_t >); break;
+				case type_v< std::int64_t >: worker(hana::type_c< std::int64_t >); break;
+				case type_v< std::uint64_t >: worker(hana::type_c< std::uint64_t >); break;
+				case type_v< float >: worker(hana::type_c< float >); break;
+				case type_v< double >: worker(hana::type_c< double >); break;
+				case type_v< long double >: worker(hana::type_c< long double >); break;
 			}
 		};
 

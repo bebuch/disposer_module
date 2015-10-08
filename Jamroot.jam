@@ -22,7 +22,6 @@ project disposer_module
 
 	<toolset>gcc:<cxxflags>-std=c++14
 	<toolset>gcc:<cxxflags>-fconstexpr-depth=1024
-	<toolset>gcc:<cxxflags>-fopenmp
 	<toolset>gcc:<cxxflags>-Wall
 	<toolset>gcc:<cxxflags>-Wextra
 	<toolset>gcc:<cxxflags>-Wno-unused-local-typedefs
@@ -31,11 +30,9 @@ project disposer_module
 	<toolset>gcc:<linkflags>-ldl
 	<toolset>gcc:<linkflags>-rdynamic
 	<toolset>gcc:<linkflags>-fvisibility=hidden
-	<toolset>gcc:<linkflags>-fopenmp
 
 	<toolset>clang:<cxxflags>-std=c++14
 	<toolset>clang:<cxxflags>-fconstexpr-depth=1024
-	<toolset>clang:<cxxflags>-fopenmp
 	<toolset>clang:<cxxflags>-Wall
 	<toolset>clang:<cxxflags>-Wextra
 	<toolset>clang:<cxxflags>-Wno-deprecated-register
@@ -47,8 +44,8 @@ project disposer_module
 	<toolset>clang:<linkflags>-ldl
 	<toolset>clang:<linkflags>-rdynamic
 	<toolset>clang:<linkflags>-fvisibility=hidden
-	<toolset>clang:<linkflags>-fopenmp
 	<toolset>clang:<linkflags>-stdlib=libc++
+	<toolset>clang:<include>/usr/include/libcxxabi
 
 	<include>$(LIBRARIES)/boost_dev/type_index/include
 	<include>$(LIBRARIES)/boost_dev/optional/include

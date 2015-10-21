@@ -165,7 +165,7 @@ namespace disposer_module{ namespace subbitmap{
 				}
 			}
 
-			module.signals.sequence.put< T >(id, std::move(result));
+			module.signals.sequence.put< T >(std::move(result));
 		}
 	};
 
@@ -181,7 +181,7 @@ namespace disposer_module{ namespace subbitmap{
 				result[i] = module.subbitmap(data[i]);
 			}
 
-			module.signals.vector.put< T >(id, std::move(result));
+			module.signals.vector.put< T >(std::move(result));
 		}
 	};
 
@@ -192,23 +192,23 @@ namespace disposer_module{ namespace subbitmap{
 		void operator()(disposer::input_data< bitmap< T > > const& image){
 			auto& data = image.data();
 
-			module.signals.image.put< T >(id, module.subbitmap(data));
+			module.signals.image.put< T >(module.subbitmap(data));
 		}
 	};
 
 
 	void module::trigger(){
-		for(auto const& pair: slots.sequence.get(id)){
+		for(auto const& pair: slots.sequence.get()){
 			sequence_visitor visitor(*this, pair.first);
 			boost::apply_visitor(visitor, pair.second);
 		}
 
-		for(auto const& pair: slots.vector.get(id)){
+		for(auto const& pair: slots.vector.get()){
 			vector_visitor visitor(*this, pair.first);
 			boost::apply_visitor(visitor, pair.second);
 		}
 
-		for(auto const& pair: slots.image.get(id)){
+		for(auto const& pair: slots.image.get()){
 			image_visitor visitor(*this, pair.first);
 			boost::apply_visitor(visitor, pair.second);
 		}

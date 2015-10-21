@@ -110,10 +110,10 @@ namespace disposer_module{ namespace bitmap_bounding_rect{
 
 
 	void module::trigger(){
-		for(auto const& pair: image.get(id)){
-			auto id = pair.first;
+		for(auto const& pair: image.get()){
+// 			auto id = pair.first;
 
-			rect.put(id, boost::apply_visitor(visitor{}, pair.second));
+			rect.put(boost::apply_visitor(visitor{}, pair.second));
 		}
 	}
 

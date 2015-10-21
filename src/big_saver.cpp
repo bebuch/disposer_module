@@ -310,7 +310,7 @@ namespace disposer_module{ namespace big_saver{
 	void module::trigger(){
 		switch(param.input){
 			case input_t::sequence:{
-				for(auto const& pair: sequence.get(id)){
+				for(auto const& pair: sequence.get()){
 					auto id = pair.first;
 					auto& bitmap_sequence = pair.second;
 
@@ -318,7 +318,7 @@ namespace disposer_module{ namespace big_saver{
 				}
 			}break;
 			case input_t::vector:{
-				auto vectors = vector.get(id);
+				auto vectors = vector.get();
 				auto from = vectors.begin();
 
 				while(from != vectors.end()){
@@ -336,7 +336,7 @@ namespace disposer_module{ namespace big_saver{
 				}
 			}break;
 			case input_t::image:{
-				auto images = image.get(id);
+				auto images = image.get();
 				auto from = images.begin();
 
 				while(from != images.end()){

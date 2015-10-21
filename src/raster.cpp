@@ -87,8 +87,8 @@ namespace disposer_module{ namespace raster{
 
 	template < typename T >
 	void module< T >::trigger(){
-		for(auto const& pair: slots.sequence.get(id)){
-			auto id = pair.first;
+		for(auto const& pair: slots.sequence.get()){
+// 			auto id = pair.first;
 			auto& data = pair.second.data();
 
 			bitmap_sequence< T > result(data.size());
@@ -99,11 +99,11 @@ namespace disposer_module{ namespace raster{
 				}
 			}
 
-			signals.sequence.put(id, std::move(result));
+			signals.sequence.put(std::move(result));
 		}
 
-		for(auto const& pair: slots.vector.get(id)){
-			auto id = pair.first;
+		for(auto const& pair: slots.vector.get()){
+// 			auto id = pair.first;
 			auto& data = pair.second.data();
 
 			bitmap_vector< T > result(data.size());
@@ -111,14 +111,14 @@ namespace disposer_module{ namespace raster{
 				result[i] = apply_raster(data[i]);
 			}
 
-			signals.vector.put(id, std::move(result));
+			signals.vector.put(std::move(result));
 		}
 
-		for(auto const& pair: slots.image.get(id)){
-			auto id = pair.first;
+		for(auto const& pair: slots.image.get()){
+// 			auto id = pair.first;
 			auto& data = pair.second.data();
 
-			signals.image.put(id, apply_raster(data));
+			signals.image.put(apply_raster(data));
 		}
 	}
 

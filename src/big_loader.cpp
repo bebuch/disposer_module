@@ -347,17 +347,17 @@ namespace disposer_module{ namespace big_loader{
 				if(param.type[type_v< data_type >]){
 					switch(param.output){
 						case output_t::sequence:{
-							sequence.put< data_type >(id, loader.template load_sequence< data_type >());
+							sequence.put< data_type >(loader.template load_sequence< data_type >());
 						} break;
 						case output_t::vector:{
 							for(std::size_t cam = param.camera_start; cam < param.camera_count + param.camera_start; ++cam){
-								vector.put< data_type >(id, loader.template load_vector< data_type >(cam));
+								vector.put< data_type >(loader.template load_vector< data_type >(cam));
 							}
 						} break;
 						case output_t::image:{
 							for(std::size_t cam = param.camera_start; cam < param.camera_count + param.camera_start; ++cam){
 								for(std::size_t pos = param.sequence_start; pos < param.sequence_count + param.sequence_start; ++pos){
-									image.put< data_type >(id, loader.template load_bitmap< data_type >(cam, pos));
+									image.put< data_type >(loader.template load_bitmap< data_type >(cam, pos));
 								}
 							}
 						} break;

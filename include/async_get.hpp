@@ -32,10 +32,10 @@ namespace disposer_module{ namespace async_get{
 
 		disposer::output< T > result{"result"};
 
-		void trigger(std::size_t id)override{
-			for(auto& pair: future.get(id)){
-				auto id = pair.first;
-				result.put(id, pair.second.get());
+		void trigger()override{
+			for(auto& pair: future.get()){
+// 				auto id = pair.first;
+				result.put(pair.second.get());
 			}
 		}
 	};
@@ -49,8 +49,8 @@ namespace disposer_module{ namespace async_get{
 
 		disposer::input< std::future< void > > future{"future"};
 
-		void trigger(std::size_t id)override{
-			for(auto& pair: future.get(id)){
+		void trigger()override{
+			for(auto& pair: future.get()){
 				pair.second.get();
 			}
 		}

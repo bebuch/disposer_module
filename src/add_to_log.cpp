@@ -30,7 +30,9 @@ namespace disposer_module{ namespace add_to_log{
 				auto& data = pair.second.data();
 
 				disposer::log([this, id, &data](log::info& os){
-					os << type << ": id=" << id << " chain '" << chain << "' module '" << name << "' data='" << mask_non_print(data) << "'";
+					os << type << ": id=" << id << " chain '" << chain
+						<< "' module '" << name << "' data='"
+						<< mask_non_print(data) << "'";
 				});
 			}
 		}

@@ -68,15 +68,25 @@ namespace disposer_module{ namespace subbitmap{
 
 
 		struct{
-			disposer::container_input< bitmap_sequence, type_list > sequence{"sequence"};
-			disposer::container_input< bitmap_vector, type_list > vector{"vector"};
-			disposer::container_input< bitmap, type_list > image{"image"};
+			disposer::container_input< bitmap_sequence, type_list >
+				sequence{"sequence"};
+
+			disposer::container_input< bitmap_vector, type_list >
+				vector{"vector"};
+
+			disposer::container_input< bitmap, type_list >
+				image{"image"};
 		} slots;
 
 		struct{
-			disposer::container_output< bitmap_sequence, type_list > sequence{"sequence"};
-			disposer::container_output< bitmap_vector, type_list > vector{"vector"};
-			disposer::container_output< bitmap, type_list > image{"image"};
+			disposer::container_output< bitmap_sequence, type_list >
+				sequence{"sequence"};
+
+			disposer::container_output< bitmap_vector, type_list >
+				vector{"vector"};
+
+			disposer::container_output< bitmap, type_list >
+				image{"image"};
 		} signals;
 
 
@@ -106,10 +116,17 @@ namespace disposer_module{ namespace subbitmap{
 		data.params.set(param.height, "height");
 
 		// for integral is NaN defined as 0
-		hana::for_each(disposer::hana_type_list< type_list >, [&data, &param](auto type_t){
-			using type = typename decltype(type_t)::type;
-			data.params.set(std::get< type >(param.default_value), "default_value", std::numeric_limits< type >::quiet_NaN());
-		});
+		hana::for_each(
+			disposer::hana_type_list< type_list >,
+			[&data, &param](auto type_t){
+				using type = typename decltype(type_t)::type;
+				data.params.set(
+					std::get< type >(param.default_value),
+					"default_value",
+					std::numeric_limits< type >::quiet_NaN()
+				);
+			}
+		);
 
 		return std::make_unique< module >(data, std::move(param));
 	}
@@ -117,18 +134,32 @@ namespace disposer_module{ namespace subbitmap{
 
 	template < typename T >
 	bitmap< T > module::subbitmap(bitmap< T > const& image)const{
-		bitmap< T > result(param.width, param.height, std::get< T >(param.default_value));
+		bitmap< T > result(
+			param.width,
+			param.height,
+			std::get< T >(param.default_value)
+		);
 
-		std::size_t const bx = param.x < 0 ? static_cast< std::size_t >(-param.x) : 0;
-		std::size_t const by = param.y < 0 ? static_cast< std::size_t >(-param.y) : 0;
+		std::size_t const bx =
+			param.x < 0 ? static_cast< std::size_t >(-param.x) : 0;
+
+		std::size_t const by =
+			param.y < 0 ? static_cast< std::size_t >(-param.y) : 0;
+
 		std::size_t const ex =
-			static_cast< std::int64_t >(param.width) < static_cast< std::int64_t >(image.width()) - param.x ?
+			static_cast< std::int64_t >(param.width) <
+			static_cast< std::int64_t >(image.width()) - param.x ?
 				param.width :
-				(static_cast< std::int32_t >(image.width()) > param.x ? image.width() - param.x : 0);
+					static_cast< std::int32_t >(image.width()) >
+					param.x ? image.width() - param.x : 0;
+
 		std::size_t const ey =
-			static_cast< std::int64_t >(param.height) < static_cast< std::int64_t >(image.height()) - param.y ?
+			static_cast< std::int64_t >(param.height) <
+			static_cast< std::int64_t >(image.height()) - param.y ?
 				param.height :
-				(static_cast< std::int32_t >(image.height()) > param.y ? image.height() - param.y : 0);
+					static_cast< std::int32_t >(image.height()) > param.y ?
+					image.height() - param.y : 0;
+
 
 		// line wise copy
 		for(std::size_t y = by; y < ey; ++y){
@@ -144,7 +175,8 @@ namespace disposer_module{ namespace subbitmap{
 
 
 	struct visitor: boost::static_visitor< void >{
-		visitor(subbitmap::module& module, std::size_t id): module(module), id(id){}
+		visitor(subbitmap::module& module, std::size_t id):
+			module(module), id(id) {}
 
 		subbitmap::module& module;
 		std::size_t const id;
@@ -154,7 +186,9 @@ namespace disposer_module{ namespace subbitmap{
 		using visitor::visitor;
 
 		template < typename T >
-		void operator()(disposer::input_data< bitmap_sequence< T > > const& sequence){
+		void operator()(
+			disposer::input_data< bitmap_sequence< T > > const& sequence
+		){
 			auto& data = sequence.data();
 
 			bitmap_sequence< T > result(data.size());
@@ -173,7 +207,9 @@ namespace disposer_module{ namespace subbitmap{
 		using visitor::visitor;
 
 		template < typename T >
-		void operator()(disposer::input_data< bitmap_vector< T > > const& vector){
+		void operator()(
+			disposer::input_data< bitmap_vector< T > > const& vector
+		){
 			auto& data = vector.data();
 
 			bitmap_vector< T > result(data.size());

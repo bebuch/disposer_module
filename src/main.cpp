@@ -9,6 +9,7 @@
 #include "log.hpp"
 
 #include <disposer/disposer.hpp>
+#include <disposer/module_base.hpp>
 
 #include <boost/filesystem.hpp>
 #include <boost/dll.hpp>

@@ -66,7 +66,10 @@ namespace disposer_module{ namespace raster{
 		data.params.set(param.raster, "raster");
 
 		if(param.raster == 0){
-			throw std::logic_error(make_string(data.type_name + ": raster (value: ", param.raster, ") needs to be greater than 0"));
+			throw std::logic_error(make_string(
+				data.type_name + ": raster (value: ", param.raster,
+				") needs to be greater than 0"
+			));
 		}
 
 		return std::make_unique< module< T > >(data, std::move(param));
@@ -75,12 +78,17 @@ namespace disposer_module{ namespace raster{
 
 	template < typename T >
 	bitmap< T > module< T >::apply_raster(bitmap< T > const& image)const{
-		bitmap< T > result((image.width() - 1) / param.raster + 1, (image.height() - 1) / param.raster + 1);
+		bitmap< T > result(
+			(image.width() - 1) / param.raster + 1,
+			(image.height() - 1) / param.raster + 1
+		);
+
 		for(std::size_t y = 0; y < result.height(); ++y){
 			for(std::size_t x = 0; x < result.width(); ++x){
 				result(x, y) = image(x * param.raster, y * param.raster);
 			}
 		}
+
 		return result;
 	}
 

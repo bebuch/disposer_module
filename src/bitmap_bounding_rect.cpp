@@ -25,7 +25,9 @@ namespace disposer_module{ namespace bitmap_bounding_rect{
 			disposer::module_base(data, {image}, {rect}){}
 
 
-		disposer::container_input< bitmap, float, double, long double > image{"image"};
+		disposer::container_input< bitmap, float, double, long double >
+			image{"image"};
+
 		disposer::output< rect< std::size_t > > rect{"rect"};
 
 
@@ -40,7 +42,9 @@ namespace disposer_module{ namespace bitmap_bounding_rect{
 
 	struct visitor: boost::static_visitor< rect< std::size_t > >{
 		template < typename T >
-		rect< std::size_t > operator()(disposer::input_data< bitmap< T > > const& data)const{
+		rect< std::size_t > operator()(
+			disposer::input_data< bitmap< T > > const& data
+		)const{
 			using std::isnan;
 
 			auto& image = data.data();
@@ -104,7 +108,9 @@ namespace disposer_module{ namespace bitmap_bounding_rect{
 			}
 
 			// attention: end sizes are one after the end
-			return rect< std::size_t >(x_begin, y_begin, 1 + x_end - x_begin, 1 + y_end - y_begin);
+			return rect< std::size_t >(
+				x_begin, y_begin, 1 + x_end - x_begin, 1 + y_end - y_begin
+			);
 		}
 	};
 

@@ -26,13 +26,24 @@ int main(){
 
 		::disposer::disposer disposer;
 
+		auto program_dir = boost::dll::program_location().remove_filename();
+		std::cout << "Search for DLLs in '" << program_dir << "'" << std::endl;
+
 		std::regex regex(".*\\.so");
-		for(auto const& file: fs::directory_iterator(boost::dll::program_location().remove_filename())){
-			if(!is_regular_file(file)) continue;
-			if(!std::regex_match(file.path().filename().string(), regex)) continue;
-			::disposer::log([&file](disposer_module::log::info& os){ os << "load shared library '" << file.path().string() << "'"; }, [&]{
+		for(auto const& file: fs::directory_iterator(program_dir)){
+			if(
+				!is_regular_file(file) ||
+				!std::regex_match(file.path().filename().string(), regex)
+			) continue;
+
+			::disposer::log([&file](disposer_module::log::info& os){
+				os << "load shared library '" << file.path().string() << "'";
+			}, [&]{
 				modules.emplace_back(file.path().string());
-				modules.back().get_alias< void(::disposer::disposer&) >("init")(disposer);
+
+				modules.back().get_alias<
+					void(::disposer::disposer&)
+				>("init")(disposer);
 			});
 		}
 
@@ -42,7 +53,9 @@ int main(){
 			disposer.trigger(chain);
 		}
 	}catch(std::exception const& e){
-		std::cerr << "Exception: [" << boost::typeindex::type_id_runtime(e).pretty_name() << "] " << e.what() << std::endl;
+		std::cerr << "Exception: ["
+			<< boost::typeindex::type_id_runtime(e).pretty_name() << "] "
+			<< e.what() << std::endl;
 	}catch(...){
 		std::cerr << "Unknown exception" << std::endl;
 	}

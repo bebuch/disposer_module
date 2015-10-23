@@ -44,8 +44,8 @@ namespace disposer_module{ namespace add_to_log{
 		return std::make_unique< module >(data);
 	}
 
-	void init(disposer::disposer& disposer){
-		disposer.add_module_maker("add_to_log", &make_module);
+	void init(disposer::module_adder& add){
+		add("add_to_log", &make_module);
 	}
 
 	BOOST_DLL_AUTO_ALIAS(init)

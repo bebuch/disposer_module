@@ -251,8 +251,8 @@ namespace disposer_module{ namespace subbitmap{
 	}
 
 
-	void init(disposer::disposer& disposer){
-		disposer.add_module_maker("subbitmap", &make_module);
+	void init(disposer::module_adder& add){
+		add("subbitmap", &make_module);
 	}
 
 	BOOST_DLL_AUTO_ALIAS(init)

@@ -367,8 +367,8 @@ namespace disposer_module{ namespace big_saver{
 	}
 
 
-	void init(disposer::disposer& disposer){
-		disposer.add_module_maker("big_saver", &make_module);
+	void init(disposer::module_adder& add){
+		add("big_saver", &make_module);
 	}
 
 	BOOST_DLL_AUTO_ALIAS(init)

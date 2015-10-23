@@ -408,8 +408,8 @@ namespace disposer_module{ namespace big_loader{
 	}
 
 
-	void init(disposer::disposer& disposer){
-		disposer.add_module_maker("big_loader", &make_module);
+	void init(disposer::module_adder& add){
+		add("big_loader", &make_module);
 	}
 
 	BOOST_DLL_AUTO_ALIAS(init)

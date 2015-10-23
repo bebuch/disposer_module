@@ -123,8 +123,8 @@ namespace disposer_module{ namespace bitmap_bounding_rect{
 		}
 	}
 
-	void init(disposer::disposer& disposer){
-		disposer.add_module_maker("bitmap_bounding_rect", &make_module);
+	void init(disposer::module_adder& add){
+		add("bitmap_bounding_rect", &make_module);
 	}
 
 	BOOST_DLL_AUTO_ALIAS(init)

@@ -42,8 +42,8 @@ int main(){
 				modules.emplace_back(file.path().string());
 
 				modules.back().get_alias<
-					void(::disposer::disposer&)
-				>("init")(disposer);
+					void(::disposer::module_adder&)
+				>("init")(disposer.adder());
 			});
 		}
 

@@ -39,7 +39,9 @@ namespace disposer_module{
 		template < index_t ... I >
 		using index_sequence_t = std::integer_sequence< index_t, I ... >;
 
-		using field_size_t = index_sequence_t< 100, 8, 8, 8, 12, 12, 8, 1, 100, 6, 2, 32, 32, 8, 8, 155, 12 >;
+		using field_size_t = index_sequence_t<
+			100, 8, 8, 8, 12, 12, 8, 1, 100, 6, 2, 32, 32, 8, 8, 155, 12
+		>;
 
 
 		template < typename IntegerSequence, index_t X >
@@ -47,7 +49,8 @@ namespace disposer_module{
 
 		template < index_t H, index_t ... I, index_t X >
 		struct get_integer< index_sequence_t< H, I ... >, X >{
-			static constexpr index_t value = get_integer< index_sequence_t< I ... >, X - 1 >::value;
+			static constexpr index_t value =
+				get_integer< index_sequence_t< I ... >, X - 1 >::value;
 		};
 
 		template < index_t H, index_t ... I >
@@ -57,7 +60,8 @@ namespace disposer_module{
 
 		template < index_t X >
 		struct field_size{
-			static constexpr index_t value = get_integer< field_size_t, X >::value;
+			static constexpr index_t value =
+				get_integer< field_size_t, X >::value;
 		};
 
 
@@ -66,7 +70,9 @@ namespace disposer_module{
 
 		template < index_t H, index_t ... I, index_t X >
 		struct get_integer_start< index_sequence_t< H, I ... >, X >{
-			static constexpr index_t value = get_integer_start< index_sequence_t< I ... >, X - 1 >::value + H;
+			static constexpr index_t value =
+				get_integer_start< index_sequence_t< I ... >, X - 1 >::value +
+				H;
 		};
 
 		template < index_t H, index_t ... I >
@@ -76,7 +82,8 @@ namespace disposer_module{
 
 		template < index_t X >
 		struct field_start{
-			static constexpr index_t value = get_integer_start< field_size_t, X >::value;
+			static constexpr index_t value =
+				get_integer_start< field_size_t, X >::value;
 		};
 
 
@@ -104,7 +111,10 @@ namespace disposer_module{
 
 
 		template < index_t FieldName, typename Container >
-		void write(std::array< char, 512 >& buffer, Container const& container){
+		void write(
+			std::array< char, 512 >& buffer,
+			Container const& container
+		){
 			static constexpr auto start = field_start< FieldName >::value;
 			static constexpr auto size  = field_size< FieldName >::value;
 
@@ -112,11 +122,17 @@ namespace disposer_module{
 			auto const end = container.end();
 
 			if(end - begin > size){
-				throw std::runtime_error(disposer_module::make_string("Tar: field data to long: [", FieldName, "] is: ", end - begin, ", max: ", size));
+				throw std::runtime_error(disposer_module::make_string(
+					"Tar: field data to long: [", FieldName, "] is: ",
+					end - begin, ", max: ", size
+				));
 			}
 
 			std::copy(begin, end, buffer.begin() + start);
-			std::fill(buffer.begin() + start + (end - begin), buffer.begin() + start + size, 0);
+			std::fill(
+				buffer.begin() + start + (end - begin),
+				buffer.begin() + start + size, 0
+			);
 		}
 
 
@@ -125,10 +141,14 @@ namespace disposer_module{
 			static constexpr auto start = field_start< FieldName >::value;
 			static constexpr auto size  = field_size< FieldName >::value;
 
-			return std::string(buffer.begin() + start, buffer.begin() + start + size);
+			return std::string(
+				buffer.begin() + start,
+				buffer.begin() + start + size
+			);
 		}
 
-		constexpr std::array< char, field_size< field_name::checksum >::value > empty_checksum{{' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '}};
+		constexpr std::array< char, field_size< field_name::checksum >::value >
+			empty_checksum{{' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '}};
 
 		constexpr std::array< char, 5 > magic{{'u', 's', 't', 'a', 'r'}};
 		constexpr std::array< char, 6 > mode{{'0', '0', '0', '6', '4', '4'}};
@@ -141,16 +161,21 @@ namespace disposer_module{
 			for(unsigned i: buffer) sum += i;
 
 			std::ostringstream os;
-			os << std::oct << std::setfill('0') << std::setw(6) << sum << '\0' << ' ';
+			os << std::oct << std::setfill('0') << std::setw(6) << sum << '\0'
+				<< ' ';
 
 			return os.str();
 		}
 
-		inline std::array< char, 512 > make_posix_header(std::string const& name, std::size_t size){
+		inline std::array< char, 512 > make_posix_header(
+			std::string const& name,
+			std::size_t size
+		){
 			std::array< char, 512 > buffer{};
 
 			std::ostringstream os;
-			os << std::oct << std::setfill('0') << std::setw(11) << std::time(nullptr);
+			os << std::oct << std::setfill('0') << std::setw(11)
+				<< std::time(nullptr);
 			std::string mtime = os.str();
 
 			write< field_name::magic >(buffer, magic);
@@ -160,8 +185,15 @@ namespace disposer_module{
 
 
 			// Set filename
-			if(name.size() == 0) throw std::runtime_error("Tar: filename is empty");
-			if(name.size() >= 100) throw std::runtime_error("Tar: filename larger than 99 charakters");
+			if(name.size() == 0){
+				throw std::runtime_error("Tar: filename is empty");
+			}
+
+			if(name.size() >= 100){
+				throw std::runtime_error(
+					"Tar: filename larger than 99 charakters"
+				);
+			}
 
 			write< field_name::name >(buffer, name);
 
@@ -183,21 +215,31 @@ namespace disposer_module{
 			return data.substr(0, data.find('\0'));
 		}
 
-		inline std::tuple< std::string, std::size_t > read_posix_header(std::array< char, 512 > const& buffer){
+		inline std::tuple< std::string, std::size_t > read_posix_header(
+			std::array< char, 512 > const& buffer
+		){
 			auto const checksum = read< field_name::checksum >(buffer);
 			auto const magic = cut_null(read< field_name::magic >(buffer));
 			auto const size = read< field_name::size >(buffer);
 			auto const filename = cut_null(read< field_name::name >(buffer));
 
 			if(magic != "ustar"){
-				throw std::runtime_error("Tar: loaded file without magic 'ustar', magic is: '" + mask_non_print(magic) + "'");
+				throw std::runtime_error(
+					"Tar: loaded file without magic 'ustar', magic is: '" +
+					mask_non_print(magic) + "'"
+				);
 			}
 
 			if(checksum != calc_checksum(buffer)){
-				throw std::runtime_error("Tar: loaded file with wrong checksum");
+				throw std::runtime_error(
+					"Tar: loaded file with wrong checksum"
+				);
 			}
 
-			return std::make_tuple(std::move(filename), static_cast< std::size_t >(std::stol(size, 0, 8)));
+			return std::make_tuple(
+				std::move(filename),
+				static_cast< std::size_t >(std::stol(size, 0, 8))
+			);
 		}
 
 
@@ -208,7 +250,10 @@ namespace disposer_module{
 	class tar_writer{
 	public:
 		tar_writer(std::string const& filename):
-			outfile_(new std::ofstream(filename.c_str(), std::ios_base::out | std::ios_base::binary)),
+			outfile_(new std::ofstream(
+				filename.c_str(),
+				std::ios_base::out | std::ios_base::binary
+			)),
 			out_(*outfile_) {}
 
 		tar_writer(std::ostream& out):
@@ -219,23 +264,38 @@ namespace disposer_module{
 			out_.write(dummy, 1024);
 		}
 
-		void write(std::string const& filename, char const* content, std::size_t size){
-			write(filename, [&](std::ostream& os){ os.write(content, size); }, size);
+		void write(
+			std::string const& filename,
+			char const* content,
+			std::size_t size
+		){
+			write(filename, [&](std::ostream& os){
+				os.write(content, size);
+			}, size);
 		}
 
 		void write(std::string const& filename, std::string const& content){
 			write(filename, content.data(), content.size());
 		}
 
-		void write(std::string const& filename, std::function< void(std::ostream&) > const& writer){
+		void write(
+			std::string const& filename,
+			std::function< void(std::ostream&) > const& writer
+		){
 			std::ostringstream os(std::ios_base::out | std::ios_base::binary);
 			writer(os);
 			write(filename, os.str());
 		}
 
-		void write(std::string const& filename, std::function< void(std::ostream&) > const& writer, std::size_t size){
+		void write(
+			std::string const& filename,
+			std::function< void(std::ostream&) > const& writer,
+			std::size_t size
+		){
 			if(!filenames_.emplace(filename).second){
-				throw std::runtime_error("Duplicate filename in tar-file: " + filename);
+				throw std::runtime_error(
+					"Duplicate filename in tar-file: " + filename
+				);
 			}
 
 			auto const header = impl::tar::make_posix_header(filename, size);
@@ -247,10 +307,15 @@ namespace disposer_module{
 			out_.write(header.data(), header.size());
 
 			writer(out_);
-			auto wrote_size = static_cast< std::size_t >(out_.tellp() - start) - 512;
+			auto wrote_size =
+				static_cast< std::size_t >(out_.tellp() - start) - 512;
 			if(wrote_size != size){
 				out_.seekp(start);
-				throw std::runtime_error(make_string("While writing '", filename, "' to tar-file: Writer function wrote ", wrote_size, " bytes, but ", size, " where expected"));
+				throw std::runtime_error(make_string(
+					"While writing '", filename,
+					"' to tar-file: Writer function wrote ", wrote_size,
+					" bytes, but ", size, " where expected"
+				));
 			}
 
 			out_.write(buffer.data(), buffer.size());
@@ -272,7 +337,9 @@ namespace disposer_module{
 	class tar_reader{
 	public:
 		tar_reader(std::string const& filename):
-			isptr_(std::make_unique< std::ifstream >(filename.c_str(), std::ios_base::in | std::ios_base::binary)),
+			isptr_(std::make_unique< std::ifstream >(
+				filename.c_str(), std::ios_base::in | std::ios_base::binary
+			)),
 			is_(*isptr_.get())
 		{
 			init();
@@ -287,7 +354,9 @@ namespace disposer_module{
 		std::istream& get(std::string const& filename){
 			auto iter = files_.find(filename);
 			if(iter == files_.end()){
-				throw std::runtime_error("Filename-entry not fount in tar-file: " + filename);
+				throw std::runtime_error(
+					"Filename-entry not fount in tar-file: " + filename
+				);
 			}
 
 			iter->second.seekg(0);
@@ -313,19 +382,30 @@ namespace disposer_module{
 
 				std::string filename;
 				std::size_t size;
-				std::tie(filename, size) = impl::tar::read_posix_header(buffer);
+				std::tie(filename, size) =
+					impl::tar::read_posix_header(buffer);
 
-				auto result = files_.emplace(std::piecewise_construct, std::forward_as_tuple(filename), std::forward_as_tuple(is_.rdbuf(), is_.tellg(), size));
+				auto result = files_.emplace(
+					std::piecewise_construct,
+					std::forward_as_tuple(filename),
+					std::forward_as_tuple(is_.rdbuf(), is_.tellg(), size)
+				);
 				if(!result.second){
-					throw std::runtime_error("Duplicate filename-entry while reading tar-file: " + filename);
+					throw std::runtime_error(
+						"Duplicate filename-entry while reading tar-file: " +
+						filename
+					);
 				}
 
-				std::streampos file_size_in_tar = size + (512 - (size % 512)) % 512;
+				std::streampos file_size_in_tar =
+					size + (512 - (size % 512)) % 512;
 				is_.seekg(is_.tellg() + file_size_in_tar);
 
 
 				if(!is_){
-					throw std::runtime_error("Tar filename-entry with illegal size: " + filename);
+					throw std::runtime_error(
+						"Tar filename-entry with illegal size: " + filename
+					);
 				}
 			}
 		}

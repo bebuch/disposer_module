@@ -19,7 +19,10 @@ namespace disposer_module{
 
 
 		template < class charT, class traits >
-		inline bool test(std::basic_istream< charT, traits >& is, charT const& should_be){
+		inline bool test(
+			std::basic_istream< charT, traits >& is,
+			charT const& should_be
+		){
 			charT in;
 			if(is){
 				if(is >> in && in == should_be) return true;
@@ -29,7 +32,10 @@ namespace disposer_module{
 		}
 
 		template < class charT, class traits, class ShouldBe >
-		inline bool equal(std::basic_istream< charT, traits >& is, ShouldBe const& should_be){
+		inline bool equal(
+			std::basic_istream< charT, traits >& is,
+			ShouldBe const& should_be
+		){
 			ShouldBe in;
 			if(is && is >> in && in == should_be) return true;
 			is.setstate(std::ios_base::failbit);
@@ -37,7 +43,10 @@ namespace disposer_module{
 		}
 
 		template < class charT, class traits >
-		inline bool equal(std::basic_istream< charT, traits >& is, charT const& should_be){
+		inline bool equal(
+			std::basic_istream< charT, traits >& is,
+			charT const& should_be
+		){
 			auto result = test(is, should_be);
 			if(!result) is.setstate(std::ios_base::failbit);
 			return result;

@@ -19,13 +19,19 @@ namespace disposer_module{
 
 
 	template < typename charT, typename traits, typename T >
-	std::basic_ostream< charT, traits >& operator<<(std::basic_ostream< charT, traits >& os, point< T > const& data) {
+	std::basic_ostream< charT, traits >& operator<<(
+		std::basic_ostream< charT, traits >& os,
+		point< T > const& data
+	){
 		return os << data.x() << "x" << data.y();
 	}
 
 
 	template < typename charT, typename traits, typename T >
-	std::basic_istream< charT, traits >& operator>>(std::basic_istream< charT, traits >& is, point< T >& data) {
+	std::basic_istream< charT, traits >& operator>>(
+		std::basic_istream< charT, traits >& is,
+		point< T >& data
+	){
 		point< T > tmp;
 		is >> tmp.x();
 		if(!io::equal(is, 'x')) return is;

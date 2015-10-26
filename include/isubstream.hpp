@@ -19,7 +19,11 @@ namespace disposer_module{
 
 	class isubstream: public std::istream{
 	public:
-		isubstream(std::streambuf* buffer, std::streampos start, std::streamsize size):
+		isubstream(
+			std::streambuf* buffer,
+			std::streampos start,
+			std::streamsize size
+		):
 			std::istream(&buffer_),
 			buffer_(buffer, start, size)
 			{}

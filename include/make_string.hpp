@@ -37,14 +37,27 @@ namespace disposer_module{
 		inline void stream_output_separated_by(Stream&, Separator const&){}
 
 		template < typename Stream, typename Separator, typename Head >
-		inline void stream_output_separated_by(Stream& s, Separator const&, Head&& head){
+		inline void stream_output_separated_by(
+			Stream& s,
+			Separator const&,
+			Head&& head
+		){
 			s << std::forward< Head >(head);
 		}
 
-		template < typename Stream, typename Separator, typename Head, typename ... T >
-		inline void stream_output_separated_by(Stream& s, Separator const& separator, Head&& head, T&& ... args){
+		template <
+			typename Stream, typename Separator, typename Head, typename ... T
+		>
+		inline void stream_output_separated_by(
+			Stream& s,
+			Separator const& separator,
+			Head&& head,
+			T&& ... args
+		){
 			s << std::forward< Head >(head) << separator;
-			stream_output_separated_by(s, separator, std::forward< T >(args) ...);
+			stream_output_separated_by(
+				s, separator, std::forward< T >(args) ...
+			);
 		}
 
 
@@ -60,10 +73,15 @@ namespace disposer_module{
 	}
 
 	template < typename Separator, typename ... T >
-	inline std::string make_string_separated_by(Separator const& separator, T&& ... args){
+	inline std::string make_string_separated_by(
+		Separator const& separator,
+		T&& ... args
+	){
 		std::ostringstream os;
 		os << std::boolalpha;
-		impl::make_string::stream_output_separated_by(os, separator, std::forward< T >(args) ...);
+		impl::make_string::stream_output_separated_by(
+			os, separator, std::forward< T >(args) ...
+		);
 		return os.str();
 	}
 

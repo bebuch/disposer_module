@@ -17,7 +17,11 @@ namespace disposer_module{
 
 	class substreambuf: public std::streambuf{
 	public:
-		substreambuf(std::streambuf* buffer, std::streampos start, std::streamsize size):
+		substreambuf(
+			std::streambuf* buffer,
+			std::streampos start,
+			std::streamsize size
+		):
 			buffer_(buffer),
 			start_(start),
 			size_(size)
@@ -33,11 +37,19 @@ namespace disposer_module{
 			 buffer_->pubimbue(loc);
 		}
 
-		virtual std::streambuf* setbuf(char_type* s, std::streamsize n)override{
+		virtual std::streambuf* setbuf(
+			char_type* s,
+			std::streamsize n
+		)override{
 			return buffer_->pubsetbuf(s, n);
 		}
 
-		virtual std::streampos seekoff(std::streamoff off, std::ios_base::seekdir dir, std::ios_base::openmode which = std::ios_base::in | std::ios_base::out)override{
+		virtual std::streampos seekoff(
+			std::streamoff off,
+			std::ios_base::seekdir dir,
+			std::ios_base::openmode which =
+				std::ios_base::in | std::ios_base::out
+		)override{
 			std::streampos new_pos;
 
 			if(dir == std::ios_base::beg){
@@ -45,18 +57,28 @@ namespace disposer_module{
 			}else if(dir == std::ios_base::cur){
 				new_pos = buffer_->pubseekoff(off, dir, which);
 			}else{
-				new_pos = buffer_->pubseekpos(start_ + std::streampos(size_) + off, which);
+				new_pos = buffer_->pubseekpos(
+					start_ + std::streampos(size_) + off, which
+				);
 			}
 
-			if(new_pos < start_ || new_pos >= start_ + std::streampos(size_)) return -1;
+			if(new_pos < start_ || new_pos >= start_ + std::streampos(size_)){
+				return -1;
+			}
 
 			return new_pos;
 		}
 
-		virtual std::streampos seekpos(std::streampos pos, std::ios_base::openmode which = std::ios_base::in | std::ios_base::out)override{
+		virtual std::streampos seekpos(
+			std::streampos pos,
+			std::ios_base::openmode which =
+				std::ios_base::in | std::ios_base::out
+		)override{
 			auto new_pos = buffer_->pubseekpos(start_ + pos, which);
 
-			if(new_pos < start_ || new_pos >= start_ + std::streampos(size_)) return -1;
+			if(new_pos < start_ || new_pos >= start_ + std::streampos(size_)){
+				return -1;
+			}
 
 			return new_pos;
 		}
@@ -81,11 +103,17 @@ namespace disposer_module{
 			return buffer_->sbumpc();
 		}
 
-		virtual std::streamsize xsgetn(char_type* s, std::streamsize count)override{
+		virtual std::streamsize xsgetn(
+			char_type* s,
+			std::streamsize count
+		)override{
 			return buffer_->sgetn(s, count);
 		}
 
-		virtual std::streamsize xsputn(char_type const* s, std::streamsize count)override{
+		virtual std::streamsize xsputn(
+			char_type const* s,
+			std::streamsize count
+		)override{
 			return buffer_->sputn(s, count);
 		}
 

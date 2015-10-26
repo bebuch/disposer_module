@@ -19,7 +19,10 @@ namespace disposer_module{
 
 
 	template < typename charT, typename traits, typename T, std::size_t N >
-	std::basic_ostream< charT, traits >& operator<<(std::basic_ostream< charT, traits >& os, std::array< T, N > const& data){
+	std::basic_ostream< charT, traits >& operator<<(
+		std::basic_ostream< charT, traits >& os,
+		std::array< T, N > const& data
+	){
 		os << '{';
 
 		if(N >= 1){
@@ -34,7 +37,10 @@ namespace disposer_module{
 
 
 	template < typename charT, typename traits, typename T, std::size_t N >
-	std::basic_istream< charT, traits >& operator>>(std::basic_istream< charT, traits >& is, std::array< T, N >& data){
+	std::basic_istream< charT, traits >& operator>>(
+		std::basic_istream< charT, traits >& is,
+		std::array< T, N >& data
+	){
 		if(!io::equal(is, '{')) return is;
 
 		std::array< T, N > tmp;

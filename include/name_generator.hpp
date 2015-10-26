@@ -60,12 +60,17 @@ namespace disposer_module{
 			variable
 		)
 
-		inline std::vector< boost::variant< std::string, std::size_t > > parse_pattern(std::string const& pattern, std::vector< std::string > const& variables){
+		inline std::vector< boost::variant< std::string, std::size_t > >
+		parse_pattern(
+			std::string const& pattern,
+			std::vector< std::string > const& variables
+		){
 			auto iter = pattern.begin();
 			auto end = pattern.end();
 			x3::ascii::space_type space;
 
-			std::vector< boost::variant< std::string, variable_string > > parts;
+			std::vector< boost::variant< std::string, variable_string > >
+				parts;
 
 			bool match = phrase_parse(iter, end, x3::no_skip[
 				*(string | variable)
@@ -75,18 +80,33 @@ namespace disposer_module{
 				throw std::runtime_error("Syntax error");
 			}
 
-			struct visitor: boost::static_visitor< boost::variant< std::string, std::size_t > >{
-				visitor(std::vector< std::string > const& variables): variables(variables) {}
+			struct visitor:
+				boost::static_visitor<
+					boost::variant< std::string, std::size_t >
+				>
+			{
+				visitor(std::vector< std::string > const& variables):
+					variables(variables) {}
 
 				std::vector< std::string > const& variables;
 
-				boost::variant< std::string, std::size_t > operator()(std::string const& v){
+				boost::variant< std::string, std::size_t >
+				operator()(std::string const& v){
 					return v;
 				}
 
-				boost::variant< std::string, std::size_t > operator()(variable_string const& v){
-					auto pos = static_cast< std::size_t >(std::find(variables.begin(), variables.end(), v) - variables.begin());
-					if(pos >= variables.size()) throw std::runtime_error("Unknown variable '" + v + "'");
+				boost::variant< std::string, std::size_t >
+				operator()(variable_string const& v){
+					auto pos = static_cast< std::size_t >(std::find(
+							variables.begin(), variables.end(), v
+						) - variables.begin());
+
+					if(pos >= variables.size()){
+						throw std::runtime_error(
+							"Unknown variable '" + v + "'"
+						);
+					}
+
 					return pos;
 				}
 			} v{variables};
@@ -109,9 +129,14 @@ namespace disposer_module{
 	public:
 		name_generator(
 			std::string const& pattern,
-			std::pair< std::string, std::function< std::string(T const&) > >&& ... variables
+			std::pair<
+				std::string,
+				std::function< std::string(T const&) >
+			>&& ... variables
 		):
-			pattern_(impl::name_generator::parse_pattern(pattern, {std::move(variables.first) ...})),
+			pattern_(impl::name_generator::parse_pattern(pattern, {
+				std::move(variables.first) ...
+			})),
 			functions_{std::move(variables.second) ...}
 			{}
 
@@ -147,7 +172,8 @@ namespace disposer_module{
 		};
 
 		template < std::size_t ... I>
-		std::string get(std::index_sequence< I ... >, T const& ... values)const{
+		std::string
+		get(std::index_sequence< I ... >, T const& ... values)const{
 			visitor v{
 				std::get< I >(functions_)(values) ...
 			};
@@ -211,10 +237,14 @@ namespace disposer_module{
 		String&& pattern,
 		std::pair< T, U >&& ... variables
 	){
-		return name_generator< argument_t< U > ... >(std::forward< String >(pattern), std::pair< std::string, std::function< std::string(argument_t< U > const&) > >(
-			std::move(variables.first),
-			std::move(variables.second)
-		) ...);
+		return name_generator< argument_t< U > ... >(
+			std::forward< String >(pattern),
+			std::pair< std::string, std::function<
+				std::string(argument_t< U > const&)
+			> >(
+				std::move(variables.first),
+				std::move(variables.second)
+			) ...);
 	}
 
 	template < typename String, typename ... T, typename ... U >
@@ -223,17 +253,26 @@ namespace disposer_module{
 		std::array< bool, sizeof...(T) > const& must_have,
 		std::pair< T, U >&& ... variables
 	){
-		auto result = name_generator< argument_t< U > ... >(pattern, std::pair< std::string, std::function< std::string(argument_t< U > const&) > >(
-			variables.first,
-			std::move(variables.second)
-		) ...);
+		auto result = name_generator< argument_t< U > ... >(
+			pattern,
+			std::pair< std::string, std::function<
+				std::string(argument_t< U > const&)
+			> >(
+				variables.first,
+				std::move(variables.second)
+			) ...);
 
-		std::array< std::string, sizeof...(T) > const variable{{ std::move(variables.first) ... }};
+		std::array< std::string, sizeof...(T) > const variable{{
+			std::move(variables.first) ...
+		}};
 
 		auto const use_count = result.use_count();
 		for(std::size_t i = 0; i < sizeof...(T); ++i){
 			if(must_have[i] && use_count[i] == 0){
-				throw std::runtime_error("Variable '" + variable[i] + "' must be used in " + std::string(pattern));
+				throw std::runtime_error(
+					"Variable '" + variable[i] + "' must be used in " +
+					std::string(pattern)
+				);
 			}
 		}
 

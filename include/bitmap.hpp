@@ -36,22 +36,28 @@ namespace disposer_module{
 		using size_type = disposer_module::size< std::size_t >;
 
 		/// \brief Type of a iterator for data
-		using iterator = typename std::vector< value_type >::iterator;
+		using iterator =
+			typename std::vector< value_type >::iterator;
 
 		/// \brief Type of a iterator for const data
-		using const_iterator = typename std::vector< value_type >::const_iterator;
+		using const_iterator =
+			typename std::vector< value_type >::const_iterator;
 
 		/// \brief Type of a reverse iterator for data
-		using reverse_iterator = typename std::vector< value_type >::reverse_iterator;
+		using reverse_iterator =
+			typename std::vector< value_type >::reverse_iterator;
 
 		/// \brief Type of a reverse iterator for const data
-		using const_reverse_iterator = typename std::vector< value_type >::const_reverse_iterator;
+		using const_reverse_iterator =
+			typename std::vector< value_type >::const_reverse_iterator;
 
 		/// \brief Type of a reference to data
-		using reference = typename std::vector< value_type >::reference;
+		using reference =
+			typename std::vector< value_type >::reference;
 
 		/// \brief Type of a const reference to data
-		using const_reference = typename std::vector< value_type >::const_reference;
+		using const_reference =
+			typename std::vector< value_type >::const_reference;
 
 
 
@@ -64,7 +70,9 @@ namespace disposer_module{
 		/// \brief Constructs a bitmap by moving the data of another one
 		bitmap(bitmap&&) = default;
 
-		/// \brief Constructs a bitmap on position (0, 0), with size size.width and size.height, initialiese all values with value
+		/// \brief Constructs a bitmap on position (0, 0), with size size.width
+		///        and size.height, initialiese all values with value
+		///
 		/// \throw std::out_of_range
 		bitmap(size_type const& size, value_type const& value = value_type()):
 			size_(size),
@@ -73,10 +81,12 @@ namespace disposer_module{
 			throw_if_size_is_negative(size_);
 		}
 
-		/// \brief Constructs a bitmap on position (0, 0), with size size.width and size.height, initialiese all values with value
+		/// \brief Constructs a bitmap on position (0, 0), with size size.width
+		///        and size.height, initialiese all values with value
+		///
 		/// \throw std::out_of_range
 		template < typename InputIterator >
-		bitmap(size_type const& size, InputIterator first, InputIterator last) :
+		bitmap(size_type const& size, InputIterator first, InputIterator last):
 			size_(size),
 			data_(first, last)
 		{
@@ -84,7 +94,8 @@ namespace disposer_module{
 			if (data_.size() != size_.point_count()){
 				throw std::logic_error(
 					"tools::bitmap constructor size (" +
-					std::to_string(size_.width()) + "x" + std::to_string(size_.height()) +
+					std::to_string(size_.width()) + "x" +
+					std::to_string(size_.height()) +
 					") and iterator range (" +
 					std::to_string(data_.size()) +
 					") are incompatible"
@@ -92,9 +103,15 @@ namespace disposer_module{
 			}
 		}
 
-		/// \brief Constructs a bitmap on position (0, 0), with size width and height, initialiese all values with value
+		/// \brief Constructs a bitmap on position (0, 0), with size width and
+		///        height, initialiese all values with value
+		///
 		/// \throw std::out_of_range
-		bitmap(std::size_t width, std::size_t height, value_type const& value = value_type()):
+		bitmap(
+			std::size_t width,
+			std::size_t height,
+			value_type const& value = value_type()
+		):
 			size_(width, height),
 			data_(size_.point_count(), value)
 		{
@@ -172,14 +189,23 @@ namespace disposer_module{
 
 
 		/// \brief Resize the data field
+		///
 		/// \attention All pointers and iterators to the data become invalid
-		void resize(std::size_t width, std::size_t height, value_type const& value = value_type()){
+		void resize(
+			std::size_t width,
+			std::size_t height,
+			value_type const& value = value_type()
+		){
 			resize(size_type(width, height), value);
 		}
 
 		/// \brief Resize the data field
+		///
 		/// \attention All pointers and iterators to the data become invalid
-		void resize(size_type const& size, value_type const& value = value_type()){
+		void resize(
+			size_type const& size,
+			value_type const& value = value_type()
+		){
 			throw_if_size_is_negative(size);
 			data_.resize(size.point_count(), value);
 			size_ = size;
@@ -209,7 +235,9 @@ namespace disposer_module{
 
 		/// \brief Get a pointer to data for direct manipulation
 		value_type* data(){
-			return const_cast< value_type* >(static_cast< const bitmap< value_type >& >(*this).data());
+			return const_cast< value_type* >(
+				static_cast< const bitmap< value_type >& >(*this).data()
+			);
 		}
 
 		/// \brief Get a pointer to constant data for direct read
@@ -285,7 +313,10 @@ namespace disposer_module{
 			#ifdef DEBUG
 				if(!is_point_in_bitmap(*this, point)){
 					std::ostringstream os;
-					os << "tools::bitmap: std::out_of_range: point(x = " << point.x() << ", y = " << point.y() << ") is outside the bitmap (width = " << width() << ", height = " << height() << ")";
+					os << "tools::bitmap: std::out_of_range: point(x = "
+						<< point.x() << ", y = " << point.y()
+						<< ") is outside the bitmap (width = " << width()
+						<< ", height = " << height() << ")";
 					throw std::out_of_range(os.str());
 				}
 			#endif
@@ -296,7 +327,9 @@ namespace disposer_module{
 		static void throw_if_size_is_negative(size_type const& size){
 			if(!size.is_positive()){
 				std::ostringstream os;
-				os << "tools::bitmap: std::out_of_range: bitmap obtain negative size{" << size.width() << ", " << size.height() << "}";
+				os << "tools::bitmap: std::out_of_range: bitmap obtain "
+					<< "negative size{" << size.width() << ", " 
+					<< size.height() << "}";
 				throw std::out_of_range(os.str());
 			}
 		}
@@ -305,7 +338,10 @@ namespace disposer_module{
 
 	template < typename ValueType >
 	inline
-	bool is_point_in_bitmap(bitmap< ValueType > const& image, typename bitmap< ValueType >::point_type const& point){
+	bool is_point_in_bitmap(
+		bitmap< ValueType > const& image,
+		typename bitmap< ValueType >::point_type const& point
+	){
 		if(
 			point.x() <  0              ||
 			point.x() >= image.width()  ||

@@ -22,20 +22,29 @@ namespace disposer_module{
 		};
 	};
 
-	/// \brief Use a \ref simple_bitmap_transform on a bitmap, the rotation will be first executet
+	/// \brief Use a \ref simple_bitmap_transform on a bitmap, the rotation
+	/// will be first executet
 	template < typename value_type_parameter, typename value_type_result >
 	inline bitmap< value_type_result > bitmap_transform(
 		bitmap< value_type_parameter > const& image,
 		simple_bitmap_transform::value transform,
 		std::function< value_type_result(value_type_parameter) > converter
 	){
-		bool rotation = (transform & simple_bitmap_transform::rigth_rotate) != 0;
-		bool mirror_h = (transform & simple_bitmap_transform::mirror_horizontal) != 0;
-		bool mirror_v = (transform & simple_bitmap_transform::mirror_vectical) != 0;
+		using size_type = typename bitmap< value_type_result >::size_type;
+
+		bool rotation =
+			(transform & simple_bitmap_transform::rigth_rotate) != 0;
+
+		bool mirror_h =
+			(transform & simple_bitmap_transform::mirror_horizontal) != 0;
+
+		bool mirror_v =
+			(transform & simple_bitmap_transform::mirror_vectical) != 0;
+
 
 		bitmap< value_type_result > result(
 			rotation ?
-			typename bitmap< value_type_result >::size_type(image.height(), image.width()) :
+			size_type(image.height(), image.width()) :
 			image.size()
 		);
 

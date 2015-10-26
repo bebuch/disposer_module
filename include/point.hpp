@@ -22,58 +22,58 @@ namespace disposer_module{
 
 
 		/// \brief The x
-		value_type& x(){
+		constexpr value_type& x(){
 			return x_;
 		}
 
 		/// \brief The y
-		value_type& y(){
+		constexpr value_type& y(){
 			return y_;
 		}
 
 
 		/// \brief The x
-		value_type const& x()const{
+		constexpr value_type const& x()const{
 			return x_;
 		}
 
 		/// \brief The y
-		value_type const& y()const{
+		constexpr value_type const& y()const{
 			return y_;
 		}
 
 
 		/// \brief Set x and y
-		void set(value_type const& x, value_type const& y){
+		constexpr void set(value_type const& x, value_type const& y){
 			x_ = x;
 			y_ = y;
 		}
 
 
 		/// \brief Constructs a point by (0, 0)
-		point() = default;
+		constexpr point() = default;
 
 		/// \brief Copy constructor
-		point(point const&) = default;
+		constexpr point(point const&) = default;
 
 		/// \brief Move constructor
-		point(point&&) = default;
+		constexpr point(point&&) = default;
 
 		/// \brief Constructs a point by (x, y)
-		point(value_type const& x, value_type const& y):
+		constexpr point(value_type const& x, value_type const& y):
 			x_(x), y_(y)
 			{}
 
 
 		/// \brief Copy assignment
-		point& operator=(point const&) = default;
+		constexpr point& operator=(point const&) = default;
 
 		/// \brief Move assignment
-		point& operator=(point&&) = default;
+		constexpr point& operator=(point&&) = default;
 
 
 		/// \brief Get true, if width and height are positiv
-		bool is_positive()const{
+		constexpr bool is_positive()const{
 			return x() >= value_type() && y() >= value_type();
 		}
 

@@ -23,63 +23,63 @@ namespace disposer_module{
 
 
 		/// \brief The width
-		value_type& width(){
+		constexpr value_type& width(){
 			return width_;
 		}
 
 		/// \brief The height
-		value_type& height(){
+		constexpr value_type& height(){
 			return height_;
 		}
 
 
 		/// \brief The width
-		value_type const& width()const{
+		constexpr value_type const& width()const{
 			return width_;
 		}
 
 		/// \brief The height
-		value_type const& height()const{
+		constexpr value_type const& height()const{
 			return height_;
 		}
 
 
 		/// \brief Set width and height
-		void set(value_type const& width, value_type const& height){
+		constexpr void set(value_type const& width, value_type const& height){
 			width_ = width;
 			height_ = height;
 		}
 
 
 		/// \brief Constructs a size with width 0 and height 0
-		size() = default;
+		constexpr size() = default;
 
 		/// \brief Constructs a copy
-		size(size const&) = default;
+		constexpr size(size const&) = default;
 
 		/// \brief Constructs a copy
-		size(size&&) = default;
+		constexpr size(size&&) = default;
 
 		/// \brief Constructs a size width width and height
-		size(value_type const& width, value_type const& height):
+		constexpr size(value_type const& width, value_type const& height):
 			width_(width), height_(height) {}
 
 
 		/// \brief Copy assignment
-		size& operator=(size const&) = default;
+		constexpr size& operator=(size const&) = default;
 
 		/// \brief Move assignment
-		size& operator=(size&&) = default;
+		constexpr size& operator=(size&&) = default;
 
 
 		/// \brief Get true, if width and height are positiv
-		bool is_positive()const{
+		constexpr bool is_positive()const{
 			return width() >= value_type() && height() >= value_type();
 		}
 
 
 		/// \brief Get width * height
-		value_type const point_count()const{
+		constexpr value_type const point_count()const{
 			return width() * height();
 		}
 
@@ -89,13 +89,110 @@ namespace disposer_module{
 	};
 
 	template < typename ValueType >
-	bool operator==(size< ValueType > const& a, size< ValueType > const& b){
+	constexpr bool operator==(
+		size< ValueType > const& a,
+		size< ValueType > const& b
+	){
 		return a.width() == b.width() && a.height() == b.height();
 	}
 
 	template < typename ValueType >
-	bool operator!=(size< ValueType > const& a, size< ValueType > const& b){
+	constexpr bool operator!=(
+		size< ValueType > const& a,
+		size< ValueType > const& b
+	){
 		return a != b;
+	}
+
+
+	template < typename ValueType >
+	constexpr size< ValueType >& operator+=(
+		size< ValueType >& a,
+		size< ValueType > const& b
+	){
+		a.width()  += b.width();
+		a.height() += b.height();
+		return a;
+	}
+
+	template < typename ValueType >
+	constexpr size< ValueType >& operator-=(
+		size< ValueType >& a,
+		size< ValueType > const& b
+	){
+		a.width()  -= b.width();
+		a.height() -= b.height();
+		return a;
+	}
+
+	template < typename ValueType >
+	constexpr size< ValueType >& operator*=(
+		size< ValueType >& a,
+		size< ValueType > const& b
+	){
+		a.width()  *= b.width();
+		a.height() *= b.height();
+		return a;
+	}
+
+	template < typename ValueType >
+	constexpr size< ValueType >& operator/=(
+		size< ValueType >& a,
+		size< ValueType > const& b
+	){
+		a.width()  /= b.width();
+		a.height() /= b.height();
+		return a;
+	}
+
+	template < typename ValueType >
+	constexpr size< ValueType >& operator%=(
+		size< ValueType >& a,
+		size< ValueType > const& b
+	){
+		a.width()  %= b.width();
+		a.height() %= b.height();
+		return a;
+	}
+
+	template < typename ValueType >
+	constexpr size< ValueType > operator+(
+		size< ValueType > a,
+		size< ValueType > const& b
+	){
+		return a += b;
+	}
+
+	template < typename ValueType >
+	constexpr size< ValueType > operator-(
+		size< ValueType > a,
+		size< ValueType > const& b
+	){
+		return a -= b;
+	}
+
+	template < typename ValueType >
+	constexpr size< ValueType > operator*(
+		size< ValueType > a,
+		size< ValueType > const& b
+	){
+		return a *= b;
+	}
+
+	template < typename ValueType >
+	constexpr size< ValueType > operator/(
+		size< ValueType > a,
+		size< ValueType > const& b
+	){
+		return a /= b;
+	}
+
+	template < typename ValueType >
+	constexpr size< ValueType > operator%(
+		size< ValueType > a,
+		size< ValueType > const& b
+	){
+		return a %= b;
 	}
 
 

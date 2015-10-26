@@ -20,6 +20,7 @@ namespace disposer_module{ namespace big{
 	public:
 		/// \brief Constructs an object of class big_error
 		explicit big_error(std::string const& what_arg);
+
 		/// \brief Constructs an object of class big_error
 		explicit big_error(char const* what_arg);
 	};

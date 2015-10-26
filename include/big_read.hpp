@@ -29,22 +29,27 @@ namespace disposer_module{ namespace big{
 	};
 
 	/// \brief Loads a big file by a given filename
+	///
 	/// \throw disposer_module::big::big_error
 	template < typename BitmapType >
 	void read(BitmapType& bitmap, std::string const& filename);
 
 	/// \brief Loads a big file from a std::istream
+	///
 	/// \throw disposer_module::big::big_error
 	template < typename BitmapType >
 	void read(BitmapType& bitmap, std::istream& is);
 
 	/// \brief Loads the type-information of a big file from a std::istream
+	///
 	/// \throw disposer_module::big::big_error
 	header read_header(std::istream& is);
 
 	/// \brief Loads the data of a big file from a std::istream
+	///
 	/// First you must use the read_header-function to read the header and
 	/// resize the bitmap
+	///
 	/// \throw disposer_module::big::big_error
 	template < typename BitmapType >
 	void read_data(BitmapType& bitmap, std::istream& is);

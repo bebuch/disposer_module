@@ -21,11 +21,13 @@ namespace disposer_module{ namespace big{
 
 
 	/// \brief Saves a image or quality picture by a given filename
+	///
 	/// \throw disposer_module::big::big_error
 	template < typename BitmapType >
 	void write(BitmapType const& bitmap, std::string const& filename);
 
 	/// \brief Writes a image or quality picture to a std::ostream
+	///
 	/// \throw disposer_module::big::big_error
 	template < typename BitmapType >
 	void write(BitmapType const& bitmap, std::ostream& os);

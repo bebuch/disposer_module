@@ -31,13 +31,16 @@ namespace disposer_module{ namespace big{
 	void write(BitmapType const& bitmap, std::ostream& os);
 
 
-	//=============================================================================
+	//=========================================================================
 	// Implementation
-	//=============================================================================
+	//=========================================================================
 
 	template < typename BitmapType >
 	void write(BitmapType const& bitmap, std::string const& filename){
-		std::ofstream os(filename.c_str(), std::ios_base::out | std::ios_base::binary);
+		std::ofstream os(
+			filename.c_str(),
+			std::ios_base::out | std::ios_base::binary
+		);
 
 		if(!os.is_open()){
 			throw big_error("Can't open file: " + filename);
@@ -52,7 +55,9 @@ namespace disposer_module{ namespace big{
 
 	template < typename BitmapType >
 	void write(BitmapType const& bitmap, std::ostream& os){
-		using value_type = std::remove_cv_t< std::remove_pointer_t< decltype(bitmap.data()) > >;
+		using value_type = std::remove_cv_t< std::remove_pointer_t<
+			decltype(bitmap.data())
+		> >;
 
 		// big header informations
 		std::uint16_t width  = static_cast< std::uint16_t >(bitmap.width());

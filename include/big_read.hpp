@@ -43,19 +43,23 @@ namespace disposer_module{ namespace big{
 	header read_header(std::istream& is);
 
 	/// \brief Loads the data of a big file from a std::istream
-	/// First you must use the read_header-function to read the header and resize the bitmap
+	/// First you must use the read_header-function to read the header and
+	/// resize the bitmap
 	/// \throw disposer_module::big::big_error
 	template < typename BitmapType >
 	void read_data(BitmapType& bitmap, std::istream& is);
 
 
-	//=============================================================================
+	//=========================================================================
 	// Implementation
-	//=============================================================================
+	//=========================================================================
 
 	template < typename BitmapType >
 	void read(BitmapType& bitmap, std::string const& filename){
-		std::ifstream is(filename.c_str(), std::ios_base::in | std::ios_base::binary);
+		std::ifstream is(
+			filename.c_str(),
+			std::ios_base::in | std::ios_base::binary
+		);
 
 		if(!is.is_open()){
 			throw big_error("Can't open file: " + filename);
@@ -70,7 +74,9 @@ namespace disposer_module{ namespace big{
 
 	template < typename BitmapType >
 	void read(BitmapType& bitmap, std::istream& is){
-		using value_type = std::remove_cv_t< std::remove_pointer_t< decltype(bitmap.data()) > >;
+		using value_type = std::remove_cv_t< std::remove_pointer_t<
+			decltype(bitmap.data())
+		> >;
 
 		header header = read_header(is);
 
@@ -106,7 +112,9 @@ namespace disposer_module{ namespace big{
 
 	template < typename BitmapType >
 	void read_data(BitmapType& bitmap, std::istream& is){
-		using value_type = std::remove_cv_t< std::remove_pointer_t< decltype(bitmap.data()) > >;
+		using value_type = std::remove_cv_t< std::remove_pointer_t<
+			decltype(bitmap.data())
+		> >;
 
 		is.read(
 			reinterpret_cast< char* >(bitmap.data()),

@@ -17,10 +17,12 @@
 namespace disposer_module{ namespace big{
 
 
-	/// \brief It's a meta function, that get the numeric value for the type in a big file
+	/// \brief It's a meta function, that get the numeric value for the type
+	///        in a big file
 	template < typename T > struct type {
 		/// \brief Type in big files
-		static constexpr unsigned short value = sizeof(T) | (std::is_signed< T >::value ? 0x20 : 0x00);
+		static constexpr unsigned short value =
+			sizeof(T) | (std::is_signed< T >::value ? 0x20 : 0x00);
 	};
 
 	/// \brief The specialization for float big files

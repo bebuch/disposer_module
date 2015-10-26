@@ -30,9 +30,12 @@ namespace disposer_module{ namespace big{
 		typedef typename Container::value_type value_type;
 
 		Container result(image.size());
-		std::transform(image.begin(), image.end(), result.begin(), [](value_type value){
-			return value >= undef ? std::numeric_limits< value_type >::quiet_NaN() : value;
-		});
+		std::transform(image.begin(), image.end(), result.begin(),
+			[](value_type value){
+				return value >= undef ?
+					std::numeric_limits< value_type >::quiet_NaN() : value;
+			}
+		);
 
 		return std::move(result);
 	}
@@ -42,9 +45,11 @@ namespace disposer_module{ namespace big{
 		typedef typename Container::value_type value_type;
 
 		Container result(image.size());
-		std::transform(image.begin(), image.end(), result.begin(), [](value_type value){
-			return isnan(value) ? undef : value;
-		});
+		std::transform(image.begin(), image.end(), result.begin(),
+			[](value_type value){
+				return isnan(value) ? undef : value;
+			}
+		);
 
 		return std::move(result);
 	}

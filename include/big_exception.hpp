@@ -9,40 +9,15 @@
 #ifndef _disposer_module__big_exception__hpp_INCLUDED_
 #define _disposer_module__big_exception__hpp_INCLUDED_
 
-#include <string>
 #include <stdexcept>
 
 namespace disposer_module{ namespace big{
 
 
 	/// \brief Exception class that will throws by load or save big files
-	class big_error: public std::runtime_error{
-	public:
-		/// \brief Constructs an object of class big_error
-		explicit big_error(std::string const& what_arg);
-
-		/// \brief Constructs an object of class big_error
-		explicit big_error(char const* what_arg);
+        struct big_error: std::runtime_error{
+            using std::runtime_error::runtime_error;
 	};
-
-
-	//=========================================================================
-	// Implementation
-	//=========================================================================
-
-	inline
-	big_error::big_error(
-		std::string const& what_arg
-	):
-		std::runtime_error(what_arg)
-		{}
-
-	inline
-	big_error::big_error(
-		char const* what_arg
-	):
-		std::runtime_error(what_arg)
-		{}
 
 
 } }

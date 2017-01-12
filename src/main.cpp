@@ -21,13 +21,13 @@
 int main(){
 	namespace fs = boost::filesystem;
 
-	return ::disposer::exception_catching_log([](disposer_module::log::info& os){
-		os << "program";
-	}, []{
-		std::list< boost::dll::shared_library > modules;
+	// modules must be deleted last, to access the destructors in shared libs
+	std::list< boost::dll::shared_library > modules;
+	::disposer::disposer disposer;
 
-		::disposer::disposer disposer;
-
+	if(!::disposer::exception_catching_log([](
+		disposer_module::log::info& os){ os << "loading modules"; },
+	[&disposer, &modules]{
 		auto program_dir = boost::dll::program_location().remove_filename();
 		std::cout << "Search for DLLs in '" << program_dir << "'" << std::endl;
 
@@ -48,7 +48,11 @@ int main(){
 				>("init")(disposer.adder());
 			});
 		}
+	})) return 1;
 
+	return ::disposer::exception_catching_log(
+		[](disposer_module::log::info& os){ os << "trigger chains"; },
+	[&disposer]{
 		disposer.load("plan.ini");
 
 		for(auto& chain: disposer.chains()){

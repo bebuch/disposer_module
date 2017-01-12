@@ -151,7 +151,7 @@ namespace disposer_module{ namespace big_loader{
 
 		if(param.type == std::array< bool, type_list::size >{{false}}){
 			throw std::logic_error(
-				data.type_name + 
+				data.type_name +
 				": No type active (set at least one of 'type_int8', 'type_uint8', 'type_int16', 'type_uint16', 'type_int32', 'type_uint32', 'type_int64', 'type_uint64', 'type_float', 'type_double', 'type_long_double' to true)"
 			);
 		}
@@ -400,6 +400,11 @@ namespace disposer_module{ namespace big_loader{
 			auto data_type = [this, &loader](){
 				auto filename = loader.filename(param.camera_start, param.sequence_start);
 				std::ifstream is(filename);
+
+				if(!is.is_open()){
+						throw big::big_error("Can't open file: " + filename);
+				}
+
 				return get_type(is, filename);
 			}();
 

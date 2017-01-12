@@ -108,9 +108,9 @@ namespace disposer_module{ namespace big{
 		is.read(reinterpret_cast< char* >(&header.type),   2);
 		is.read(reinterpret_cast< char* >(&header.placeholder), 4);
 
-		if(!is.good()){
-			throw big_error("Can't read big header");
-		}
+                if(!is.good()){
+                        throw big_error("Can't read big header");
+                }
 
 		return header;
 	}

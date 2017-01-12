@@ -11,7 +11,8 @@
 
 #include "isubstream.hpp"
 #include "make_string.hpp"
-#include "mask_non_print.hpp"
+
+#include <disposer/mask_non_print.hpp>
 
 #include <functional>
 #include <iostream>
@@ -226,7 +227,7 @@ namespace disposer_module{
 			if(magic != "ustar"){
 				throw std::runtime_error(
 					"Tar: loaded file without magic 'ustar', magic is: '" +
-					mask_non_print(magic) + "'"
+					disposer::mask_non_print(magic) + "'"
 				);
 			}
 

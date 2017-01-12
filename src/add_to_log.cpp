@@ -7,7 +7,6 @@
 // file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 //-----------------------------------------------------------------------------
 #include "log.hpp"
-#include "mask_non_print.hpp"
 
 #include <disposer/module.hpp>
 
@@ -32,7 +31,7 @@ namespace disposer_module{ namespace add_to_log{
 				disposer::log([this, id, &data](log::info& os){
 					os << type << ": id=" << id << " chain '" << chain
 						<< "' module '" << name << "' data='"
-						<< mask_non_print(data) << "'";
+						<< data << "'";
 				});
 			}
 		}

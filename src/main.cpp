@@ -21,7 +21,9 @@
 int main(){
 	namespace fs = boost::filesystem;
 
-	try{
+	return ::disposer::exception_catching_log([](disposer_module::log::info& os){
+		os << "program";
+	}, []{
 		std::list< boost::dll::shared_library > modules;
 
 		::disposer::disposer disposer;
@@ -52,11 +54,5 @@ int main(){
 		for(auto& chain: disposer.chains()){
 			disposer.trigger(chain);
 		}
-	}catch(std::exception const& e){
-		std::cerr << "Exception: ["
-			<< boost::typeindex::type_id_runtime(e).pretty_name() << "] "
-			<< e.what() << std::endl;
-	}catch(...){
-		std::cerr << "Unknown exception" << std::endl;
-	}
+	});
 }

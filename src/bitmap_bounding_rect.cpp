@@ -28,7 +28,7 @@ namespace disposer_module{ namespace bitmap_bounding_rect{
 		disposer::container_input< bitmap, float, double, long double >
 			image{"image"};
 
-		disposer::output< rect< std::size_t > > rect{"rect"};
+		disposer::output< disposer_module::rect< std::size_t > > rect{"rect"};
 
 
 		void trigger()override;

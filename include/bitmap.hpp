@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------------
-// Copyright (c) 2009-2015 Benjamin Buch
+// Copyright (c) 2009-2017 Benjamin Buch
 //
 // https://github.com/bebuch/disposer_module
 //
@@ -328,7 +328,7 @@ namespace disposer_module{
 			if(!size.is_positive()){
 				std::ostringstream os;
 				os << "tools::bitmap: std::out_of_range: bitmap obtain "
-					<< "negative size{" << size.width() << ", " 
+					<< "negative size{" << size.width() << ", "
 					<< size.height() << "}";
 				throw std::out_of_range(os.str());
 			}

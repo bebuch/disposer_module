@@ -1,6 +1,7 @@
 import os ;
 local boost = [ os.environ BOOST ] ;
 local disposer = [ os.environ DISPOSER ] ;
+local big = [ os.environ BIG ] ;
 
 use-project /boost
 	: $(boost)
@@ -56,12 +57,16 @@ lib big_loader
 	:
 	big_loader.cpp
 	/disposer//disposer
+	:
+	<include>$(big)/cpp/include
 	;
 
 lib big_saver
 	:
 	big_saver.cpp
 	/disposer//disposer
+	:
+	<include>$(big)/cpp/include
 	;
 
 lib raster

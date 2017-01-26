@@ -106,7 +106,7 @@ namespace disposer_module{ namespace big_loader{
 		std::size_t get_type(std::istream& is, std::string const& filename)const;
 
 
-		void trigger()override;
+		void exec()override;
 
 
 		void input_ready()override;
@@ -336,7 +336,7 @@ namespace disposer_module{ namespace big_loader{
 	}
 
 
-	void module::trigger(){
+	void module::exec(){
 		auto used_id = param.fixed_id ? *param.fixed_id : id;
 
 		auto call_worker = [this](auto& loader, std::size_t data_type){

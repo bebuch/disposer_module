@@ -90,7 +90,7 @@ namespace disposer_module{ namespace subbitmap{
 		} signals;
 
 
-		void trigger()override;
+		void exec()override;
 
 
 		void input_ready()override{
@@ -233,7 +233,7 @@ namespace disposer_module{ namespace subbitmap{
 	};
 
 
-	void module::trigger(){
+	void module::exec(){
 		for(auto const& pair: slots.sequence.get()){
 			sequence_visitor visitor(*this, pair.first);
 			boost::apply_visitor(visitor, pair.second);

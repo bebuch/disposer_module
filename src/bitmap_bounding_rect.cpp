@@ -31,7 +31,7 @@ namespace disposer_module{ namespace bitmap_bounding_rect{
 		disposer::output< disposer_module::rect< std::size_t > > rect{"rect"};
 
 
-		void trigger()override;
+		void exec()override;
 	};
 
 	disposer::module_ptr make_module(disposer::make_data& data){
@@ -115,7 +115,7 @@ namespace disposer_module{ namespace bitmap_bounding_rect{
 	};
 
 
-	void module::trigger(){
+	void module::exec(){
 		for(auto const& pair: image.get()){
 // 			auto id = pair.first;
 

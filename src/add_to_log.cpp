@@ -23,7 +23,7 @@ namespace disposer_module{ namespace add_to_log{
 
 		disposer::input< std::string > string{"string"};
 
-		virtual void trigger()override{
+		virtual void exec()override{
 			for(auto& pair: string.get()){
 				auto id = pair.first;
 				auto& data = pair.second.data();

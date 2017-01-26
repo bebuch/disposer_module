@@ -51,7 +51,7 @@ namespace disposer_module{ namespace raster{
 		} signals;
 
 
-		void trigger()override;
+		void exec()override;
 
 
 		parameter const param;
@@ -94,7 +94,7 @@ namespace disposer_module{ namespace raster{
 
 
 	template < typename T >
-	void module< T >::trigger(){
+	void module< T >::exec(){
 		for(auto const& pair: slots.sequence.get()){
 // 			auto id = pair.first;
 			auto& data = pair.second.data();

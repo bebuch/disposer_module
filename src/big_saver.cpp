@@ -107,16 +107,16 @@ namespace disposer_module{ namespace big_saver{
 
 
 		template < typename T >
-		void trigger_sequence(std::size_t id);
+		void exec_sequence(std::size_t id);
 
 		template < typename T >
-		void trigger_vector(std::size_t id);
+		void exec_vector(std::size_t id);
 
 		template < typename T >
-		void trigger_image(std::size_t id);
+		void exec_image(std::size_t id);
 
 
-		void trigger()override;
+		void exec()override;
 
 
 		parameter const param;
@@ -334,7 +334,7 @@ namespace disposer_module{ namespace big_saver{
 	};
 
 
-	void module::trigger(){
+	void module::exec(){
 		switch(param.input){
 			case input_t::sequence:{
 				for(auto const& pair: sequence.get()){

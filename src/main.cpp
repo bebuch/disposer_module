@@ -51,12 +51,12 @@ int main(){
 	})) return 1;
 
 	return ::disposer::exception_catching_log(
-		[](disposer_module::log::info& os){ os << "trigger chains"; },
+		[](disposer_module::log::info& os){ os << "exec chains"; },
 	[&disposer]{
 		disposer.load("plan.ini");
 
 		for(auto& chain: disposer.chains()){
-			disposer.trigger(chain);
+			disposer.exec(chain);
 		}
 	});
 }

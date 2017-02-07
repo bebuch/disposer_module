@@ -93,6 +93,12 @@ lib raster
 	/disposer//disposer
 	;
 
+lib demosaic
+	:
+	demosaic.cpp
+	/disposer//disposer
+	;
+
 lib bitmap_vector_join
 	:
 	bitmap_vector_join.cpp

@@ -76,6 +76,17 @@ lib camera_ximea
 	<linkflags>-lm3api
 	;
 
+lib show_image
+	:
+	show_image.cpp
+	/disposer//disposer
+	:
+	<linkflags>-L/usr/X11R6/lib
+	<linkflags>-lm
+	<linkflags>-lpthread
+	<linkflags>-lX11
+	;
+
 lib raster
 	:
 	raster.cpp

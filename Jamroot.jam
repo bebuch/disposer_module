@@ -52,7 +52,6 @@ exe disposer_module
 	/boost//filesystem
 	;
 
-
 lib big_loader
 	:
 	big_loader.cpp
@@ -67,6 +66,14 @@ lib big_saver
 	/disposer//disposer
 	:
 	<include>$(big)/cpp/include
+	;
+
+lib camera_ximea
+	:
+	camera_ximea.cpp
+	/disposer//disposer
+	:
+	<linkflags>-lm3api
 	;
 
 lib raster

@@ -18,8 +18,27 @@
 #include <iostream>
 
 
-int main(){
+int main(int argc, char** argv){
 	namespace fs = boost::filesystem;
+
+	bool exec_all = (argc == 1);
+	std::string trigger_chain;
+	std::size_t exec_count = 0;
+	if(!exec_all){
+		if(argc != 3){
+			std::cerr << argv[0] << " [chain exec_count]" << std::endl;
+			return 1;
+		}
+
+		trigger_chain = argv[1];
+		try{
+			exec_count = boost::lexical_cast< std::size_t >(argv[2]);
+		}catch(...){
+			std::cerr << argv[0] << " [chain exec_count]" << std::endl;
+			std::cerr << "exec_count parsing failed: " << argv[2] << std::endl;
+			return 1;
+		}
+	}
 
 	// modules must be deleted last, to access the destructors in shared libs
 	std::list< boost::dll::shared_library > modules;
@@ -52,11 +71,17 @@ int main(){
 
 	return ::disposer::exception_catching_log(
 		[](disposer_module::log::info& os){ os << "exec chains"; },
-	[&disposer]{
+	[&disposer, exec_all, &trigger_chain, exec_count]{
 		disposer.load("plan.ini");
 
-		for(auto& chain: disposer.chains()){
-			disposer.exec(chain);
+		if(exec_all){
+			for(auto& chain: disposer.chains()){
+				disposer.exec(chain);
+			}
+		}else{
+			for(std::size_t i = 0; i < exec_count; ++i){
+				disposer.exec(trigger_chain);
+			}
 		}
 	});
 }

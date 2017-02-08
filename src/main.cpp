@@ -69,7 +69,7 @@ int main(int argc, char** argv){
 		}
 	})) return 1;
 
-	return ::disposer::exception_catching_log(
+	return !::disposer::exception_catching_log(
 		[](disposer_module::log::info& os){ os << "exec chains"; },
 	[&disposer, exec_all, &trigger_chain, exec_count]{
 		disposer.load("plan.ini");

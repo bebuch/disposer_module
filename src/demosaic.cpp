@@ -72,6 +72,7 @@ namespace disposer_module{ namespace demosaic{
 
 
 		void exec()override;
+		void input_ready()override;
 
 
 		parameter const param;
@@ -150,6 +151,14 @@ namespace disposer_module{ namespace demosaic{
 			visitor visitor(*this, pair.first);
 			boost::apply_visitor(visitor, pair.second);
 		}
+	}
+
+	void module::input_ready(){
+		signals.image_vector.activate_types(
+			slots.image.active_types_transformed(
+				[](auto type){ return hana::type_c< std::vector< typename decltype(type)::type > >; }
+			)
+		);
 	}
 
 

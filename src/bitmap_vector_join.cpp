@@ -73,6 +73,7 @@ namespace disposer_module{ namespace bitmap_vector_join{
 
 
 		void exec()override;
+		void input_ready()override;
 
 
 		parameter const param;
@@ -116,7 +117,7 @@ namespace disposer_module{ namespace bitmap_vector_join{
 		std::size_t width =
 			std::min(ips, vectors.size()) * input_size.width();
 		std::size_t height =
-			((ips - 1) / vectors.size() + 1) * input_size.height();
+			((vectors.size() - 1) / ips + 1) * input_size.height();
 
 		bitmap< T > result(
 			width, height, std::get< T >(param.default_value)
@@ -169,6 +170,17 @@ namespace disposer_module{ namespace bitmap_vector_join{
 			boost::apply_visitor(visitor, pair.second);
 		}
 	}
+
+	void module::input_ready(){
+		signals.image.activate_types(
+			slots.image_vector.active_types_transformed(
+				[](auto type){
+					return hana::type_c< typename decltype(type)::type::value_type >;
+				}
+			)
+		);
+	}
+
 
 
 	void init(disposer::module_adder& add){

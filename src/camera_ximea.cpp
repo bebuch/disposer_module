@@ -220,35 +220,7 @@ namespace disposer_module{ namespace camera_ximea{
 	}
 
 
-	struct parameter{
-		bool list_cameras;
-	};
-
-
-	struct module: disposer::module_base{
-		module(disposer::make_data const& data, parameter&& param):
-			disposer::module_base(data, {image, info}),
-			param(std::move(param))
-			{}
-
-		using bitmap_type = bitmap< std::uint8_t >;
-
-		disposer::output< bitmap_type > image{"image"};
-
-		disposer::output< std::string > info{"info"};
-
-
-		void exec()override;
-		void input_ready()override;
-
-
-		std::string exec_id_list()const;
-
-
-		parameter const param;
-	};
-
-
+	struct module;
 	class ximea_cam{
 	public:
 		ximea_cam(module const& module, std::uint32_t id): ximea_cam(module){
@@ -265,15 +237,7 @@ namespace disposer_module{ namespace camera_ximea{
 			init();
 		}
 
-		~ximea_cam(){
-			try{
-				verify(xiCloseDevice(handle_));
-			}catch(std::exception const& e){
-				module_.log([&e](log::info& os){ os << e.what(); });
-			}catch(...){
-				module_.log([](log::info& os){ os << "unknown exception"; });
-			}
-		}
+		~ximea_cam();
 
 		void start_acquisition()const{
 			verify(xiStartAcquisition(handle_));
@@ -283,9 +247,22 @@ namespace disposer_module{ namespace camera_ximea{
 			verify(xiStopAcquisition(handle_));
 		}
 
-// 		bitmap< std::uint8_t > get_image()const{
-// 			xiGetImage
-// 		}
+		bitmap< std::uint8_t > get_image()const{
+			XI_IMG image{}; // {} makes the 0-initialization
+			image.size = sizeof(XI_IMG);
+			verify(xiGetImage(handle_, 2000, &image));
+
+			auto const data = (unsigned char*)image.bp;
+
+			bitmap< std::uint8_t > mosaic(image.width, image.height);
+			for(std::size_t y = 0; y < mosaic.height(); ++y){
+				for(std::size_t x = 0; x < mosaic.width(); ++x){
+					mosaic(x, y) = data[y * image.width + x];
+				}
+			}
+
+			return mosaic;
+		}
 
 		void set_param(std::string const& name, int value)const{
 			verify(xiSetParamInt(handle_, name.c_str(), value));
@@ -333,6 +310,57 @@ namespace disposer_module{ namespace camera_ximea{
 	};
 
 
+	struct parameter{
+		bool list_cameras;
+
+		std::size_t id;
+	};
+
+
+	struct module: disposer::module_base{
+		module(disposer::make_data const& data, parameter&& param):
+			disposer::module_base(data, {image, info}),
+			param(std::move(param))
+		{
+			if(param.list_cameras) return;
+			cam_.emplace(*this, 0);
+			cam_->set_param(XI_PRM_EXPOSURE, 10000);
+			cam_->start_acquisition();
+		}
+
+		~module(){
+			if(param.list_cameras) return;
+			cam_->stop_acquisition();
+		}
+
+		using bitmap_type = bitmap< std::uint8_t >;
+
+		disposer::output< bitmap_type > image{"image"};
+
+		disposer::output< std::string > info{"info"};
+
+
+		void exec()override;
+		void input_ready()override;
+
+
+		std::string exec_id_list()const;
+
+
+		boost::optional< ximea_cam > cam_;
+
+		parameter const param;
+	};
+
+	ximea_cam::~ximea_cam(){
+		try{
+			verify(xiCloseDevice(handle_));
+		}catch(std::exception const& e){
+			module_.log([&e](log::info& os){ os << e.what(); });
+		}catch(...){
+			module_.log([](log::info& os){ os << "unknown exception"; });
+		}
+	}
 
 	disposer::module_ptr make_module(disposer::make_data& data){
 		auto& outputs = data.outputs;
@@ -345,12 +373,26 @@ namespace disposer_module{ namespace camera_ximea{
 
 		if(param.list_cameras && !output_info){
 			throw std::logic_error(data.type_name +
-				": parameter list_cameras requires info as output");
+				": parameter list_cameras == true requires info as output");
 		}
 
 		if(param.list_cameras && output_image){
 			throw std::logic_error(data.type_name +
-				": parameter list_cameras forbids image as output");
+				": parameter list_cameras == true forbids image as output");
+		}
+
+		if(!param.list_cameras && output_info){
+			throw std::logic_error(data.type_name +
+				": parameter list_cameras == false forbids info as output");
+		}
+
+		if(!param.list_cameras && !output_image){
+			throw std::logic_error(data.type_name +
+				": parameter list_cameras == false requires image as output");
+		}
+
+		if(!param.list_cameras){
+			data.params.set(param.id, "id", 0);
 		}
 
 		return std::make_unique< module >(data, std::move(param));
@@ -360,6 +402,8 @@ namespace disposer_module{ namespace camera_ximea{
 	void module::exec(){
 		if(param.list_cameras){
 			info.put(exec_id_list());
+		}else{
+			image.put(cam_->get_image());
 		}
 	}
 

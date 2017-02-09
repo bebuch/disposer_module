@@ -36,7 +36,6 @@ namespace disposer_module{ namespace show_image{
 
 		virtual void exec()override{
 			for(auto& pair: image.get()){
-// 				auto id = pair.first;
 				auto& data = pair.second.data();
 
 				img.assign(

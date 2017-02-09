@@ -39,7 +39,7 @@ namespace disposer_module{ namespace show_image{
 // 				auto id = pair.first;
 				auto& data = pair.second.data();
 
-				cimg_library::CImg< std::uint8_t > img(
+				img.assign(
 					data.data(), data.width(), data.height()
 				);
 				display.display(img);
@@ -47,6 +47,7 @@ namespace disposer_module{ namespace show_image{
 		}
 
 		cimg_library::CImgDisplay display;
+		cimg_library::CImg< std::uint8_t > img;
 	};
 
 	disposer::module_ptr make_module(disposer::make_data& data){

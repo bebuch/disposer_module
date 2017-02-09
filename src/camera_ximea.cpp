@@ -10,6 +10,8 @@
 
 #include <disposer/module.hpp>
 
+#include <bitmap/pixel.hpp>
+
 #include <m3api/xiApi.h>
 #undef align
 
@@ -21,6 +23,9 @@
 
 
 namespace disposer_module{ namespace camera_ximea{
+
+
+	namespace pixel = ::bitmap::pixel;
 
 
 	void verify(XI_RETURN xi_return){
@@ -247,14 +252,15 @@ namespace disposer_module{ namespace camera_ximea{
 			verify(xiStopAcquisition(handle_));
 		}
 
-		bitmap< std::uint8_t > get_image()const{
+		template < typename T >
+		bitmap< T > get_image()const{
 			XI_IMG image{}; // {} makes the 0-initialization
 			image.size = sizeof(XI_IMG);
 			verify(xiGetImage(handle_, 2000, &image));
 
-			auto const data = (unsigned char*)image.bp;
+			auto const data = reinterpret_cast< T const* >(image.bp);
 
-			bitmap< std::uint8_t > mosaic(image.width, image.height);
+			bitmap< T > mosaic(image.width, image.height);
 			for(std::size_t y = 0; y < mosaic.height(); ++y){
 				for(std::size_t x = 0; x < mosaic.width(); ++x){
 					mosaic(x, y) = data[y * image.width + x];
@@ -301,12 +307,19 @@ namespace disposer_module{ namespace camera_ximea{
 	private:
 		ximea_cam(module const& module): module_(module), handle_(0){}
 
-		void init(){
-			set_param(XI_PRM_BUFFER_POLICY, XI_BP_SAFE);
-		}
+		void init()const;
 
 		module const& module_;
 		HANDLE handle_;
+	};
+
+
+	enum class pixel_format{
+		mono8,
+		mono16,
+		rgb8,
+		raw8,
+		raw16
 	};
 
 
@@ -314,7 +327,16 @@ namespace disposer_module{ namespace camera_ximea{
 		bool list_cameras;
 
 		std::size_t id;
+
+		pixel_format format;
 	};
+
+
+	using type_list = disposer::type_list<
+		std::uint8_t,
+		std::uint16_t,
+		pixel::rgb8
+	>;
 
 
 	struct module: disposer::module_base{
@@ -333,9 +355,8 @@ namespace disposer_module{ namespace camera_ximea{
 			cam_->stop_acquisition();
 		}
 
-		using bitmap_type = bitmap< std::uint8_t >;
 
-		disposer::output< bitmap_type > image{"image"};
+		disposer::container_output< bitmap, type_list > image{"image"};
 
 		disposer::output< std::string > info{"info"};
 
@@ -361,6 +382,29 @@ namespace disposer_module{ namespace camera_ximea{
 			module_.log([](log::info& os){ os << "unknown exception"; });
 		}
 	}
+
+	void ximea_cam::init()const{
+		set_param(XI_PRM_BUFFER_POLICY, XI_BP_SAFE);
+
+		switch(module_.param.format){
+			case pixel_format::mono8:
+				set_param(XI_PRM_IMAGE_DATA_FORMAT, XI_MONO8);
+				break;
+			case pixel_format::raw8:
+				set_param(XI_PRM_IMAGE_DATA_FORMAT, XI_RAW8);
+				break;
+			case pixel_format::mono16:
+				set_param(XI_PRM_IMAGE_DATA_FORMAT, XI_MONO16);
+				break;
+			case pixel_format::raw16:
+				set_param(XI_PRM_IMAGE_DATA_FORMAT, XI_RAW16);
+				break;
+			case pixel_format::rgb8:
+				set_param(XI_PRM_IMAGE_DATA_FORMAT, XI_RGB24);
+				break;
+		}
+	}
+
 
 	disposer::module_ptr make_module(disposer::make_data& data){
 		auto& outputs = data.outputs;
@@ -393,6 +437,32 @@ namespace disposer_module{ namespace camera_ximea{
 
 		if(!param.list_cameras){
 			data.params.set(param.id, "id", 0);
+
+			std::string format;
+			data.params.set(format, "pixel_format", "mono8");
+
+			std::map< std::string, pixel_format > const map{
+				{"mono8", pixel_format::mono8},
+				{"mono16", pixel_format::mono16},
+				{"rgb8", pixel_format::rgb8},
+				{"raw8", pixel_format::raw8},
+				{"raw16", pixel_format::raw16}
+			};
+
+			auto iter = map.find(format);
+			if(iter == map.end()){
+				std::ostringstream os;
+				os << "parameter pixel_format has unknown value '" << format
+					<< "', available formats are: ";
+				bool first = true;
+				for(auto& pair: map){
+					if(first){ first = false; }else{ os << ", "; }
+					os << "'" << pair.first << "'";
+				}
+				throw std::logic_error(os.str());
+			}
+
+			param.format = iter->second;
 		}
 
 		return std::make_unique< module >(data, std::move(param));
@@ -403,7 +473,22 @@ namespace disposer_module{ namespace camera_ximea{
 		if(param.list_cameras){
 			info.put(exec_id_list());
 		}else{
-			image.put(cam_->get_image());
+			switch(param.format){
+				case pixel_format::mono8:
+				case pixel_format::raw8:
+					image.put< std::uint8_t >
+						(cam_->get_image< std::uint8_t >());
+					break;
+				case pixel_format::mono16:
+				case pixel_format::raw16:
+					image.put< std::uint16_t >
+						(cam_->get_image< std::uint16_t >());
+					break;
+				case pixel_format::rgb8:
+					image.put< pixel::rgb8 >
+						(cam_->get_image< pixel::rgb8 >());
+					break;
+			}
 		}
 	}
 
@@ -411,7 +496,19 @@ namespace disposer_module{ namespace camera_ximea{
 		if(param.list_cameras){
 			info.activate< std::string >();
 		}else{
-			image.activate< bitmap_type >();
+			switch(param.format){
+				case pixel_format::mono8:
+				case pixel_format::raw8:
+					image.activate< std::uint8_t >();
+					break;
+				case pixel_format::mono16:
+				case pixel_format::raw16:
+					image.activate< std::uint16_t >();
+					break;
+				case pixel_format::rgb8:
+					image.activate< pixel::rgb8 >();
+					break;
+			}
 		}
 	}
 

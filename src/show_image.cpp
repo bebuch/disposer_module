@@ -8,6 +8,8 @@
 //-----------------------------------------------------------------------------
 #include <disposer/module.hpp>
 
+#include <bitmap/pixel.hpp>
+
 #include <boost/dll.hpp>
 
 #include <CImg.h>
@@ -19,6 +21,16 @@
 namespace disposer_module{ namespace show_image{
 
 
+	namespace pixel = ::bitmap::pixel;
+
+
+	using type_list = disposer::type_list<
+		std::uint8_t,
+		std::uint16_t,
+		pixel::rgb8
+	>;
+
+
 	struct parameter{
 		std::string window_title;
 
@@ -27,27 +39,78 @@ namespace disposer_module{ namespace show_image{
 	};
 
 
+	using cimg_variant = boost::variant<
+			cimg_library::CImg< std::uint8_t >,
+			cimg_library::CImg< std::uint16_t >
+		>;
+
+
+	struct assign_visitor: boost::static_visitor< void >{
+		assign_visitor(cimg_variant& img): img(img){}
+
+		cimg_variant& img;
+
+		void operator()(
+			disposer::input_data< bitmap< uint8_t > > const& data
+		)const{
+			auto& image = data.data();
+			img = cimg_library::CImg< std::uint8_t >(
+				image.data(), image.width(), image.height()
+			);
+		}
+
+		void operator()(
+			disposer::input_data< bitmap< uint16_t > > const& data
+		)const{
+			auto& image = data.data();
+			img = cimg_library::CImg< std::uint16_t >(
+				image.data(), image.width(), image.height()
+			);
+		}
+
+		void operator()(
+			disposer::input_data< bitmap< pixel::rgb8 > > const& data
+		)const{
+			auto& image = data.data();
+			img = cimg_library::CImg< std::uint8_t >(
+				reinterpret_cast< std::uint8_t const* >(image.data()),
+				image.width(), image.height(), 1, 3
+			);
+		}
+	};
+
+	struct display_visitor: boost::static_visitor< void >{
+		display_visitor(cimg_library::CImgDisplay& display):
+			display(display){}
+
+		cimg_library::CImgDisplay& display;
+
+		template < typename T >
+		void operator()(T const& img)const{
+			display.display(img);
+		}
+	};
+
+
 	struct module: disposer::module_base{
 		module(disposer::make_data const& data, parameter&& param):
 			disposer::module_base(data, {image}),
 			display(param.width, param.height, param.window_title.c_str()){}
 
-		disposer::input< bitmap< std::uint8_t > > image{"image"};
+		disposer::container_input< bitmap, type_list > image{"image"};
 
 		virtual void exec()override{
 			for(auto& pair: image.get()){
-				auto& data = pair.second.data();
+				auto& data = pair.second;
 
-				img.assign(
-					data.data(), data.width(), data.height()
-				);
-				display.display(img);
+				boost::apply_visitor(assign_visitor(img), data);
+				boost::apply_visitor(display_visitor(display), img);
 				display.show();
 			}
 		}
 
 		cimg_library::CImgDisplay display;
-		cimg_library::CImg< std::uint8_t > img;
+		cimg_variant img;
 	};
 
 	disposer::module_ptr make_module(disposer::make_data& data){

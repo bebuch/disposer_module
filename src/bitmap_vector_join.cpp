@@ -8,6 +8,10 @@
 //-----------------------------------------------------------------------------
 #include "bitmap_vector.hpp"
 
+#include <bitmap/pixel.hpp>
+
+#define BOOST_MPL_CFG_NO_PREPROCESSED_HEADERS
+#define BOOST_MPL_LIMIT_LIST_SIZE 50
 #include <disposer/module.hpp>
 
 #include <boost/hana.hpp>
@@ -16,10 +20,33 @@
 #include <cstdint>
 
 
+template < typename T >
+struct disposer::parameter_cast< ::bitmap::pixel::basic_ga< T > >{
+	::bitmap::pixel::basic_ga< T > operator()(std::string const& value)const{
+		return {};
+	}
+};
+
+template < typename T >
+struct disposer::parameter_cast< ::bitmap::pixel::basic_rgb< T > >{
+	::bitmap::pixel::basic_rgb< T > operator()(std::string const& value)const{
+		return {};
+	}
+};
+
+template < typename T >
+struct disposer::parameter_cast< ::bitmap::pixel::basic_rgba< T > >{
+	::bitmap::pixel::basic_rgba< T > operator()(std::string const& value)const{
+		return {};
+	}
+};
+
+
 namespace disposer_module{ namespace bitmap_vector_join{
 
 
 	namespace hana = boost::hana;
+	namespace pixel = ::bitmap::pixel;
 
 
 	using disposer::type_position_v;
@@ -35,7 +62,37 @@ namespace disposer_module{ namespace bitmap_vector_join{
 		std::uint64_t,
 		float,
 		double,
-		long double
+		long double,
+		pixel::ga8,
+		pixel::ga16,
+		pixel::ga32,
+		pixel::ga64,
+		pixel::ga8u,
+		pixel::ga16u,
+		pixel::ga32u,
+		pixel::ga64u,
+		pixel::ga32f,
+		pixel::ga64f,
+		pixel::rgb8,
+		pixel::rgb16,
+		pixel::rgb32,
+		pixel::rgb64,
+		pixel::rgb8u,
+		pixel::rgb16u,
+		pixel::rgb32u,
+		pixel::rgb64u,
+		pixel::rgb32f,
+		pixel::rgb64f,
+		pixel::rgba8,
+		pixel::rgba16,
+		pixel::rgba32,
+		pixel::rgba64,
+		pixel::rgba8u,
+		pixel::rgba16u,
+		pixel::rgba32u,
+		pixel::rgba64u,
+		pixel::rgba32f,
+		pixel::rgba64f
 	>;
 
 
@@ -98,7 +155,13 @@ namespace disposer_module{ namespace bitmap_vector_join{
 				data.params.set(
 					std::get< type >(param.default_value),
 					"default_value",
-					std::numeric_limits< type >::quiet_NaN()
+					[](){
+						if constexpr(std::is_floating_point_v< type >){
+							return std::numeric_limits< type >::quiet_NaN();
+						}else{
+							return type();
+						}
+					}()
 				);
 			}
 		);

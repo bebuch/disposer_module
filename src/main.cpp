@@ -16,6 +16,7 @@
 
 #include <regex>
 #include <iostream>
+#include <future>
 
 
 int main(int argc, char** argv){
@@ -79,9 +80,29 @@ int main(int argc, char** argv){
 				disposer.exec(chain);
 			}
 		}else{
+			// single thread version
 			for(std::size_t i = 0; i < exec_count; ++i){
 				disposer.exec(trigger_chain);
 			}
+
+
+// 			// multi threaded version
+// 			auto const cores = std::thread::hardware_concurrency();
+// 			std::vector< std::thread > workers;
+// 			workers.reserve(cores);
+//
+// 			std::atomic< std::size_t > index(0);
+// 			for(std::size_t i = 0; i < cores; ++i){
+// 				workers.emplace_back([&disposer, &trigger_chain, &index]{
+// 					while(index++ < 1000){
+// 						disposer.exec(trigger_chain);
+// 					}
+// 				});
+// 			}
+//
+// 			for(auto& worker: workers){
+// 				worker.join();
+// 			}
 		}
 	});
 }

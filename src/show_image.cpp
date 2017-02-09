@@ -42,6 +42,7 @@ namespace disposer_module{ namespace show_image{
 					data.data(), data.width(), data.height()
 				);
 				display.display(img);
+				display.show();
 			}
 		}
 

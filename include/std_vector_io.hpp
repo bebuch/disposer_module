@@ -9,13 +9,16 @@
 #ifndef _disposer_module__std_vector_io__hpp_INCLUDED_
 #define _disposer_module__std_vector_io__hpp_INCLUDED_
 
-#include "io.hpp"
+#include <bitmap/io.hpp>
 
 #include <iostream>
 #include <vector>
 
 
 namespace disposer_module{
+
+
+	namespace io = ::bitmap::io;
 
 
 	template < typename charT, typename traits, typename T >

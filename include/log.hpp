@@ -8,11 +8,11 @@
 //-----------------------------------------------------------------------------
 #ifndef _disposer_module__log__hpp_INCLUDED_
 #define _disposer_module__log__hpp_INCLUDED_
-
-#include "size_io.hpp"
-#include "point_io.hpp"
 #include "std_array_io.hpp"
 #include "std_vector_io.hpp"
+
+#include <bitmap/size_io.hpp>
+#include <bitmap/point_io.hpp>
 
 #include <disposer/log.hpp>
 #include <disposer/log_tag.hpp>

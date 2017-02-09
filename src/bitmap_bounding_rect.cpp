@@ -7,7 +7,6 @@
 // file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 //-----------------------------------------------------------------------------
 #include "bitmap.hpp"
-#include "rect.hpp"
 
 #include <disposer/module.hpp>
 
@@ -28,7 +27,7 @@ namespace disposer_module{ namespace bitmap_bounding_rect{
 		disposer::container_input< bitmap, float, double, long double >
 			image{"image"};
 
-		disposer::output< disposer_module::rect< std::size_t > > rect{"rect"};
+		disposer::output< ::bitmap::rect< std::size_t > > rect{"rect"};
 
 
 		void exec()override;
@@ -40,9 +39,9 @@ namespace disposer_module{ namespace bitmap_bounding_rect{
 		return std::make_unique< module >(data);
 	}
 
-	struct visitor: boost::static_visitor< rect< std::size_t > >{
+	struct visitor: boost::static_visitor< ::bitmap::rect< std::size_t > >{
 		template < typename T >
-		rect< std::size_t > operator()(
+		::bitmap::rect< std::size_t > operator()(
 			disposer::input_data< bitmap< T > > const& data
 		)const{
 			using std::isnan;
@@ -69,7 +68,9 @@ namespace disposer_module{ namespace bitmap_bounding_rect{
 			}
 
 			// return if all is NaN
-			if(y_begin == image.width()) return rect< std::size_t >(0, 0);
+			if(y_begin == image.width()){
+				return ::bitmap::rect< std::size_t >(0, 0);
+			}
 
 			// find y end
 			for(std::size_t y = image.height() - 1; y > 0; --y){
@@ -108,7 +109,7 @@ namespace disposer_module{ namespace bitmap_bounding_rect{
 			}
 
 			// attention: end sizes are one after the end
-			return rect< std::size_t >(
+			return ::bitmap::rect< std::size_t >(
 				x_begin, y_begin, 1 + x_end - x_begin, 1 + y_end - y_begin
 			);
 		}
@@ -117,8 +118,6 @@ namespace disposer_module{ namespace bitmap_bounding_rect{
 
 	void module::exec(){
 		for(auto const& pair: image.get()){
-// 			auto id = pair.first;
-
 			rect.put(boost::apply_visitor(visitor{}, pair.second));
 		}
 	}

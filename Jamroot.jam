@@ -1,6 +1,7 @@
 import os ;
 local boost = [ os.environ BOOST ] ;
 local disposer = [ os.environ DISPOSER ] ;
+local bitmap = [ os.environ BITMAP ] ;
 local big = [ os.environ BIG ] ;
 
 use-project /boost
@@ -50,6 +51,8 @@ exe disposer_module
 	main.cpp
 	/disposer//disposer
 	/boost//filesystem
+	:
+	<include>$(bitmap)/include
 	;
 
 lib big_loader
@@ -58,6 +61,7 @@ lib big_loader
 	/disposer//disposer
 	:
 	<include>$(big)/cpp/include
+	<include>$(bitmap)/include
 	;
 
 lib big_saver
@@ -66,6 +70,7 @@ lib big_saver
 	/disposer//disposer
 	:
 	<include>$(big)/cpp/include
+	<include>$(bitmap)/include
 	;
 
 lib camera_ximea
@@ -73,6 +78,7 @@ lib camera_ximea
 	camera_ximea.cpp
 	/disposer//disposer
 	:
+	<include>$(bitmap)/include
 	<linkflags>-lm3api
 	;
 
@@ -81,6 +87,7 @@ lib show_image
 	show_image.cpp
 	/disposer//disposer
 	:
+	<include>$(bitmap)/include
 	<linkflags>-L/usr/X11R6/lib
 	<linkflags>-lm
 	<linkflags>-lpthread
@@ -91,34 +98,46 @@ lib raster
 	:
 	raster.cpp
 	/disposer//disposer
+	:
+	<include>$(bitmap)/include
 	;
 
 lib add_to_log
 	:
 	add_to_log.cpp
 	/disposer//disposer
+	:
+	<include>$(bitmap)/include
 	;
 
 lib demosaic
 	:
 	demosaic.cpp
 	/disposer//disposer
+	:
+	<include>$(bitmap)/include
 	;
 
 lib bitmap_vector_join
 	:
 	bitmap_vector_join.cpp
 	/disposer//disposer
+	:
+	<include>$(bitmap)/include
 	;
 
 lib subbitmap
 	:
 	subbitmap.cpp
 	/disposer//disposer
+	:
+	<include>$(bitmap)/include
 	;
 
 lib bitmap_bounding_rect
 	:
 	bitmap_bounding_rect.cpp
 	/disposer//disposer
+	:
+	<include>$(bitmap)/include
 	;

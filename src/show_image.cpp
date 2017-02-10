@@ -33,9 +33,6 @@ namespace disposer_module{ namespace show_image{
 
 	struct parameter{
 		std::string window_title;
-
-		unsigned width;
-		unsigned height;
 	};
 
 
@@ -87,6 +84,7 @@ namespace disposer_module{ namespace show_image{
 
 		template < typename T >
 		void operator()(T const& img)const{
+			display.resize(img, false);
 			display.display(img);
 		}
 	};
@@ -95,7 +93,7 @@ namespace disposer_module{ namespace show_image{
 	struct module: disposer::module_base{
 		module(disposer::make_data const& data, parameter&& param):
 			disposer::module_base(data, {image}),
-			display(param.width, param.height, param.window_title.c_str()){}
+			display(200, 100, param.window_title.c_str()){}
 
 		disposer::container_input< bitmap, type_list > image{"image"};
 
@@ -119,8 +117,6 @@ namespace disposer_module{ namespace show_image{
 		parameter param;
 
 		data.params.set(param.window_title, "window_title");
-		data.params.set(param.width, "width");
-		data.params.set(param.height, "height");
 
 		return std::make_unique< module >(data, std::move(param));
 	}

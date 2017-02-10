@@ -84,7 +84,13 @@ namespace disposer_module{ namespace show_image{
 
 		template < typename T >
 		void operator()(T const& img)const{
-			display.resize(img, false);
+			if(
+				display.width() != img.width() ||
+				display.height() != img.height()
+			){
+				display.resize(img, false);
+			}
+
 			display.display(img);
 		}
 	};

@@ -151,8 +151,11 @@ namespace disposer_module{ namespace demosaic{
 		std::size_t width = image.width() / xc;
 		std::size_t height = image.height() / yc;
 
-		bitmap_vector< T >
-			result(xc * yc, bitmap< T >(width, height));
+		bitmap_vector< T > result;
+		result.reserve(xc * yc);
+		for(std::size_t i = 0; i < xc * yc; ++i){
+			result.emplace_back(width, height);
+		}
 
 		for(std::size_t y = 0; y < image.height(); ++y){
 			for(std::size_t x = 0; x < image.width(); ++x){

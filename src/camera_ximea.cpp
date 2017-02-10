@@ -254,17 +254,17 @@ namespace disposer_module{ namespace camera_ximea{
 
 		template < typename T >
 		bitmap< T > get_image()const{
+			bitmap< T > mosaic(width_, height_);
+
 			XI_IMG image{}; // {} makes the 0-initialization
 			image.size = sizeof(XI_IMG);
+			image.bp = static_cast< void* >(mosaic.data());
+			image.bp_size = mosaic.point_count() * sizeof(T);
+
 			verify(xiGetImage(handle_, 2000, &image));
 
-			auto const data = reinterpret_cast< T const* >(image.bp);
-
-			bitmap< T > mosaic(image.width, image.height);
-			for(std::size_t y = 0; y < mosaic.height(); ++y){
-				for(std::size_t x = 0; x < mosaic.width(); ++x){
-					mosaic(x, y) = data[y * image.width + x];
-				}
+			if(image.padding_x != 0){
+				throw std::runtime_error("line alignment is not implemented");
 			}
 
 			return mosaic;
@@ -305,12 +305,20 @@ namespace disposer_module{ namespace camera_ximea{
 		}
 
 	private:
-		ximea_cam(module const& module): module_(module), handle_(0){}
+		ximea_cam(module const& module):
+			module_(module),
+			handle_(0),
+			width_(0),
+			height_(0)
+			{}
 
-		void init()const;
+		void init();
 
 		module const& module_;
 		HANDLE handle_;
+
+		std::size_t width_;
+		std::size_t height_;
 	};
 
 
@@ -383,7 +391,9 @@ namespace disposer_module{ namespace camera_ximea{
 		}
 	}
 
-	void ximea_cam::init()const{
+	void ximea_cam::init(){
+		if(module_.param.list_cameras) return;
+
 		set_param(XI_PRM_BUFFER_POLICY, XI_BP_SAFE);
 
 		switch(module_.param.format){
@@ -403,6 +413,9 @@ namespace disposer_module{ namespace camera_ximea{
 				set_param(XI_PRM_IMAGE_DATA_FORMAT, XI_RGB24);
 				break;
 		}
+
+		width_ = get_param_int(XI_PRM_WIDTH);
+		height_ = get_param_int(XI_PRM_HEIGHT);
 	}
 
 

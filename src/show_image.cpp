@@ -36,13 +36,13 @@ namespace disposer_module{ namespace show_image{
 	};
 
 
-	using cimg_variant = boost::variant<
+	using cimg_variant = std::variant<
 			cimg_library::CImg< std::uint8_t >,
 			cimg_library::CImg< std::uint16_t >
 		>;
 
 
-	struct assign_visitor: boost::static_visitor< void >{
+	struct assign_visitor{
 		assign_visitor(cimg_variant& img): img(img){}
 
 		cimg_variant& img;
@@ -76,7 +76,7 @@ namespace disposer_module{ namespace show_image{
 		}
 	};
 
-	struct display_visitor: boost::static_visitor< void >{
+	struct display_visitor{
 		display_visitor(cimg_library::CImgDisplay& display):
 			display(display){}
 
@@ -107,8 +107,8 @@ namespace disposer_module{ namespace show_image{
 			for(auto& pair: image.get()){
 				auto& data = pair.second;
 
-				boost::apply_visitor(assign_visitor(img), data);
-				boost::apply_visitor(display_visitor(display), img);
+				std::visit(assign_visitor(img), data);
+				std::visit(display_visitor(display), img);
 				display.show();
 			}
 		}

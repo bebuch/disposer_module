@@ -131,7 +131,7 @@ namespace disposer_module{ namespace pixel_transform{
 	}
 
 
-	struct visitor: boost::static_visitor< void >{
+	struct visitor{
 		visitor(pixel_transform::module& module):
 			module(module) {}
 
@@ -143,7 +143,7 @@ namespace disposer_module{ namespace pixel_transform{
 
 		template < typename T >
 		void operator()(
-			disposer::input_data< bitmap_sequence< T > >& sequence
+			disposer::input_data< bitmap_sequence< T > >&& sequence
 		){
 			auto output = sequence.get();
 
@@ -162,7 +162,7 @@ namespace disposer_module{ namespace pixel_transform{
 
 		template < typename T >
 		void operator()(
-			disposer::input_data< bitmap_vector< T > >& vector
+			disposer::input_data< bitmap_vector< T > >&& vector
 		){
 			auto output = vector.get();
 
@@ -178,7 +178,7 @@ namespace disposer_module{ namespace pixel_transform{
 		using visitor::visitor;
 
 		template < typename T >
-		void operator()(disposer::input_data< bitmap< T > >& image){
+		void operator()(disposer::input_data< bitmap< T > >&& image){
 			auto output = image.get();
 
 			module.pixel_transform(output->data());
@@ -191,17 +191,17 @@ namespace disposer_module{ namespace pixel_transform{
 	void module::exec(){
 		for(auto&& pair: slots.sequence.get()){
 			sequence_visitor visitor(*this);
-			boost::apply_visitor(visitor, pair.second);
+			std::visit(visitor, std::move(pair.second));
 		}
 
 		for(auto&& pair: slots.vector.get()){
 			vector_visitor visitor(*this);
-			boost::apply_visitor(visitor, pair.second);
+			std::visit(visitor, std::move(pair.second));
 		}
 
 		for(auto&& pair: slots.image.get()){
 			image_visitor visitor(*this);
-			boost::apply_visitor(visitor, pair.second);
+			std::visit(visitor, std::move(pair.second));
 		}
 	}
 

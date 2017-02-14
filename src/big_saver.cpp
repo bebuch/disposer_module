@@ -47,7 +47,7 @@ namespace disposer_module{ namespace big_saver{
 			std::size_t, std::size_t, std::size_t > > big_pattern;
 	};
 
-	using save_image = boost::variant<
+	using save_image = std::variant<
 			std::reference_wrapper< bitmap< std::int8_t > const >,
 			std::reference_wrapper< bitmap< std::uint8_t > const >,
 			std::reference_wrapper< bitmap< std::int16_t > const >,
@@ -206,7 +206,7 @@ namespace disposer_module{ namespace big_saver{
 	}
 
 
-	struct big_stream_visitor: boost::static_visitor< void >{
+	struct big_stream_visitor{
 		big_stream_visitor(std::ostream& os): os(os){}
 
 		std::ostream& os;
@@ -217,7 +217,7 @@ namespace disposer_module{ namespace big_saver{
 		}
 	};
 
-	struct big_streamsize_visitor: boost::static_visitor< std::size_t >{
+	struct big_streamsize_visitor{
 		template < typename T >
 		std::size_t operator()(T const& image_ref)const{
 			using value_type = std::remove_cv_t< std::remove_pointer_t<
@@ -230,7 +230,7 @@ namespace disposer_module{ namespace big_saver{
 		}
 	};
 
-	struct big_file_visitor: boost::static_visitor< void >{
+	struct big_file_visitor{
 		big_file_visitor(std::string const& name): name(name){}
 
 		std::string const& name;
@@ -263,10 +263,8 @@ namespace disposer_module{ namespace big_saver{
 						},
 						[&tar, &bitmap, &filename]{
 							tar.write(filename, [&bitmap](std::ostream& os){
-								boost::apply_visitor(big_stream_visitor(os),
-									bitmap);
-							}, boost::apply_visitor(big_streamsize_visitor(),
-								bitmap));
+								std::visit(big_stream_visitor(os), bitmap);
+							}, std::visit(big_streamsize_visitor(), bitmap));
 						});
 						++pos;
 					}
@@ -284,8 +282,7 @@ namespace disposer_module{ namespace big_saver{
 						os << "write '" << filename << "'";
 					},
 					[&bitmap, &filename]{
-						boost::apply_visitor(big_file_visitor(filename),
-							bitmap);
+						std::visit(big_file_visitor(filename), bitmap);
 					});
 					++pos;
 				}
@@ -295,7 +292,7 @@ namespace disposer_module{ namespace big_saver{
 	}
 
 
-	struct sequence_visitor: boost::static_visitor< save_sequence >{
+	struct sequence_visitor{
 		sequence_visitor(std::size_t id): id(id){}
 
 		std::size_t const id;
@@ -314,7 +311,7 @@ namespace disposer_module{ namespace big_saver{
 		}
 	};
 
-	struct vector_visitor: boost::static_visitor< save_vector >{
+	struct vector_visitor{
 		template < typename T >
 		save_vector operator()(T const& vectors)const{
 			save_vector result;
@@ -326,7 +323,7 @@ namespace disposer_module{ namespace big_saver{
 		}
 	};
 
-	struct image_visitor: boost::static_visitor< save_image >{
+	struct image_visitor{
 		template < typename T >
 		save_image operator()(T const& image)const{
 			return image.data();
@@ -341,8 +338,7 @@ namespace disposer_module{ namespace big_saver{
 					auto id = pair.first;
 					auto& bitmap_sequence = pair.second;
 
-					save(id, boost::apply_visitor(sequence_visitor(id),
-						bitmap_sequence));
+					save(id, std::visit(sequence_visitor(id), bitmap_sequence));
 				}
 			}break;
 			case input_t::vector:{
@@ -355,7 +351,7 @@ namespace disposer_module{ namespace big_saver{
 
 					save_sequence data;
 					for(auto iter = from; iter != to; ++iter){
-						data.emplace_back(boost::apply_visitor(vector_visitor(),
+						data.emplace_back(std::visit(vector_visitor(),
 							iter->second));
 					}
 
@@ -380,7 +376,7 @@ namespace disposer_module{ namespace big_saver{
 
 						if(pos == param.sequence_count) pos = 0;
 
-						data.back().emplace_back(boost::apply_visitor(
+						data.back().emplace_back(std::visit(
 							image_visitor(), iter->second));
 					}
 

@@ -168,7 +168,7 @@ namespace disposer_module{ namespace demosaic{
 	}
 
 
-	struct visitor: boost::static_visitor< void >{
+	struct visitor{
 		visitor(demosaic::module& module, std::size_t id):
 			module(module), id(id) {}
 
@@ -187,7 +187,7 @@ namespace disposer_module{ namespace demosaic{
 	void module::exec(){
 		for(auto const& pair: slots.image.get()){
 			visitor visitor(*this, pair.first);
-			boost::apply_visitor(visitor, pair.second);
+			std::visit(visitor, pair.second);
 		}
 	}
 

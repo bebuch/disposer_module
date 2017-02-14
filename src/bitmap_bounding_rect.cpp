@@ -39,7 +39,7 @@ namespace disposer_module{ namespace bitmap_bounding_rect{
 		return std::make_unique< module >(data);
 	}
 
-	struct visitor: boost::static_visitor< ::bitmap::rect< std::size_t > >{
+	struct visitor{
 		template < typename T >
 		::bitmap::rect< std::size_t > operator()(
 			disposer::input_data< bitmap< T > > const& data
@@ -118,7 +118,7 @@ namespace disposer_module{ namespace bitmap_bounding_rect{
 
 	void module::exec(){
 		for(auto const& pair: image.get()){
-			rect.put(boost::apply_visitor(visitor{}, pair.second));
+			rect.put(std::visit(visitor{}, pair.second));
 		}
 	}
 

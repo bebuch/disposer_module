@@ -13,11 +13,11 @@
 #include <functional>
 #include <sstream>
 #include <utility>
+#include <variant>
 #include <string>
 #include <array>
 #include <tuple>
 
-#include <boost/variant.hpp>
 #include <boost/config/warning_disable.hpp>
 #include <boost/spirit/home/x3.hpp>
 #include <boost/spirit/home/x3/directive.hpp>
@@ -60,7 +60,7 @@ namespace disposer_module{
 			variable
 		)
 
-		inline std::vector< boost::variant< std::string, std::size_t > >
+		inline std::vector< std::variant< std::string, std::size_t > >
 		parse_pattern(
 			std::string const& pattern,
 			std::vector< std::string > const& variables
@@ -69,7 +69,7 @@ namespace disposer_module{
 			auto end = pattern.end();
 			x3::ascii::space_type space;
 
-			std::vector< boost::variant< std::string, variable_string > >
+			std::vector< std::variant< std::string, variable_string > >
 				parts;
 
 			bool match = phrase_parse(iter, end, x3::no_skip[
@@ -80,22 +80,18 @@ namespace disposer_module{
 				throw std::runtime_error("Syntax error");
 			}
 
-			struct visitor:
-				boost::static_visitor<
-					boost::variant< std::string, std::size_t >
-				>
-			{
+			struct visitor{
 				visitor(std::vector< std::string > const& variables):
 					variables(variables) {}
 
 				std::vector< std::string > const& variables;
 
-				boost::variant< std::string, std::size_t >
+				std::variant< std::string, std::size_t >
 				operator()(std::string const& v){
 					return v;
 				}
 
-				boost::variant< std::string, std::size_t >
+				std::variant< std::string, std::size_t >
 				operator()(variable_string const& v){
 					auto pos = static_cast< std::size_t >(std::find(
 							variables.begin(), variables.end(), v
@@ -111,10 +107,10 @@ namespace disposer_module{
 				}
 			} v{variables};
 
-			std::vector< boost::variant< std::string, std::size_t > > result;
+			std::vector< std::variant< std::string, std::size_t > > result;
 			result.reserve(variables.size());
 			for(auto& data: parts){
-				result.push_back(boost::apply_visitor(v, data));
+				result.push_back(std::visit(v, data));
 			}
 
 			return result;
@@ -147,7 +143,7 @@ namespace disposer_module{
 		std::array< std::size_t, sizeof...(T) > use_count()const{
 			std::array< std::size_t, sizeof...(T) > result{{0}};
 			for(auto& data: pattern_){
-				if(auto v = boost::get< std::size_t >(&data)){
+				if(auto v = std::get_if< std::size_t >(&data)){
 					++result[*v];
 				}
 			}
@@ -155,7 +151,7 @@ namespace disposer_module{
 		}
 
 	private:
-		struct visitor: boost::static_visitor< std::string >{
+		struct visitor{
 			visitor(first_of_t< std::string, T >&& ... v):
 				variables{{ std::move(v) ... }}
 				{}
@@ -180,13 +176,13 @@ namespace disposer_module{
 
 			std::ostringstream os;
 			for(auto& data: pattern_){
-				os << boost::apply_visitor(v, data);
+				os << std::visit(v, data);
 			}
 
 			return os.str();
 		}
 
-		std::vector< boost::variant< std::string, std::size_t > > pattern_;
+		std::vector< std::variant< std::string, std::size_t > > pattern_;
 		std::tuple< std::function< std::string(T const&) > ... > functions_;
 	};
 

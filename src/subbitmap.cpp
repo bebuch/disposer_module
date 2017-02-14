@@ -174,7 +174,7 @@ namespace disposer_module{ namespace subbitmap{
 	}
 
 
-	struct visitor: boost::static_visitor< void >{
+	struct visitor{
 		visitor(subbitmap::module& module, std::size_t id):
 			module(module), id(id) {}
 
@@ -236,17 +236,17 @@ namespace disposer_module{ namespace subbitmap{
 	void module::exec(){
 		for(auto const& pair: slots.sequence.get()){
 			sequence_visitor visitor(*this, pair.first);
-			boost::apply_visitor(visitor, pair.second);
+			std::visit(visitor, pair.second);
 		}
 
 		for(auto const& pair: slots.vector.get()){
 			vector_visitor visitor(*this, pair.first);
-			boost::apply_visitor(visitor, pair.second);
+			std::visit(visitor, pair.second);
 		}
 
 		for(auto const& pair: slots.image.get()){
 			image_visitor visitor(*this, pair.first);
-			boost::apply_visitor(visitor, pair.second);
+			std::visit(visitor, pair.second);
 		}
 	}
 

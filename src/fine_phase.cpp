@@ -189,7 +189,7 @@ namespace disposer_module{ namespace fine_phase{
 	}
 
 
-	struct visitor: boost::static_visitor< void >{
+	struct visitor{
 		visitor(fine_phase::module& module, std::size_t id):
 			module(module), id(id) {}
 
@@ -216,7 +216,7 @@ namespace disposer_module{ namespace fine_phase{
 	void module::exec(){
 		for(auto const& pair: slots.vector.get()){
 			fine_phase::visitor visitor(*this, pair.first);
-			boost::apply_visitor(visitor, pair.second);
+			std::visit(visitor, pair.second);
 		}
 	}
 

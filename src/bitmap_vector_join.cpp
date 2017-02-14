@@ -201,7 +201,7 @@ namespace disposer_module{ namespace bitmap_vector_join{
 	}
 
 
-	struct visitor: boost::static_visitor< void >{
+	struct visitor{
 		visitor(bitmap_vector_join::module& module, std::size_t id):
 			module(module), id(id) {}
 
@@ -230,7 +230,7 @@ namespace disposer_module{ namespace bitmap_vector_join{
 	void module::exec(){
 		for(auto const& pair: slots.image_vector.get()){
 			visitor visitor(*this, pair.first);
-			boost::apply_visitor(visitor, pair.second);
+			std::visit(visitor, pair.second);
 		}
 	}
 

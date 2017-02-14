@@ -36,14 +36,14 @@ namespace disposer_module{ namespace big_saver{
 
 		std::string dir;
 
-		boost::optional< std::size_t > fixed_id;
+		std::optional< std::size_t > fixed_id;
 
 		std::size_t sequence_count;
 
 		input_t input;
 
-		boost::optional< name_generator< std::size_t > > tar_pattern;
-		boost::optional< name_generator<
+		std::optional< name_generator< std::size_t > > tar_pattern;
+		std::optional< name_generator<
 			std::size_t, std::size_t, std::size_t > > big_pattern;
 	};
 

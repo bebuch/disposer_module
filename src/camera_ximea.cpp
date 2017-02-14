@@ -376,7 +376,7 @@ namespace disposer_module{ namespace camera_ximea{
 		std::string exec_id_list()const;
 
 
-		boost::optional< ximea_cam > cam_;
+		std::optional< ximea_cam > cam_;
 
 		parameter const param;
 	};

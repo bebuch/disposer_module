@@ -80,12 +80,12 @@ namespace disposer_module{ namespace big_loader{
 
 		std::array< bool, type_list::size > type;
 
-		boost::optional< std::size_t > fixed_id;
+		std::optional< std::size_t > fixed_id;
 
 		output_t output;
 
-		boost::optional< name_generator< std::size_t > > tar_pattern;
-		boost::optional< name_generator< std::size_t, std::size_t, std::size_t > > big_pattern;
+		std::optional< name_generator< std::size_t > > tar_pattern;
+		std::optional< name_generator< std::size_t, std::size_t, std::size_t > > big_pattern;
 	};
 
 

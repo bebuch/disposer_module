@@ -253,63 +253,26 @@ namespace disposer_module{ namespace camera_ximea{
 		}
 
 		template < typename T >
-		bitmap< T > get_image()const{
-			bitmap< T > mosaic(width_, height_);
+		bitmap< T > get_image()const;
 
-			XI_IMG image{}; // {} makes the 0-initialization
-			image.size = sizeof(XI_IMG);
-			image.bp = static_cast< void* >(mosaic.data());
-			image.bp_size = mosaic.point_count() * sizeof(T);
+		void set_param(std::string const& name, int value)const;
+		void set_param(std::string const& name, float value)const;
+		void set_param(std::string const& name, std::string const& value)const;
 
-			verify(xiGetImage(handle_, 2000, &image));
-
-			if(image.padding_x != 0){
-				throw std::runtime_error("line alignment is not implemented");
-			}
-
-			return mosaic;
-		}
-
-		void set_param(std::string const& name, int value)const{
-			verify(xiSetParamInt(handle_, name.c_str(), value));
-		}
-
-		void set_param(std::string const& name, float value)const{
-			verify(xiSetParamFloat(handle_, name.c_str(), value));
-		}
-
-		void set_param(std::string const& name, std::string const& value)const{
-			verify(xiSetParamString(handle_, name.c_str(),
-				const_cast< char* >(value.c_str()), value.size()));
-		}
-
-		int get_param_int(std::string const& name)const{
-			int value = 0;
-			verify(xiGetParamInt(handle_, name.c_str(), &value));
-			return value;
-		}
-
-		float get_param_float(std::string const& name)const{
-			float value = 0;
-			verify(xiGetParamFloat(handle_, name.c_str(), &value));
-			return value;
-		}
-
-		std::string get_param_string(std::string const& name)const{
-			char data[4096];
-			data[sizeof(data) - 1] = '\0';
-			verify(xiGetParamString(
-				handle_, name.c_str(), data, sizeof(data) - 1));
-			char const* ptr = static_cast< char* >(&data[0]);
-			return std::string(ptr, ptr + strlen(ptr));
-		}
+		int get_param_int(std::string const& name)const;
+		float get_param_float(std::string const& name)const;
+		std::string get_param_string(std::string const& name)const;
 
 	private:
 		ximea_cam(module const& module):
 			module_(module),
 			handle_(0),
 			width_(0),
-			height_(0)
+			height_(0),
+			full_width_(0),
+			full_height_(0),
+			payload_size_(0),
+			payload_pass_(false)
 			{}
 
 		void init();
@@ -319,6 +282,12 @@ namespace disposer_module{ namespace camera_ximea{
 
 		std::size_t width_;
 		std::size_t height_;
+		std::size_t full_width_;
+		std::size_t full_height_;
+
+		/// \\brief Image data buffer size in bytes
+		std::size_t payload_size_;
+		std::size_t payload_pass_;
 	};
 
 
@@ -335,6 +304,13 @@ namespace disposer_module{ namespace camera_ximea{
 		bool list_cameras;
 
 		std::size_t id;
+
+		bool use_camera_region;
+
+		std::size_t x_offset;
+		std::size_t y_offset;
+		std::size_t width;
+		std::size_t height;
 
 		pixel_format format;
 	};
@@ -392,31 +368,180 @@ namespace disposer_module{ namespace camera_ximea{
 	}
 
 	void ximea_cam::init(){
-		if(module_.param.list_cameras) return;
+		module_.log([](log::info& os){ os << "init camera"; }, [&]{
+			if(module_.param.list_cameras) return;
 
-		set_param(XI_PRM_BUFFER_POLICY, XI_BP_SAFE);
+			set_param(XI_PRM_BUFFER_POLICY, XI_BP_SAFE);
 
-		switch(module_.param.format){
-			case pixel_format::mono8:
-				set_param(XI_PRM_IMAGE_DATA_FORMAT, XI_MONO8);
-				break;
-			case pixel_format::raw8:
-				set_param(XI_PRM_IMAGE_DATA_FORMAT, XI_RAW8);
-				break;
-			case pixel_format::mono16:
-				set_param(XI_PRM_IMAGE_DATA_FORMAT, XI_MONO16);
-				break;
-			case pixel_format::raw16:
-				set_param(XI_PRM_IMAGE_DATA_FORMAT, XI_RAW16);
-				break;
-			case pixel_format::rgb8:
-				set_param(XI_PRM_IMAGE_DATA_FORMAT, XI_RGB24);
-				break;
-		}
+			switch(module_.param.format){
+				case pixel_format::mono8:
+					set_param(XI_PRM_IMAGE_DATA_FORMAT, XI_MONO8);
+					break;
+				case pixel_format::raw8:
+					set_param(XI_PRM_IMAGE_DATA_FORMAT, XI_RAW8);
+					break;
+				case pixel_format::mono16:
+					set_param(XI_PRM_IMAGE_DATA_FORMAT, XI_MONO16);
+					break;
+				case pixel_format::raw16:
+					set_param(XI_PRM_IMAGE_DATA_FORMAT, XI_RAW16);
+					break;
+				case pixel_format::rgb8:
+					set_param(XI_PRM_IMAGE_DATA_FORMAT, XI_RGB24);
+					break;
+			}
 
-		width_ = get_param_int(XI_PRM_WIDTH);
-		height_ = get_param_int(XI_PRM_HEIGHT);
+			width_ = full_width_ = get_param_int(XI_PRM_WIDTH);
+			height_ = full_height_ = get_param_int(XI_PRM_HEIGHT);
+
+
+			auto const x = module_.param.x_offset;
+			auto const y = module_.param.y_offset;
+			auto const width = module_.param.width;
+			auto const height = module_.param.height;
+			if(x + width > full_width_ || y + height > full_height_){
+				std::ostringstream os;
+				os << "parameter region is out of range (x: " << x << ", y: "
+					<< y << ", width: " << width << ", height: " << height
+					<< "; sensor resolution: "
+					<< full_width_ << "x" << full_height_ << ")";
+				throw std::logic_error(os.str());
+			}
+
+			if(module_.param.use_camera_region){
+				set_param(XI_PRM_REGION_SELECTOR, 0);
+				set_param(XI_PRM_HEIGHT, static_cast< int >(height));
+				set_param(XI_PRM_WIDTH, static_cast< int >(width));
+				set_param(XI_PRM_OFFSET_X, static_cast< int >(x));
+				set_param(XI_PRM_OFFSET_Y, static_cast< int >(y));
+// 				set_param(XI_PRM_REGION_MODE, 1); // Don't activate reagion 0?
+				width_ = width;
+				height_ = height;
+			}
+
+			payload_size_ = get_param_int(XI_PRM_IMAGE_PAYLOAD_SIZE);
+			payload_pass_ = (width_ * height_ == payload_size_);
+		});
 	}
+
+	template < typename T >
+	bitmap< T > ximea_cam::get_image()const{
+		return module_.log([](log::info& os){ os << "capture image"; }, [this]{
+			bitmap< T > mosaic(width_, height_);
+			if(payload_pass_){
+				XI_IMG image{}; // {} makes the 0-initialization
+				image.size = sizeof(XI_IMG);
+				image.bp = static_cast< void* >(mosaic.data());
+				image.bp_size = mosaic.point_count() * sizeof(T);
+
+				verify(xiGetImage(handle_, 2000, &image));
+
+				assert(image.padding_x == 0);
+			}else{
+				std::vector< std::uint8_t > buffer(payload_size_);
+
+				XI_IMG image{}; // {} makes the 0-initialization
+				image.size = sizeof(XI_IMG);
+				image.bp = static_cast< void* >(buffer.data());
+				image.bp_size = payload_size_;
+
+				verify(xiGetImage(handle_, 2000, &image));
+
+				assert(image.padding_x > 0);
+
+				auto line_width = mosaic.width() * sizeof(T) + image.padding_x;
+				for(std::size_t y = 0; y < mosaic.height(); ++y){
+					auto line_start = buffer.data() + y * line_width;
+					auto line_end = line_start + mosaic.width() * sizeof(T);
+					auto out_line_start = reinterpret_cast< std::uint8_t* >(
+						mosaic.data() + y * mosaic.width()
+					);
+					std::copy(line_start, line_end, out_line_start);
+				}
+			}
+
+			if(module_.param.use_camera_region) return mosaic;
+
+			auto& param = module_.param;
+			auto rect = ::bitmap::make_rect(
+				::bitmap::make_point(param.x_offset, param.y_offset),
+				::bitmap::make_size(param.width, param.height)
+			);
+
+			return mosaic.subbitmap(rect);
+		});
+	}
+
+	void ximea_cam::set_param(std::string const& name, int value)const{
+		module_.log([&](log::info& os){
+			os << "set param: " << name << " = " << value;
+		}, [&]{
+			verify(xiSetParamInt(handle_, name.c_str(), value));
+		});
+	}
+
+	void ximea_cam::set_param(std::string const& name, float value)const{
+		module_.log([&](log::info& os){
+			os << "set param: " << name << " = " << value;
+		}, [&]{
+			verify(xiSetParamFloat(handle_, name.c_str(), value));
+		});
+	}
+
+	void ximea_cam::set_param(
+		std::string const& name,
+		std::string const& value
+	)const{
+		module_.log([&](log::info& os){
+			os << "set param: " << name << " = " << value;
+		}, [&]{
+			verify(xiSetParamString(handle_, name.c_str(),
+				const_cast< char* >(value.c_str()), value.size()));
+		});
+	}
+
+	int ximea_cam::get_param_int(std::string const& name)const{
+		std::optional< int > value;
+		module_.log([&](log::info& os){
+			os << "get param: " << name;
+			if(value) os << " = " << *value;
+		}, [&]{
+			int v;
+			verify(xiGetParamInt(handle_, name.c_str(), &v));
+			value = v;
+		});
+		return *value;
+	}
+
+	float ximea_cam::get_param_float(std::string const& name)const{
+		std::optional< float > value;
+		module_.log([&](log::info& os){
+			os << "get param: " << name;
+			if(value) os << " = " << *value;
+		}, [&]{
+			float v = 0;
+			verify(xiGetParamFloat(handle_, name.c_str(), &v));
+			value = v;
+		});
+		return *value;
+	}
+
+	std::string ximea_cam::get_param_string(std::string const& name)const{
+		std::optional< std::string > value;
+		module_.log([&](log::info& os){
+			os << "get param: " << name;
+			if(value) os << " = " << *value;
+		}, [&]{
+			char data[4096];
+			data[sizeof(data) - 1] = '\0';
+			verify(xiGetParamString(
+				handle_, name.c_str(), data, sizeof(data) - 1));
+			char const* ptr = static_cast< char* >(&data[0]);
+			value = std::string(ptr, ptr + strlen(ptr));
+		});
+		return *value;
+	}
+
 
 
 	disposer::module_ptr make_module(disposer::make_data& data){
@@ -476,6 +601,13 @@ namespace disposer_module{ namespace camera_ximea{
 			}
 
 			param.format = iter->second;
+
+			data.params.set(param.x_offset, "x_offset");
+			data.params.set(param.y_offset, "y_offset");
+			data.params.set(param.width, "width");
+			data.params.set(param.height, "height");
+			data.params.set(
+				param.use_camera_region, "use_camera_region", false);
 		}
 
 		return std::make_unique< module >(data, std::move(param));

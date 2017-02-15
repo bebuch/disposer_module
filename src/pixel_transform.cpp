@@ -189,19 +189,22 @@ namespace disposer_module{ namespace pixel_transform{
 
 
 	void module::exec(){
-		for(auto&& pair: slots.sequence.get()){
+		for(auto&& [id, input_data]: slots.sequence.get()){
+			(void)id;
 			sequence_visitor visitor(*this);
-			std::visit(visitor, std::move(pair.second));
+			std::visit(visitor, std::move(input_data));
 		}
 
-		for(auto&& pair: slots.vector.get()){
+		for(auto&& [id, input_data]: slots.vector.get()){
+			(void)id;
 			vector_visitor visitor(*this);
-			std::visit(visitor, std::move(pair.second));
+			std::visit(visitor, std::move(input_data));
 		}
 
-		for(auto&& pair: slots.image.get()){
+		for(auto&& [id, input_data]: slots.image.get()){
+			(void)id;
 			image_visitor visitor(*this);
-			std::visit(visitor, std::move(pair.second));
+			std::visit(visitor, std::move(input_data));
 		}
 	}
 

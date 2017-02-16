@@ -10,14 +10,15 @@
 
 #include <bitmap/pixel.hpp>
 
-#define BOOST_MPL_CFG_NO_PREPROCESSED_HEADERS
-#define BOOST_MPL_LIMIT_LIST_SIZE 50
 #include <disposer/module.hpp>
 
 #include <boost/hana.hpp>
 #include <boost/dll.hpp>
 
 #include <cstdint>
+#include <iostream>
+
+#include "thread_pool.hpp"
 
 
 namespace disposer_module{ namespace demosaic{
@@ -153,16 +154,27 @@ namespace disposer_module{ namespace demosaic{
 
 		bitmap_vector< T > result;
 		result.reserve(xc * yc);
-		for(std::size_t i = 0; i < xc * yc; ++i){
-			result.emplace_back(width, height);
-		}
 
-		for(std::size_t y = 0; y < image.height(); ++y){
-			for(std::size_t x = 0; x < image.width(); ++x){
-				auto result_index = (y % yc) * xc + x % xc;
-				result[result_index](x / xc, y / yc) = image(x, y);
-			}
-		}
+		thread_pool pool;
+
+		std::mutex mutex;
+		pool(0, xc * yc,
+			[&result, &mutex, width, height](std::size_t){
+				auto image = bitmap< T >(width, height);
+
+				// emplace_back is not thread safe
+				std::lock_guard< std::mutex > lock(mutex);
+				result.emplace_back(std::move(image));
+			});
+
+		pool(0, image.height(),
+			[&result, &image, xc, yc](std::size_t y){
+				for(std::size_t x = 0; x < image.width(); ++x){
+					auto result_index = (y % yc) * xc + x % xc;
+					result[result_index](x / xc, y / yc) = image(x, y);
+				}
+			});
+
 
 		return result;
 	}

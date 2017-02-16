@@ -10,8 +10,6 @@
 
 #include <bitmap/pixel.hpp>
 
-#define BOOST_MPL_CFG_NO_PREPROCESSED_HEADERS
-#define BOOST_MPL_LIMIT_LIST_SIZE 50
 #include <disposer/module.hpp>
 
 #include <boost/hana.hpp>

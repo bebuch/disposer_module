@@ -168,14 +168,6 @@ namespace disposer_module{ namespace demosaic{
 				result.emplace_back(std::move(image));
 			});
 
-// 		pool(0, image.height(),
-// 			[&result, &image, xc, yc](std::size_t y){
-// 				for(std::size_t x = 0; x < image.width(); ++x){
-// 					auto result_index = (y % yc) * xc + x % xc;
-// 					result[result_index](x / xc, y / yc) = image(x, y);
-// 				}
-// 			});
-
 		pool(0, height,
 			[&result, &image, xc, yc, width](std::size_t y){
 				for(std::size_t x = 0; x < width; ++x){

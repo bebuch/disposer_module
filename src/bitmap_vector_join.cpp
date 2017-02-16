@@ -11,31 +11,150 @@
 #include <bitmap/pixel.hpp>
 
 #include <disposer/module.hpp>
+#include <disposer/type_name.hpp>
 
+#include <boost/spirit/home/x3.hpp>
 #include <boost/hana.hpp>
 #include <boost/dll.hpp>
 
 #include <cstdint>
+#include <limits>
+
+
+
+namespace{
+
+
+	template < typename T >
+	auto get_parser(){
+		static_assert(
+			std::is_floating_point_v< T > ||
+			std::is_unsigned_v< T > ||
+			std::is_signed_v< T >
+		);
+
+		namespace x3 = boost::spirit::x3;
+
+		if constexpr(std::is_floating_point_v< T >){
+			return x3::double_;
+		}else if constexpr(std::is_unsigned_v< T >){
+			return x3::uint64;
+		}else{
+			return x3::int64;
+		}
+	}
+
+
+	template < typename T, typename Value >
+	T protected_cast(Value v){
+		if constexpr(
+			!std::is_floating_point_v< T > && !std::is_same_v< T, Value >
+		){
+			if(
+				std::numeric_limits< T >::min() > v ||
+				std::numeric_limits< T >::max() < v
+			){
+				std::ostringstream os;
+				os << "value '" << v << "' does not match in type [" <<
+					disposer::type_name< T >() << "]";
+				throw std::out_of_range(os.str());
+			}
+		}
+
+		return static_cast< T >(v);
+	}
+
+
+}
 
 
 template < typename T >
 struct disposer::parameter_cast< ::bitmap::pixel::basic_ga< T > >{
-	::bitmap::pixel::basic_ga< T > operator()(std::string const& /*value*/)const{
-		return {};
+	::bitmap::pixel::basic_ga< T > operator()(std::string const& value)const{
+		namespace x3 = boost::spirit::x3;
+
+		::bitmap::pixel::basic_ga< T > px;
+		auto g = [&px](auto& ctx){ px.g = protected_cast< T >(_attr(ctx)); };
+		auto a = [&px](auto& ctx){ px.a = protected_cast< T >(_attr(ctx)); };
+
+		auto vparser = get_parser< T >();
+
+		auto first = value.begin();
+		auto const last = value.end();
+		bool const match = x3::phrase_parse(first, last,
+			(x3::lit('{')
+				>> vparser[g] >> x3::lit(',')
+				>> vparser[a] >> x3::lit('}')),
+			x3::space);
+
+		if(!match || first != last){
+			throw std::logic_error(
+				"expected '{gray, alpha}' but got '" + value + "'");
+		}
+
+		return px;
 	}
 };
 
 template < typename T >
 struct disposer::parameter_cast< ::bitmap::pixel::basic_rgb< T > >{
-	::bitmap::pixel::basic_rgb< T > operator()(std::string const& /*value*/)const{
-		return {};
+	::bitmap::pixel::basic_rgb< T > operator()(std::string const& value)const{
+		namespace x3 = boost::spirit::x3;
+
+		::bitmap::pixel::basic_rgb< T > px;
+		auto r = [&px](auto& ctx){ px.r = protected_cast< T >(_attr(ctx)); };
+		auto g = [&px](auto& ctx){ px.g = protected_cast< T >(_attr(ctx)); };
+		auto b = [&px](auto& ctx){ px.b = protected_cast< T >(_attr(ctx)); };
+
+		auto vparser = get_parser< T >();
+
+		auto first = value.begin();
+		auto const last = value.end();
+		bool const match = x3::phrase_parse(first, last,
+			(x3::lit('{')
+				>> vparser[r] >> x3::lit(',')
+				>> vparser[g] >> x3::lit(',')
+				>> vparser[b] >> x3::lit('}')),
+			x3::space);
+
+		if(!match || first != last){
+			throw std::logic_error(
+				"expected '{red, green, blue}' but got '" + value + "'");
+		}
+
+		return px;
 	}
 };
 
 template < typename T >
 struct disposer::parameter_cast< ::bitmap::pixel::basic_rgba< T > >{
-	::bitmap::pixel::basic_rgba< T > operator()(std::string const& /*value*/)const{
-		return {};
+	::bitmap::pixel::basic_rgba< T > operator()(std::string const& value)const{
+		namespace x3 = boost::spirit::x3;
+
+		::bitmap::pixel::basic_rgba< T > px;
+		auto r = [&px](auto& ctx){ px.r = protected_cast< T >(_attr(ctx)); };
+		auto g = [&px](auto& ctx){ px.g = protected_cast< T >(_attr(ctx)); };
+		auto b = [&px](auto& ctx){ px.b = protected_cast< T >(_attr(ctx)); };
+		auto a = [&px](auto& ctx){ px.a = protected_cast< T >(_attr(ctx)); };
+
+		auto vparser = get_parser< T >();
+
+		auto first = value.begin();
+		auto const last = value.end();
+		bool const match = x3::phrase_parse(first, last,
+			(x3::lit('{')
+				>> vparser[r] >> x3::lit(',')
+				>> vparser[g] >> x3::lit(',')
+				>> vparser[b] >> x3::lit(',')
+				>> vparser[a] >> x3::lit('}')),
+			x3::space);
+
+		if(!match || first != last){
+			throw std::logic_error(
+				"expected '{red, green, blue, alpha}' but got '" + value + "'");
+		}
+
+		return px;
 	}
 };
 
@@ -184,6 +303,7 @@ namespace disposer_module{ namespace bitmap_vector_join{
 			width, height, std::get< T >(param.default_value)
 		);
 
+		// parallel version with thread_pool is slower
 		for(std::size_t i = 0; i < vectors.size(); ++i){
 			auto const vwidth = vectors[i].width();
 			auto const x_offset = (i % ips) * input_size.width();

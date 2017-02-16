@@ -151,14 +151,15 @@ namespace disposer_module{ namespace demosaic{
 
 		std::size_t width = image.width() / xc;
 		std::size_t height = image.height() / yc;
+		std::size_t image_count = xc * yc;
 
 		bitmap_vector< T > result;
-		result.reserve(xc * yc);
+		result.reserve(image_count);
 
 		thread_pool pool;
 
 		std::mutex mutex;
-		pool(0, xc * yc,
+		pool(0, image_count,
 			[&result, &mutex, width, height](std::size_t){
 				auto image = bitmap< T >(width, height);
 
@@ -167,14 +168,25 @@ namespace disposer_module{ namespace demosaic{
 				result.emplace_back(std::move(image));
 			});
 
-		pool(0, image.height(),
-			[&result, &image, xc, yc](std::size_t y){
-				for(std::size_t x = 0; x < image.width(); ++x){
-					auto result_index = (y % yc) * xc + x % xc;
-					result[result_index](x / xc, y / yc) = image(x, y);
+// 		pool(0, image.height(),
+// 			[&result, &image, xc, yc](std::size_t y){
+// 				for(std::size_t x = 0; x < image.width(); ++x){
+// 					auto result_index = (y % yc) * xc + x % xc;
+// 					result[result_index](x / xc, y / yc) = image(x, y);
+// 				}
+// 			});
+
+		pool(0, height,
+			[&result, &image, xc, yc, width](std::size_t y){
+				for(std::size_t x = 0; x < width; ++x){
+					for(std::size_t iy = 0; iy < yc; ++iy){
+						for(std::size_t ix = 0; ix < xc; ++ix){
+							result[iy * xc + ix](x, y) =
+								image(x * xc + ix, y * yc + iy);
+						}
+					}
 				}
 			});
-
 
 		return result;
 	}

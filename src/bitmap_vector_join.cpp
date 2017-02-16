@@ -20,21 +20,21 @@
 
 template < typename T >
 struct disposer::parameter_cast< ::bitmap::pixel::basic_ga< T > >{
-	::bitmap::pixel::basic_ga< T > operator()(std::string const& value)const{
+	::bitmap::pixel::basic_ga< T > operator()(std::string const& /*value*/)const{
 		return {};
 	}
 };
 
 template < typename T >
 struct disposer::parameter_cast< ::bitmap::pixel::basic_rgb< T > >{
-	::bitmap::pixel::basic_rgb< T > operator()(std::string const& value)const{
+	::bitmap::pixel::basic_rgb< T > operator()(std::string const& /*value*/)const{
 		return {};
 	}
 };
 
 template < typename T >
 struct disposer::parameter_cast< ::bitmap::pixel::basic_rgba< T > >{
-	::bitmap::pixel::basic_rgba< T > operator()(std::string const& value)const{
+	::bitmap::pixel::basic_rgba< T > operator()(std::string const& /*value*/)const{
 		return {};
 	}
 };
@@ -185,13 +185,17 @@ namespace disposer_module{ namespace bitmap_vector_join{
 		);
 
 		for(std::size_t i = 0; i < vectors.size(); ++i){
+			auto const vwidth = vectors[i].width();
 			auto const x_offset = (i % ips) * input_size.width();
 			auto const y_offset = (i / ips) * input_size.height();
 
 			for(std::size_t y = 0; y < input_size.height(); ++y){
-				for(std::size_t x = 0; x < input_size.width(); ++x){
-					result(x_offset + x, y_offset + y) = vectors[i](x, y);
-				}
+				auto const in_start = vectors[i].data() + (y * vwidth);
+				auto const in_end = in_start + vwidth;
+				auto const out_start =
+					result.data() + (y_offset + y) * width + x_offset;
+
+				std::copy(in_start, in_end, out_start);
 			}
 		}
 

@@ -170,8 +170,8 @@ namespace disposer_module{ namespace demosaic{
 
 		pool(0, height,
 			[&result, &image, xc, yc, width](std::size_t y){
-				for(std::size_t x = 0; x < width; ++x){
-					for(std::size_t iy = 0; iy < yc; ++iy){
+				for(std::size_t iy = 0; iy < yc; ++iy){
+					for(std::size_t x = 0; x < width; ++x){
 						for(std::size_t ix = 0; ix < xc; ++ix){
 							result[iy * xc + ix](x, y) =
 								image(x * xc + ix, y * yc + iy);

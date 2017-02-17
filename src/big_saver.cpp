@@ -6,7 +6,6 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 //-----------------------------------------------------------------------------
-#include "log.hpp"
 #include "bitmap_sequence.hpp"
 #include "name_generator.hpp"
 #include "tar.hpp"
@@ -247,7 +246,7 @@ namespace disposer_module{ namespace big_saver{
 
 		if(param.tar){
 			auto tarname = param.dir + "/" + (*param.tar_pattern)(used_id);
-			log([this, &tarname, id](log::info& os){
+			log([this, &tarname, id](disposer::log_base& os){
 				os << "write '" << tarname << "'";
 			},
 			[this, id, used_id, &bitmap_sequence, &tarname]{
@@ -257,7 +256,9 @@ namespace disposer_module{ namespace big_saver{
 					std::size_t pos = param.sequence_start;
 					for(auto& bitmap: sequence){
 						auto filename = (*param.big_pattern)(used_id, cam, pos);
-						log([this, &tarname, &filename, id](log::info& os){
+						log([this, &tarname, &filename, id](
+							disposer::log_base& os
+						){
 							os << "write '" << tarname << "/" << filename
 								<< "'";
 						},
@@ -278,7 +279,7 @@ namespace disposer_module{ namespace big_saver{
 				for(auto& bitmap: sequence){
 					auto filename = param.dir + "/" +
 						(*param.big_pattern)(used_id, cam, pos);
-					log([this, &filename, id](log::info& os){
+					log([this, &filename, id](disposer::log_base& os){
 						os << "write '" << filename << "'";
 					},
 					[&bitmap, &filename]{

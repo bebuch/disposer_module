@@ -6,8 +6,6 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 //-----------------------------------------------------------------------------
-#include "log.hpp"
-
 #include <disposer/module.hpp>
 
 #include <bitmap/pixel.hpp>
@@ -361,14 +359,16 @@ namespace disposer_module{ namespace camera_ximea{
 		try{
 			verify(xiCloseDevice(handle_));
 		}catch(std::exception const& e){
-			module_.log([&e](log::info& os){ os << e.what(); });
+			module_.log(
+				[&e](disposer::log_base& os){ os << e.what(); });
 		}catch(...){
-			module_.log([](log::info& os){ os << "unknown exception"; });
+			module_.log(
+				[](disposer::log_base& os){ os << "unknown exception"; });
 		}
 	}
 
 	void ximea_cam::init(){
-		module_.log([](log::info& os){ os << "init camera"; }, [&]{
+		module_.log([](disposer::log_base& os){ os << "init camera"; }, [&]{
 			if(module_.param.list_cameras) return;
 
 			set_param(XI_PRM_BUFFER_POLICY, XI_BP_SAFE);
@@ -426,7 +426,8 @@ namespace disposer_module{ namespace camera_ximea{
 
 	template < typename T >
 	bitmap< T > ximea_cam::get_image()const{
-		return module_.log([](log::info& os){ os << "capture image"; }, [this]{
+		return module_.log([](disposer::log_base& os){ os << "capture image"; },
+		[this]{
 			bitmap< T > mosaic(width_, height_);
 			if(payload_pass_){
 				XI_IMG image{}; // {} makes the 0-initialization
@@ -473,7 +474,7 @@ namespace disposer_module{ namespace camera_ximea{
 	}
 
 	void ximea_cam::set_param(std::string const& name, int value)const{
-		module_.log([&](log::info& os){
+		module_.log([&](disposer::log_base& os){
 			os << "set param: " << name << " = " << value;
 		}, [&]{
 			verify(xiSetParamInt(handle_, name.c_str(), value));
@@ -481,7 +482,7 @@ namespace disposer_module{ namespace camera_ximea{
 	}
 
 	void ximea_cam::set_param(std::string const& name, float value)const{
-		module_.log([&](log::info& os){
+		module_.log([&](disposer::log_base& os){
 			os << "set param: " << name << " = " << value;
 		}, [&]{
 			verify(xiSetParamFloat(handle_, name.c_str(), value));
@@ -492,7 +493,7 @@ namespace disposer_module{ namespace camera_ximea{
 		std::string const& name,
 		std::string const& value
 	)const{
-		module_.log([&](log::info& os){
+		module_.log([&](disposer::log_base& os){
 			os << "set param: " << name << " = " << value;
 		}, [&]{
 			verify(xiSetParamString(handle_, name.c_str(),
@@ -502,7 +503,7 @@ namespace disposer_module{ namespace camera_ximea{
 
 	int ximea_cam::get_param_int(std::string const& name)const{
 		std::optional< int > value;
-		module_.log([&](log::info& os){
+		module_.log([&](disposer::log_base& os){
 			os << "get param: " << name;
 			if(value) os << " = " << *value;
 		}, [&]{
@@ -515,7 +516,7 @@ namespace disposer_module{ namespace camera_ximea{
 
 	float ximea_cam::get_param_float(std::string const& name)const{
 		std::optional< float > value;
-		module_.log([&](log::info& os){
+		module_.log([&](disposer::log_base& os){
 			os << "get param: " << name;
 			if(value) os << " = " << *value;
 		}, [&]{
@@ -528,7 +529,7 @@ namespace disposer_module{ namespace camera_ximea{
 
 	std::string ximea_cam::get_param_string(std::string const& name)const{
 		std::optional< std::string > value;
-		module_.log([&](log::info& os){
+		module_.log([&](disposer::log_base& os){
 			os << "get param: " << name;
 			if(value) os << " = " << *value;
 		}, [&]{

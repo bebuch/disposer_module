@@ -6,7 +6,6 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 //-----------------------------------------------------------------------------
-#include "log.hpp"
 #include "bitmap_sequence.hpp"
 #include "name_generator.hpp"
 #include "tar.hpp"
@@ -241,7 +240,7 @@ namespace disposer_module{ namespace big_loader{
 		bitmap< T > load_bitmap(std::size_t cam, std::size_t pos)const{
 			bitmap< T > result;
 			auto name = filename(cam, pos);
-			loader.log([this, &name](log::info& os){ os << "read '" << name << "'"; }, [&result, &name]{
+			loader.log([this, &name](disposer::log_base& os){ os << "read '" << name << "'"; }, [&result, &name]{
 				big::read(result, name);
 			});
 			return result;
@@ -286,7 +285,7 @@ namespace disposer_module{ namespace big_loader{
 		bitmap< T > load_bitmap(std::size_t cam, std::size_t pos)const{
 			bitmap< T > result;
 			auto name = filename(cam, pos);
-			loader.log([this, &name](log::info& os){ os << "read '" << tarname << "/" << name << "'"; }, [this, &result, &name]{
+			loader.log([this, &name](disposer::log_base& os){ os << "read '" << tarname << "/" << name << "'"; }, [this, &result, &name]{
 				big::read(result, tar.get(name));
 			});
 			return result;
@@ -315,7 +314,7 @@ namespace disposer_module{ namespace big_loader{
 
 
 	std::size_t module::get_type(std::istream& is, std::string const& filename)const{
-		return log([this, &filename](log::info& os){ os << "read header of '" << filename << "'"; }, [&is, &filename]{
+		return log([this, &filename](disposer::log_base& os){ os << "read header of '" << filename << "'"; }, [&is, &filename]{
 			auto header = big::read_header(is);
 			switch(header.type){
 				case big::type_v< std::int8_t >: return type_v< std::int8_t >;
@@ -340,7 +339,7 @@ namespace disposer_module{ namespace big_loader{
 		auto used_id = param.fixed_id ? *param.fixed_id : id;
 
 		auto call_worker = [this](auto& loader, std::size_t data_type){
-			log([this, data_type](log::info& os){ os << type_name << " id " << id << ": data type is '" << io_type_names[data_type] << "'"; });
+			log([this, data_type](disposer::log_base& os){ os << type_name << " id " << id << ": data type is '" << io_type_names[data_type] << "'"; });
 
 			auto worker = [this, &loader](auto type_t){
 				using data_type = typename decltype(type_t)::type;

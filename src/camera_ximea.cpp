@@ -414,7 +414,7 @@ namespace disposer_module{ namespace camera_ximea{
 				set_param(XI_PRM_WIDTH, static_cast< int >(width));
 				set_param(XI_PRM_OFFSET_X, static_cast< int >(x));
 				set_param(XI_PRM_OFFSET_Y, static_cast< int >(y));
-// 				set_param(XI_PRM_REGION_MODE, 1); // Don't activate reagion 0?
+// 				set_param(XI_PRM_REGION_MODE, 1); // Don't enable reagion 0?
 				width_ = width;
 				height_ = height;
 			}
@@ -639,19 +639,19 @@ namespace disposer_module{ namespace camera_ximea{
 
 	void module::input_ready(){
 		if(param.list_cameras){
-			info.activate< std::string >();
+			info.enable< std::string >();
 		}else{
 			switch(param.format){
 				case pixel_format::mono8:
 				case pixel_format::raw8:
-					image.activate< std::uint8_t >();
+					image.enable< std::uint8_t >();
 					break;
 				case pixel_format::mono16:
 				case pixel_format::raw16:
-					image.activate< std::uint16_t >();
+					image.enable< std::uint16_t >();
 					break;
 				case pixel_format::rgb8:
-					image.activate< pixel::rgb8 >();
+					image.enable< pixel::rgb8 >();
 					break;
 			}
 		}

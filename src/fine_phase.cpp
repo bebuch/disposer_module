@@ -111,7 +111,7 @@ namespace disposer_module{ namespace fine_phase{
 
 
 		void input_ready()override{
-			signals.vector.activate_types(slots.vector.active_types());
+			signals.vector.enable_types(slots.vector.active_types());
 		}
 
 

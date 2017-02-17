@@ -205,23 +205,23 @@ namespace disposer_module{ namespace big_loader{
 
 
 	void module::input_ready(){
-		auto activate = [this](auto type_t){
+		auto enable = [this](auto type_t){
 			switch(param.output){
 				case output_t::sequence:
-					sequence.activate< typename decltype(type_t)::type >();
+					sequence.enable< typename decltype(type_t)::type >();
 				break;
 				case output_t::vector:
-					vector.activate< typename decltype(type_t)::type >();
+					vector.enable< typename decltype(type_t)::type >();
 				break;
 				case output_t::image:
-					image.activate< typename decltype(type_t)::type >();
+					image.enable< typename decltype(type_t)::type >();
 				break;
 			}
 		};
 
-		hana::for_each(hana_type_list, [this, &activate](auto type_t){
+		hana::for_each(hana_type_list, [this, &enable](auto type_t){
 			using data_type = typename decltype(type_t)::type;
-			if(param.type[type_v< data_type >]) activate(type_t);
+			if(param.type[type_v< data_type >]) enable(type_t);
 		});
 	}
 

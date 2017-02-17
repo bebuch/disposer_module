@@ -91,9 +91,9 @@ namespace disposer_module{ namespace pixel_transform{
 
 
 		void input_ready()override{
-			signals.sequence.activate_types(slots.sequence.active_types());
-			signals.vector.activate_types(slots.vector.active_types());
-			signals.image.activate_types(slots.image.active_types());
+			signals.sequence.enable_types(slots.sequence.active_types());
+			signals.vector.enable_types(slots.vector.active_types());
+			signals.image.enable_types(slots.image.active_types());
 		}
 
 

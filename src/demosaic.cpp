@@ -216,7 +216,7 @@ namespace disposer_module{ namespace demosaic{
 	}
 
 
-	void init(disposer::module_adder& add){
+	void init(disposer::module_declarant& add){
 		add("demosaic", &make_module);
 	}
 

@@ -131,7 +131,7 @@ namespace disposer_module{ namespace raster{
 	}
 
 
-	void init(disposer::module_adder& add){
+	void init(disposer::module_declarant& add){
 		add("raster_int8_t", &make_module< std::int8_t >);
 		add("raster_uint8_t", &make_module< std::uint8_t >);
 		add("raster_int16_t", &make_module< std::int16_t >);

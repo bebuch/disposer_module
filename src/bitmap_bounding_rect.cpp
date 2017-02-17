@@ -122,7 +122,7 @@ namespace disposer_module{ namespace bitmap_bounding_rect{
 		}
 	}
 
-	void init(disposer::module_adder& add){
+	void init(disposer::module_declarant& add){
 		add("bitmap_bounding_rect", &make_module);
 	}
 

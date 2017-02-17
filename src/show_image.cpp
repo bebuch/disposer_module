@@ -127,7 +127,7 @@ namespace disposer_module{ namespace show_image{
 		return std::make_unique< module >(data, std::move(param));
 	}
 
-	void init(disposer::module_adder& add){
+	void init(disposer::module_declarant& add){
 		add("show_image", &make_module);
 	}
 

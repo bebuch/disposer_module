@@ -43,7 +43,7 @@ namespace disposer_module{ namespace add_to_log{
 		return std::make_unique< module >(data);
 	}
 
-	void init(disposer::module_adder& add){
+	void init(disposer::module_declarant& add){
 		add("add_to_log", &make_module);
 	}
 

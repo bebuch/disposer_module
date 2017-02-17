@@ -679,7 +679,7 @@ namespace disposer_module{ namespace camera_ximea{
 	}
 
 
-	void init(disposer::module_adder& add){
+	void init(disposer::module_declarant& add){
 		add("camera_ximea", &make_module);
 	}
 

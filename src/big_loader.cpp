@@ -414,7 +414,7 @@ namespace disposer_module{ namespace big_loader{
 	}
 
 
-	void init(disposer::module_adder& add){
+	void init(disposer::module_declarant& add){
 		add("big_loader", &make_module);
 	}
 

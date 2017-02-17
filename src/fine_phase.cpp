@@ -221,7 +221,7 @@ namespace disposer_module{ namespace fine_phase{
 	}
 
 
-	void init(disposer::module_adder& add){
+	void init(disposer::module_declarant& add){
 		add("fine_phase", &make_module);
 	}
 

@@ -209,7 +209,7 @@ namespace disposer_module{ namespace pixel_transform{
 	}
 
 
-	void init(disposer::module_adder& add){
+	void init(disposer::module_declarant& add){
 		add("pixel_transform", &make_module);
 	}
 

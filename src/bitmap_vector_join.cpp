@@ -368,7 +368,7 @@ namespace disposer_module{ namespace bitmap_vector_join{
 
 
 
-	void init(disposer::module_adder& add){
+	void init(disposer::module_declarant& add){
 		add("bitmap_vector_join", &make_module);
 	}
 

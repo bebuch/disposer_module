@@ -251,7 +251,7 @@ namespace disposer_module{ namespace subbitmap{
 	}
 
 
-	void init(disposer::module_adder& add){
+	void init(disposer::module_declarant& add){
 		add("subbitmap", &make_module);
 	}
 

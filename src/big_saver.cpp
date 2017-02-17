@@ -395,7 +395,7 @@ namespace disposer_module{ namespace big_saver{
 	}
 
 
-	void init(disposer::module_adder& add){
+	void init(disposer::module_declarant& add){
 		add("big_saver", &make_module);
 	}
 

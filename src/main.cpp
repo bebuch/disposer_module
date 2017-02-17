@@ -64,8 +64,8 @@ int main(int argc, char** argv){
 				modules.emplace_back(file.path().string());
 
 				modules.back().get_alias<
-					void(::disposer::module_adder&)
-				>("init")(disposer.adder());
+					void(::disposer::module_declarant&)
+				>("init")(disposer.declarant());
 			});
 		}
 	})) return 1;

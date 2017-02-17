@@ -23,7 +23,7 @@ int main(int argc, char** argv){
 	namespace fs = boost::filesystem;
 
 	bool exec_all = (argc == 1);
-	std::string trigger_chain;
+	std::string exec_chain;
 	std::size_t exec_count = 0;
 	if(!exec_all){
 		if(argc != 3){
@@ -31,7 +31,7 @@ int main(int argc, char** argv){
 			return 1;
 		}
 
-		trigger_chain = argv[1];
+		exec_chain = argv[1];
 		try{
 			exec_count = boost::lexical_cast< std::size_t >(argv[2]);
 		}catch(...){
@@ -72,7 +72,7 @@ int main(int argc, char** argv){
 
 	return !::disposer::exception_catching_log(
 		[](disposer_module::log::info& os){ os << "exec chains"; },
-	[&disposer, exec_all, &trigger_chain, exec_count]{
+	[&disposer, exec_all, &exec_chain, exec_count]{
 		disposer.load("plan.ini");
 
 		if(exec_all){
@@ -82,7 +82,7 @@ int main(int argc, char** argv){
 		}else{
 			// single thread version
 			for(std::size_t i = 0; i < exec_count; ++i){
-				disposer.exec(trigger_chain);
+				disposer.exec(exec_chain);
 			}
 
 
@@ -93,9 +93,9 @@ int main(int argc, char** argv){
 //
 // 			std::atomic< std::size_t > index(0);
 // 			for(std::size_t i = 0; i < cores; ++i){
-// 				workers.emplace_back([&disposer, &trigger_chain, &index]{
+// 				workers.emplace_back([&disposer, &exec_chain, &index]{
 // 					while(index++ < 1000){
-// 						disposer.exec(trigger_chain);
+// 						disposer.exec(exec_chain);
 // 					}
 // 				});
 // 			}

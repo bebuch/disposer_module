@@ -325,23 +325,46 @@ namespace disposer_module{ namespace camera_ximea{
 		module(disposer::make_data const& data, parameter&& param):
 			disposer::module_base(data, {image, info}),
 			param(std::move(param))
-		{
-			if(param.list_cameras) return;
-			cam_.emplace(*this, 0);
-			cam_->set_param(XI_PRM_EXPOSURE, 10000);
-			cam_->start_acquisition();
-		}
-
-		~module(){
-			if(param.list_cameras) return;
-			cam_->stop_acquisition();
-		}
+			{}
 
 
 		disposer::container_output< bitmap, type_list > image{"image"};
 
 		disposer::output< std::string > info{"info"};
 
+
+		void enable()override{
+			if(param.list_cameras) return;
+
+			log([](disposer::log_base& os){
+					os << "Connect to camera";
+				}, [this]{
+					try{
+						cam_.emplace(*this, 0);
+						cam_->set_param(XI_PRM_EXPOSURE, 10000);
+						cam_->start_acquisition();
+					}catch(...){
+						cam_.reset();
+						throw;
+					}
+				});
+		}
+
+		void disable()noexcept override{
+			if(param.list_cameras) return;
+
+			exception_catching_log([](disposer::log_base& os){
+					os << "Disconnect camera";
+				}, [this]{
+					try{
+						cam_->stop_acquisition();
+						cam_.reset();
+					}catch(...){
+						cam_.reset();
+						throw;
+					}
+				});
+		}
 
 		void exec()override;
 		void input_ready()override;

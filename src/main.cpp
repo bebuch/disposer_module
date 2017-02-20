@@ -76,15 +76,19 @@ int main(int argc, char** argv){
 		if(exec_all){
 			for(auto& chain_name: disposer.chains()){
 				auto& chain = disposer.get_chain(chain_name);
+				chain.enable();
 				chain.exec();
+				chain.disable();
 			}
 		}else{
 			auto& chain = disposer.get_chain(exec_chain);
 
 			// single thread version
+			chain.enable();
 			for(std::size_t i = 0; i < exec_count; ++i){
 				chain.exec();
 			}
+			chain.disable();
 
 
 // 			// multi threaded version
@@ -92,6 +96,7 @@ int main(int argc, char** argv){
 // 			std::vector< std::thread > workers;
 // 			workers.reserve(cores);
 //
+// 			chain.enable();
 // 			std::atomic< std::size_t > index(0);
 // 			for(std::size_t i = 0; i < cores; ++i){
 // 				workers.emplace_back([&chain, &index]{
@@ -104,6 +109,7 @@ int main(int argc, char** argv){
 // 			for(auto& worker: workers){
 // 				worker.join();
 // 			}
+// 			chain.disable();
 		}
 	});
 }

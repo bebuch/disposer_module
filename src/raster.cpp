@@ -11,6 +11,8 @@
 
 #include <disposer/module.hpp>
 
+#include <bitmap/pixel.hpp>
+
 #include <boost/dll.hpp>
 
 #include <cstdint>
@@ -19,11 +21,59 @@
 namespace disposer_module{ namespace raster{
 
 
+	namespace pixel = ::bitmap::pixel;
+
+	using type_list = disposer::type_list<
+		std::int8_t,
+		std::uint8_t,
+		std::int16_t,
+		std::uint16_t,
+		std::int32_t,
+		std::uint32_t,
+		std::int64_t,
+		std::uint64_t,
+		float,
+		double,
+		long double,
+		pixel::ga8,
+		pixel::ga16,
+		pixel::ga32,
+		pixel::ga64,
+		pixel::ga8u,
+		pixel::ga16u,
+		pixel::ga32u,
+		pixel::ga64u,
+		pixel::ga32f,
+		pixel::ga64f,
+		pixel::rgb8,
+		pixel::rgb16,
+		pixel::rgb32,
+		pixel::rgb64,
+		pixel::rgb8u,
+		pixel::rgb16u,
+		pixel::rgb32u,
+		pixel::rgb64u,
+		pixel::rgb32f,
+		pixel::rgb64f,
+		pixel::rgba8,
+		pixel::rgba16,
+		pixel::rgba32,
+		pixel::rgba64,
+		pixel::rgba8u,
+		pixel::rgba16u,
+		pixel::rgba32u,
+		pixel::rgba64u,
+		pixel::rgba32f,
+		pixel::rgba64f
+	>;
+
+
+
 	struct parameter{
 		std::size_t raster;
 	};
 
-	template < typename T >
+
 	struct module: disposer::module_base{
 		module(disposer::make_data const& data, parameter&& param):
 			disposer::module_base(
@@ -35,19 +85,30 @@ namespace disposer_module{ namespace raster{
 			{}
 
 
+		template < typename T >
 		bitmap< T > apply_raster(bitmap< T > const& image)const;
 
 
 		struct{
-			disposer::input< bitmap_sequence< T > > sequence{"sequence"};
-			disposer::input< bitmap_vector< T > > vector{"vector"};
-			disposer::input< bitmap< T > > image{"image"};
+			disposer::container_input< bitmap_sequence, type_list >
+				sequence{"sequence"};
+
+			disposer::container_input< bitmap_vector, type_list >
+				vector{"vector"};
+
+			disposer::container_input< bitmap, type_list >
+				image{"image"};
 		} slots;
 
 		struct{
-			disposer::output< bitmap_sequence< T > > sequence{"sequence"};
-			disposer::output< bitmap_vector< T > > vector{"vector"};
-			disposer::output< bitmap< T > > image{"image"};
+			disposer::container_output< bitmap_sequence, type_list >
+				sequence{"sequence"};
+
+			disposer::container_output< bitmap_vector, type_list >
+				vector{"vector"};
+
+			disposer::container_output< bitmap, type_list >
+				image{"image"};
 		} signals;
 
 
@@ -57,7 +118,7 @@ namespace disposer_module{ namespace raster{
 		parameter const param;
 	};
 
-	template < typename T >
+
 	disposer::module_ptr make_module(disposer::make_data& data){
 		if(data.is_first()) throw disposer::module_not_as_start(data);
 
@@ -67,17 +128,16 @@ namespace disposer_module{ namespace raster{
 
 		if(param.raster == 0){
 			throw std::logic_error(make_string(
-				data.type_name + ": raster (value: ", param.raster,
-				") needs to be greater than 0"
+				"raster (value: ", param.raster, ") needs to be greater than 0"
 			));
 		}
 
-		return std::make_unique< module< T > >(data, std::move(param));
+		return std::make_unique< module >(data, std::move(param));
 	}
 
 
 	template < typename T >
-	bitmap< T > module< T >::apply_raster(bitmap< T > const& image)const{
+	bitmap< T > module::apply_raster(bitmap< T > const& image)const{
 		bitmap< T > result(
 			(image.width() - 1) / param.raster + 1,
 			(image.height() - 1) / param.raster + 1
@@ -93,56 +153,61 @@ namespace disposer_module{ namespace raster{
 	}
 
 
-	template < typename T >
-	void module< T >::exec(){
-		for(auto const& pair: slots.sequence.get()){
-// 			auto id = pair.first;
-			auto& data = pair.second.data();
+	void module::exec(){
+		for(auto const& [id, seq]: slots.sequence.get()){
+			(void)id;
+			std::visit([this](auto const& data){
+				auto const& seq = data.data();
 
-			bitmap_sequence< T > result(data.size());
-			for(std::size_t i = 0; i < data.size(); ++i){
-				result[i].resize(data[i].size());
-				for(std::size_t j = 0; j < data[i].size(); ++j){
-					result[i][j] = apply_raster(data[i][j]);
+				using sequence_t = std::decay_t< decltype(seq) >;
+				using value_type =
+					typename sequence_t::value_type::value_type::value_type;
+
+				sequence_t result(seq.size());
+				for(std::size_t i = 0; i < seq.size(); ++i){
+					result[i].resize(seq[i].size());
+					for(std::size_t j = 0; j < seq[i].size(); ++j){
+						result[i][j] = apply_raster(seq[i][j]);
+					}
 				}
-			}
 
-			signals.sequence.put(std::move(result));
+				signals.sequence.put< value_type >(std::move(result));
+			}, seq);
 		}
 
-		for(auto const& pair: slots.vector.get()){
-// 			auto id = pair.first;
-			auto& data = pair.second.data();
+		for(auto const& [id, vec]: slots.vector.get()){
+			(void)id;
+			std::visit([this](auto const& data){
+				auto const& vec = data.data();
 
-			bitmap_vector< T > result(data.size());
-			for(std::size_t i = 0; i < data.size(); ++i){
-				result[i] = apply_raster(data[i]);
-			}
+				using vector_t = std::decay_t< decltype(vec) >;
+				using value_type = typename vector_t::value_type::value_type;
 
-			signals.vector.put(std::move(result));
+				vector_t result(vec.size());
+				for(std::size_t i = 0; i < vec.size(); ++i){
+					result[i] = apply_raster(vec[i]);
+				}
+
+				signals.vector.put< value_type >(std::move(result));
+			}, vec);
 		}
 
-		for(auto const& pair: slots.image.get()){
-// 			auto id = pair.first;
-			auto& data = pair.second.data();
+		for(auto const& [id, img]: slots.image.get()){
+			(void)id;
+			std::visit([this](auto const& data){
+				auto const& img = data.data();
 
-			signals.image.put(apply_raster(data));
+				using value_type =
+					typename std::decay_t< decltype(img) >::value_type;
+
+				signals.image.put< value_type >(apply_raster(img));
+			}, img);
 		}
 	}
 
 
 	void init(disposer::module_declarant& add){
-		add("raster_int8_t", &make_module< std::int8_t >);
-		add("raster_uint8_t", &make_module< std::uint8_t >);
-		add("raster_int16_t", &make_module< std::int16_t >);
-		add("raster_uint16_t", &make_module< std::uint16_t >);
-		add("raster_int32_t", &make_module< std::int32_t >);
-		add("raster_uint32_t", &make_module< std::uint32_t >);
-		add("raster_int64_t", &make_module< std::int64_t >);
-		add("raster_uint64_t", &make_module< std::uint64_t >);
-		add("raster_float", &make_module< float >);
-		add("raster_double", &make_module< double >);
-		add("raster_long_double", &make_module< long double >);
+		add("raster", &make_module);
 	}
 
 	BOOST_DLL_AUTO_ALIAS(init)

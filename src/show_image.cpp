@@ -76,46 +76,62 @@ namespace disposer_module{ namespace show_image{
 		}
 	};
 
-	struct display_visitor{
-		display_visitor(cimg_library::CImgDisplay& display):
-			display(display){}
 
-		cimg_library::CImgDisplay& display;
-
-		template < typename T >
-		void operator()(T const& img)const{
-			if(
-				display.width() != img.width() ||
-				display.height() != img.height()
-			){
-				display.resize(img, false);
-			}
-
-			display.display(img);
-		}
-	};
-
-
-	struct module: disposer::module_base{
-		module(disposer::make_data const& data, parameter&& param):
-			disposer::module_base(data, {image}),
-			display(200, 100, param.window_title.c_str()){}
-
-		disposer::container_input< bitmap, type_list > image{"image"};
-
-		virtual void exec()override{
-			for(auto& pair: image.get()){
-				auto& data = pair.second;
-
-				std::visit(assign_visitor(img), data);
-				std::visit(display_visitor(display), img);
-				display.show();
-			}
-		}
+	struct resources{
+		resources(std::string const& title):
+			display(200, 100, title.c_str()){}
 
 		cimg_library::CImgDisplay display;
 		cimg_variant img;
 	};
+
+	struct module: disposer::module_base{
+		module(disposer::make_data const& data, parameter&& param):
+			disposer::module_base(data, {image}),
+			param_(std::move(param)){}
+
+		disposer::container_input< bitmap, type_list > image{"image"};
+
+		void enable()override;
+
+		void disable()noexcept override;
+
+		void exec()override;
+
+		std::optional< resources > data_;
+		parameter const param_;
+	};
+
+
+	void module::enable(){
+		data_.emplace(param_.window_title);
+	}
+
+
+	void module::disable()noexcept{
+		data_.reset();
+	}
+
+
+	void module::exec(){
+		for(auto& pair: image.get()){
+			auto& img_data = pair.second;
+
+			std::visit(assign_visitor(data_->img), img_data);
+			std::visit([this](auto const& img){
+				if(
+					data_->display.width() != img.width() ||
+					data_->display.height() != img.height()
+				){
+					data_->display.resize(img, false);
+				}
+
+				data_->display.display(img);
+			}, data_->img);
+			data_->display.show();
+		}
+	}
+
 
 	disposer::module_ptr make_module(disposer::make_data& data){
 		if(data.is_first()) throw disposer::module_not_as_start(data);
@@ -126,6 +142,7 @@ namespace disposer_module{ namespace show_image{
 
 		return std::make_unique< module >(data, std::move(param));
 	}
+
 
 	void init(disposer::module_declarant& add){
 		add("show_image", &make_module);

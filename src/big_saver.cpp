@@ -134,13 +134,13 @@ namespace disposer_module{ namespace big_saver{
 		auto input_count = std::count(use_input.begin(), use_input.end(), true);
 
 		if(input_count > 1){
-			throw std::logic_error(data.type_name +
-				": Can only use one input ('image', 'vector' or 'sequence')");
+			throw std::logic_error(
+				"can only use one input ('image', 'vector' or 'sequence')");
 		}
 
 		if(input_count == 0){
-			throw std::logic_error(data.type_name +
-				": No input defined (use 'image', 'vector' or 'sequence')");
+			throw std::logic_error(
+				"no input defined (use 'image', 'vector' or 'sequence')");
 		}
 
 		auto& params = data.params;
@@ -167,8 +167,8 @@ namespace disposer_module{ namespace big_saver{
 			param.input = input_t::image;
 			params.set(param.sequence_count, "sequence_count");
 			if(param.sequence_count == 0){
-				throw std::logic_error(make_string(data.type_name,
-					": sequence_count (value: ", param.sequence_count,
+				throw std::logic_error(make_string(
+					"sequence_count (value: ", param.sequence_count,
 					") needs to be greater than 0"));
 			}
 		}
@@ -382,8 +382,8 @@ namespace disposer_module{ namespace big_saver{
 					}
 
 					if(pos != 0){
-						throw std::runtime_error(type_name +
-							": single image count does not match parameter "
+						throw std::runtime_error(
+							"single image count does not match parameter "
 							"'sequence_count'");
 					}
 

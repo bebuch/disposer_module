@@ -184,33 +184,26 @@ namespace disposer_module{ namespace demosaic{
 	}
 
 
-	struct visitor{
-		visitor(demosaic::module& module, std::size_t id):
-			module(module), id(id) {}
-
-
-		template < typename T >
-		void operator()(disposer::input_data< bitmap< T > > const& vector){
-			module.signals.image_vector
-				.put< T >(module.demosaic(vector.data()));
-		}
-
-		demosaic::module& module;
-		std::size_t const id;
-	};
-
-
 	void module::exec(){
-		for(auto const& pair: slots.image.get()){
-			visitor visitor(*this, pair.first);
-			std::visit(visitor, pair.second);
+		for(auto const& [id, img]: slots.image.get()){
+			(void)id;
+			std::visit([this](auto const& vector){
+				using value_type =
+					typename std::decay_t< decltype(vector.data()) >
+					::value_type;
+
+				signals.image_vector.put< value_type >(demosaic(vector.data()));
+			}, img);
 		}
 	}
 
 	void module::input_ready(){
 		signals.image_vector.enable_types(
 			slots.image.active_types_transformed(
-				[](auto type){ return hana::type_c< std::vector< typename decltype(type)::type > >; }
+				[](auto type){
+					return hana::type_c<
+						std::vector< typename decltype(type)::type > >;
+				}
 			)
 		);
 	}

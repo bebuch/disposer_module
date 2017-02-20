@@ -74,13 +74,16 @@ int main(int argc, char** argv){
 		disposer.load("plan.ini");
 
 		if(exec_all){
-			for(auto& chain: disposer.chains()){
-				disposer.exec(chain);
+			for(auto& chain_name: disposer.chains()){
+				auto& chain = disposer.get_chain(chain_name);
+				chain.exec();
 			}
 		}else{
+			auto& chain = disposer.get_chain(exec_chain);
+
 			// single thread version
 			for(std::size_t i = 0; i < exec_count; ++i){
-				disposer.exec(exec_chain);
+				chain.exec();
 			}
 
 
@@ -91,9 +94,9 @@ int main(int argc, char** argv){
 //
 // 			std::atomic< std::size_t > index(0);
 // 			for(std::size_t i = 0; i < cores; ++i){
-// 				workers.emplace_back([&disposer, &exec_chain, &index]{
+// 				workers.emplace_back([&chain, &index]{
 // 					while(index++ < 1000){
-// 						disposer.exec(exec_chain);
+// 						chain.exec();
 // 					}
 // 				});
 // 			}

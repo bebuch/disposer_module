@@ -227,22 +227,25 @@ namespace disposer_module{ namespace big_saver{
 								<< "'";
 						},
 						[&tar, &bitmap, &filename]{
-							tar.write(filename, [&bitmap](std::ostream& os){
-								std::visit([&os](auto const& image_ref){
-									big::write(image_ref.get(), os);
-								}, bitmap);
-							}, std::visit([](auto const& image_ref){
-								using value_type = std::remove_cv_t<
-									std::remove_pointer_t<
+							tar.write(filename,
+								[&bitmap](std::ostream& file_os){
+									std::visit(
+										[&file_os](auto const& image_ref){
+											big::write(
+												image_ref.get(), file_os);
+										}, bitmap);
+								}, std::visit([](auto const& image_ref){
+									using value_type = std::remove_cv_t<
+										std::remove_pointer_t<
 										decltype(image_ref.get().data()) > >;
 
-								auto content_bytes =
-									image_ref.get().width() *
-									image_ref.get().height() *
-									sizeof(value_type);
+									auto content_bytes =
+										image_ref.get().width() *
+										image_ref.get().height() *
+										sizeof(value_type);
 
-								return 10 + content_bytes;
-							}, bitmap));
+									return 10 + content_bytes;
+								}, bitmap));
 						});
 						++pos;
 					}

@@ -115,6 +115,13 @@ namespace disposer_module{ namespace raster{
 		void exec()override;
 
 
+		void input_ready()override{
+			signals.sequence.enable_types(slots.sequence.active_types());
+			signals.vector.enable_types(slots.vector.active_types());
+			signals.image.enable_types(slots.image.active_types());
+		}
+
+
 		parameter const param;
 	};
 

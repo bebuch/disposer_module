@@ -205,42 +205,6 @@ namespace disposer_module{ namespace big_saver{
 	}
 
 
-	struct big_stream_visitor{
-		big_stream_visitor(std::ostream& os): os(os){}
-
-		std::ostream& os;
-
-		template < typename T >
-		void operator()(T const& image_ref)const{
-			big::write(image_ref.get(), os);
-		}
-	};
-
-	struct big_streamsize_visitor{
-		template < typename T >
-		std::size_t operator()(T const& image_ref)const{
-			using value_type = std::remove_cv_t< std::remove_pointer_t<
-				decltype(image_ref.get().data()) > >;
-
-			auto content_bytes = image_ref.get().width() *
-				image_ref.get().height() * sizeof(value_type);
-
-			return 10 + content_bytes;
-		}
-	};
-
-	struct big_file_visitor{
-		big_file_visitor(std::string const& name): name(name){}
-
-		std::string const& name;
-
-		template < typename T >
-		void operator()(T const& image_ref)const{
-			big::write(image_ref.get(), name);
-		}
-	};
-
-
 	void module::save(std::size_t id, save_sequence const& bitmap_sequence){
 		auto used_id = param.fixed_id ? *param.fixed_id : id;
 
@@ -264,8 +228,21 @@ namespace disposer_module{ namespace big_saver{
 						},
 						[&tar, &bitmap, &filename]{
 							tar.write(filename, [&bitmap](std::ostream& os){
-								std::visit(big_stream_visitor(os), bitmap);
-							}, std::visit(big_streamsize_visitor(), bitmap));
+								std::visit([&os](auto const& image_ref){
+									big::write(image_ref.get(), os);
+								}, bitmap);
+							}, std::visit([](auto const& image_ref){
+								using value_type = std::remove_cv_t<
+									std::remove_pointer_t<
+										decltype(image_ref.get().data()) > >;
+
+								auto content_bytes =
+									image_ref.get().width() *
+									image_ref.get().height() *
+									sizeof(value_type);
+
+								return 10 + content_bytes;
+							}, bitmap));
 						});
 						++pos;
 					}
@@ -283,7 +260,9 @@ namespace disposer_module{ namespace big_saver{
 						os << "write '" << filename << "'";
 					},
 					[&bitmap, &filename]{
-						std::visit(big_file_visitor(filename), bitmap);
+						std::visit([&filename](auto const& image_ref){
+							big::write(image_ref.get(), filename);
+						}, bitmap);
 					});
 					++pos;
 				}
@@ -292,54 +271,22 @@ namespace disposer_module{ namespace big_saver{
 		}
 	}
 
-
-	struct sequence_visitor{
-		sequence_visitor(std::size_t id): id(id){}
-
-		std::size_t const id;
-
-		template < typename T >
-		save_sequence operator()(T const& sequence)const{
-			save_sequence data;
-			for(auto& vector: sequence.data()){
-				data.emplace_back();
-				for(auto& bitmap: vector){
-					data.back().emplace_back(bitmap);
-				}
-			}
-
-			return data;
-		}
-	};
-
-	struct vector_visitor{
-		template < typename T >
-		save_vector operator()(T const& vectors)const{
-			save_vector result;
-			for(auto& image: vectors.data()){
-				result.emplace_back(image);
-			}
-
-			return result;
-		}
-	};
-
-	struct image_visitor{
-		template < typename T >
-		save_image operator()(T const& image)const{
-			return image.data();
-		}
-	};
-
-
 	void module::exec(){
 		switch(param.input){
 			case input_t::sequence:{
-				for(auto const& pair: sequence.get()){
-					auto id = pair.first;
-					auto& bitmap_sequence = pair.second;
+				for(auto const& [id, seq]: sequence.get()){
+					save(id, std::visit(
+						[](auto const& sequence){
+							save_sequence data;
+							for(auto& vector: sequence.data()){
+								data.emplace_back();
+								for(auto& bitmap: vector){
+									data.back().emplace_back(bitmap);
+								}
+							}
 
-					save(id, std::visit(sequence_visitor(id), bitmap_sequence));
+							return data;
+						}, seq));
 				}
 			}break;
 			case input_t::vector:{
@@ -352,7 +299,14 @@ namespace disposer_module{ namespace big_saver{
 
 					save_sequence data;
 					for(auto iter = from; iter != to; ++iter){
-						data.emplace_back(std::visit(vector_visitor(),
+						data.emplace_back(std::visit(
+							[](auto const& vectors){
+								save_vector result;
+								for(auto& image: vectors.data()){
+									result.emplace_back(image);
+								}
+								return result;
+							},
 							iter->second));
 					}
 
@@ -378,7 +332,10 @@ namespace disposer_module{ namespace big_saver{
 						if(pos == param.sequence_count) pos = 0;
 
 						data.back().emplace_back(std::visit(
-							image_visitor(), iter->second));
+							[](auto const& image){
+								return save_image(image.data());
+							},
+							iter->second));
 					}
 
 					if(pos != 0){

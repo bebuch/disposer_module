@@ -70,7 +70,10 @@ namespace disposer_module{ namespace raster{
 
 
 	struct parameter{
-		std::size_t raster;
+		std::size_t offset_x;
+		std::size_t offset_y;
+		std::size_t raster_x;
+		std::size_t raster_y;
 	};
 
 
@@ -131,11 +134,18 @@ namespace disposer_module{ namespace raster{
 
 		parameter param;
 
-		data.params.set(param.raster, "raster");
+		data.params.set(param.offset_x, "offset_x", 0);
+		data.params.set(param.offset_y, "offset_y", 0);
 
-		if(param.raster == 0){
+		std::size_t raster;
+		data.params.set(raster, "raster", 1);
+		data.params.set(param.raster_x, "raster_x", raster);
+		data.params.set(param.raster_y, "raster_y", raster);
+
+		if(param.raster_x == 0 || param.raster_y == 0){
 			throw std::logic_error(make_string(
-				"raster (value: ", param.raster, ") needs to be greater than 0"
+				"raster (x = ", param.raster_x, " & y = ", param.raster_y,
+				") needs to be greater than 0"
 			));
 		}
 
@@ -146,13 +156,13 @@ namespace disposer_module{ namespace raster{
 	template < typename T >
 	bitmap< T > module::apply_raster(bitmap< T > const& image)const{
 		bitmap< T > result(
-			(image.width() - 1) / param.raster + 1,
-			(image.height() - 1) / param.raster + 1
+			(image.width() - param.offset_x - 1) / param.raster_x + 1,
+			(image.height() - param.offset_y - 1) / param.raster_y + 1
 		);
 
-		for(std::size_t y = 0; y < result.height(); ++y){
-			for(std::size_t x = 0; x < result.width(); ++x){
-				result(x, y) = image(x * param.raster, y * param.raster);
+		for(std::size_t y = param.offset_x; y < result.height(); ++y){
+			for(std::size_t x = param.offset_y; x < result.width(); ++x){
+				result(x, y) = image(x * param.raster_x, y * param.raster_y);
 			}
 		}
 

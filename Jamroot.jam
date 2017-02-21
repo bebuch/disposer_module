@@ -73,6 +73,23 @@ lib big_saver
 	<include>$(bitmap)/include
 	;
 
+# lib png_loader
+# 	:
+# 	png_loader.cpp
+# 	/disposer//disposer
+# 	:
+# 	<include>$(bitmap)/include
+# 	;
+
+lib png_saver
+	:
+	png_saver.cpp
+	/disposer//disposer
+	:
+	<include>$(bitmap)/include
+	<linkflags>-lpng
+	;
+
 lib camera_ximea
 	:
 	camera_ximea.cpp

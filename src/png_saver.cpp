@@ -276,26 +276,15 @@ namespace disposer_module{ namespace png_saver{
 						},
 						[&tar, &bitmap, &filename, &to_png_image]{
 							tar.write(filename,
-								[&bitmap, &to_png_image](std::ostream& os){
+								[&bitmap, &to_png_image](std::ostream& file_os){
 									std::visit(
-										[&os, to_png_image]
+										[&file_os, &to_png_image]
 										(auto const& image_ref){
 											auto& img = image_ref.get();
 											auto png_image = to_png_image(img);
-											png_image.write_stream(os);
+											png_image.write_stream(file_os);
 										}, bitmap);
-								}, std::visit([](auto const& image_ref){
-									using value_type = std::remove_cv_t<
-										std::remove_pointer_t<
-										decltype(image_ref.get().data()) > >;
-
-									auto content_bytes =
-										image_ref.get().width() *
-										image_ref.get().height() *
-										sizeof(value_type);
-
-									return 10 + content_bytes;
-								}, bitmap));
+								});
 						});
 						++pos;
 					}

@@ -34,8 +34,7 @@ namespace disposer_module{ namespace fine_phase{
 
 	using output_type_list = disposer::type_list<
 		float,
-		double,
-		long double
+		double
 	>;
 
 	enum class input_t{
@@ -46,20 +45,17 @@ namespace disposer_module{ namespace fine_phase{
 
 	enum class output_t{
 		float32,
-		float64,
-		float128
+		float64
 	};
 
 	struct parameter{
 		output_t out_type;
 
-// 		bool dark_image;
-// 		bool bright_image;
-// 		bool gray_code;
-// 		bool second_direction;
-//
-// 		std::size_t gray_count;
-// 		std::size_t cos_count;
+		bool dark_environement;
+
+		bool second_dir;
+		bool have_bright;
+		bool have_dark;
 	};
 
 
@@ -99,11 +95,17 @@ namespace disposer_module{ namespace fine_phase{
 		} slots;
 
 		struct{
-			disposer::container_output< bitmap_vector, type_list >
-				fine_phase_images{"fine_phases"};
+			disposer::container_output< bitmap, type_list >
+				fine_phase_dir1{"fine_phase_dir1"};
 
-			disposer::container_output< bitmap_vector, type_list >
-				quality_images{"quality_images"};
+			disposer::container_output< bitmap, type_list >
+				fine_phase_dir2{"fine_phase_dir2"};
+
+			disposer::container_output< bitmap, type_list >
+				quality_image_dir1{"quality_image_dir2"};
+
+			disposer::container_output< bitmap, type_list >
+				quality_image_dir2{"quality_image_dir2"};
 		} signals;
 
 
@@ -111,11 +113,140 @@ namespace disposer_module{ namespace fine_phase{
 
 
 		void input_ready()override{
-			signals.vector.enable_types(slots.vector.active_types());
+			// check if all enabled inputs have the same type
+			slots.cos_dir1_images.enabled_types();
+
+			//
+			switch(param.out_type){
+				case output_t::float32:
+					signals.fine_phase_dir1.activate< float >();
+					if(param.second_dir){
+						signals.fine_phase_dir2.activate< float >();
+					}
+				break;
+				case output_t::float64:
+					signals.fine_phase_dir1.activate< double >();
+					if(param.second_dir){
+						signals.fine_phase_dir2.activate< double >();
+					}
+				break;
+			}
+
+			signals.quality_image_dir1.activate< float >();
+
+			if(param.second_dir){
+				signals.quality_image_dir2.activate< float >();
+			}
 		}
 
 
-		parameter const param;
+		parameter param;
+	};
+
+
+	template < typename T >
+	bitmap< T > difference(bitmap< T > l, bitmap< T > const& r){
+		std::transform(l.begin(), l.end(), r.begin(), [](auto l, auto r){
+			return l > r : l - r : T(0);
+		});
+
+		return l;
+	}
+
+
+	template < typename T >
+	bitmap< T > calc_bright(bitmap_vector< T > const& cos_images){
+		bitmap< T > result(cos_images[].size());
+
+		for(std::size_t i = 0; i < result.point_count(); ++i){
+			double sum = 0;
+
+			for(std::size_t j = 0; j < cos_images.size(); ++j){
+				sum += cos_images[j].data()[i];
+			}
+
+			result.data()[i] = static_cast< T >(sum / cos_images.size());
+		}
+
+		return l;
+	}
+
+
+	template < typename IntensityT, typename PhaseT >
+	class calculator{
+	public:
+		calculator(
+			bitmap< IntensityT >&& dark,
+			bitmap< IntensityT >&& bright,
+			bitmap_vector< IntensityT >&& gray_dir_1,
+			bitmap_vector< IntensityT >&& cos_dir_1,
+			bitmap_vector< IntensityT >&& gray_dir_2,
+			bitmap_vector< IntensityT >&& cos_dir_2,
+		):
+			diff_(difference(bright, dark)),
+			gray_dir_1_(std::move(gray_dir_1)),
+			cos_dir_1_(std::move(cos_dir_1)),
+			gray_dir_2_(std::move(gray_dir_2)),
+			cos_dir_2_(std::move(cos_dir_2)){}
+
+		calculator(
+			bitmap< IntensityT >&& bright,
+			bitmap_vector< IntensityT >&& gray_dir_1,
+			bitmap_vector< IntensityT >&& cos_dir_1,
+			bitmap_vector< IntensityT >&& gray_dir_2,
+			bitmap_vector< IntensityT >&& cos_dir_2,
+		):
+			diff_(std::move(bright)),
+			gray_dir_1_(std::move(gray_dir_1)),
+			cos_dir_1_(std::move(cos_dir_1)),
+			gray_dir_2_(std::move(gray_dir_2)),
+			cos_dir_2_(std::move(cos_dir_2)){}
+
+		calculator(
+			bitmap_vector< IntensityT >&& gray_dir_1,
+			bitmap_vector< IntensityT >&& cos_dir_1,
+			bitmap_vector< IntensityT >&& gray_dir_2,
+			bitmap_vector< IntensityT >&& cos_dir_2,
+		):
+			diff_(calc_bright(cos_dir_1)),
+			gray_dir_1_(std::move(gray_dir_1)),
+			cos_dir_1_(std::move(cos_dir_1)),
+			gray_dir_2_(std::move(gray_dir_2)),
+			cos_dir_2_(std::move(cos_dir_2)){}
+
+		calculator(
+			bitmap< IntensityT >&& dark,
+			bitmap< IntensityT >&& bright,
+			bitmap_vector< IntensityT >&& gray_dir_1,
+			bitmap_vector< IntensityT >&& cos_dir_1
+		):
+			diff_(difference(bright, dark)),
+			gray_dir_1_(std::move(gray_dir_1)),
+			cos_dir_1_(std::move(cos_dir_1)){}
+
+		calculator(
+			bitmap< IntensityT >&& bright,
+			bitmap_vector< IntensityT >&& gray_dir_1,
+			bitmap_vector< IntensityT >&& cos_dir_1
+		):
+			diff_(std::move(bright)),
+			gray_dir_1_(std::move(gray_dir_1)),
+			cos_dir_1_(std::move(cos_dir_1)){}
+
+		calculator(
+			bitmap_vector< IntensityT >&& gray_dir_1,
+			bitmap_vector< IntensityT >&& cos_dir_1
+		):
+			diff_(calc_bright(cos_dir_1)),
+			gray_dir_1_(std::move(gray_dir_1)),
+			cos_dir_1_(std::move(cos_dir_1)){}
+
+	private:
+		bitmap< IntensityT > const diff_;
+		bitmap_vector< IntensityT > const gray_dir_1_;
+		bitmap_vector< IntensityT > const cos_dir_1_;
+		bitmap_vector< IntensityT > const gray_dir_2_;
+		bitmap_vector< IntensityT > const cos_dir_2_;
 	};
 
 
@@ -124,99 +255,14 @@ namespace disposer_module{ namespace fine_phase{
 
 		parameter param;
 
-		data.params.set(param.x, "x");
-		data.params.set(param.y, "y");
-
-		data.params.set(param.width, "width");
-		data.params.set(param.height, "height");
-
-		// for integral is NaN defined as 0
-		hana::for_each(
-			disposer::hana_type_list< type_list >,
-			[&data, &param](auto type_t){
-				using type = typename decltype(type_t)::type;
-				data.params.set(
-					std::get< type >(param.default_value),
-					"default_value",
-					std::numeric_limits< type >::quiet_NaN()
-				);
-			}
-		);
+		data.params.set(param.dark_environement, "dark_environement", false);
 
 		return std::make_unique< module >(data, std::move(param));
 	}
 
 
-	template < typename T >
-	bitmap< T > module::fine_phase(bitmap< T > const& image)const{
-		bitmap< T > result(
-			param.width,
-			param.height,
-			std::get< T >(param.default_value)
-		);
-
-		std::size_t const bx =
-			param.x < 0 ? static_cast< std::size_t >(-param.x) : 0;
-
-		std::size_t const by =
-			param.y < 0 ? static_cast< std::size_t >(-param.y) : 0;
-
-		std::size_t const ex =
-			static_cast< std::int64_t >(param.width) <
-			static_cast< std::int64_t >(image.width()) - param.x ?
-				param.width :
-					static_cast< std::int32_t >(image.width()) >
-					param.x ? image.width() - param.x : 0;
-
-		std::size_t const ey =
-			static_cast< std::int64_t >(param.height) <
-			static_cast< std::int64_t >(image.height()) - param.y ?
-				param.height :
-					static_cast< std::int32_t >(image.height()) > param.y ?
-					image.height() - param.y : 0;
-
-
-		// line wise copy
-		for(std::size_t y = by; y < ey; ++y){
-			std::copy(
-				&image(bx + param.x, y + param.y),
-				&image(ex + param.x, y + param.y),
-				&result(bx, y)
-			);
-		}
-
-		return result;
-	}
-
-
-	struct visitor{
-		visitor(fine_phase::module& module, std::size_t id):
-			module(module), id(id) {}
-
-		template < typename T >
-		void operator()(
-			disposer::input_data< bitmap_vector< T > > const& vector
-		){
-			auto& data = vector.data();
-
-			bitmap_vector< T > result(data.size());
-			for(std::size_t i = 0; i < data.size(); ++i){
-				result[i] = module.fine_phase(data[i]);
-			}
-
-			module.signals.vector.put< T >(std::move(result));
-		}
-
-		fine_phase::module& module;
-		std::size_t const id;
-	};
-
-
-
 	void module::exec(){
-		for(auto const& pair: slots.vector.get()){
-			fine_phase::visitor visitor(*this, pair.first);
-			std::visit(visitor, pair.second);
+		for(auto const& [id, img]: slots.vector.get()){
 		}
 	}
 

@@ -358,7 +358,7 @@ namespace disposer_module{ namespace bitmap_vector_join{
 
 	void module::input_ready(){
 		signals.image.enable_types(
-			slots.image_vector.active_types_transformed(
+			slots.image_vector.enabled_types_transformed(
 				[](auto type){
 					return hana::type_c< typename decltype(type)::type::value_type >;
 				}

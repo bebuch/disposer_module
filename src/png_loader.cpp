@@ -160,7 +160,7 @@ namespace disposer_module{ namespace png_loader{
 
 		if(param.type == std::array< bool, type_list::size >{{false}}){
 			throw std::logic_error(
-				"no type active (set at least one of 'type_gray8', "
+				"no type enabled (set at least one of 'type_gray8', "
 				"'type_gray16', 'type_grayalpha8', 'type_grayalpha16', "
 				"'type_rgb8', 'type_rgb16', 'type_rgba8', 'type_rgba16' "
 				"to true)"

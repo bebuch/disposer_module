@@ -163,7 +163,7 @@ namespace disposer_module{ namespace big_loader{
 
 		if(param.type == std::array< bool, type_list::size >{{false}}){
 			throw std::logic_error(
-				"no type active (set at least one of 'type_int8', "
+				"no type enabled (set at least one of 'type_int8', "
 				"'type_uint8', 'type_int16', 'type_uint16', 'type_int32', "
 				"'type_uint32', 'type_int64', 'type_uint64', 'type_float', "
 				"'type_double', 'type_long_double' to true)"

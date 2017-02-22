@@ -199,7 +199,7 @@ namespace disposer_module{ namespace demosaic{
 
 	void module::input_ready(){
 		signals.image_vector.enable_types(
-			slots.image.active_types_transformed(
+			slots.image.enabled_types_transformed(
 				[](auto type){
 					return hana::type_c<
 						std::vector< typename decltype(type)::type > >;

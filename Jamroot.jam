@@ -73,13 +73,14 @@ lib big_saver
 	<include>$(bitmap)/include
 	;
 
-# lib png_loader
-# 	:
-# 	png_loader.cpp
-# 	/disposer//disposer
-# 	:
-# 	<include>$(bitmap)/include
-# 	;
+lib png_loader
+	:
+	png_loader.cpp
+	/disposer//disposer
+	:
+	<include>$(bitmap)/include
+	<linkflags>-lpng
+	;
 
 lib png_saver
 	:

@@ -160,6 +160,14 @@ lib gray_code_decoder
 	<include>$(bitmap)/include
 	;
 
+lib phase_unwrapp_by_index
+	:
+	phase_unwrapp_by_index.cpp
+	/disposer//disposer
+	:
+	<include>$(bitmap)/include
+	;
+
 lib pixel_transform
 	:
 	pixel_transform.cpp

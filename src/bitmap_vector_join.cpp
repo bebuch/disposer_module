@@ -334,7 +334,6 @@ namespace disposer_module{ namespace bitmap_vector_join{
 		){
 			auto& vectors = vector.data();
 
-
 			auto iter = vectors.cbegin();
 			for(auto size = (iter++)->size(); iter != vectors.cend(); ++iter){
 				if(size == iter->size()) continue;

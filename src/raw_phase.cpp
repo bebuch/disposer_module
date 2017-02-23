@@ -6,16 +6,19 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 //-----------------------------------------------------------------------------
+#define _USE_MATH_DEFINES
 #include "bitmap_sequence.hpp"
-#include "make_string.hpp"
 
 #include <disposer/module.hpp>
 
-#include <boost/hana.hpp>
+#include <bitmap/size_io.hpp>
+
 #include <boost/dll.hpp>
+#include <boost/hana.hpp>
 
 #include <cstdint>
 #include <limits>
+#include <cmath>
 
 
 namespace disposer_module{ namespace raw_phase{
@@ -29,7 +32,9 @@ namespace disposer_module{ namespace raw_phase{
 	using intensity_type_list = disposer::type_list<
 		std::uint8_t,
 		std::uint16_t,
-		std::uint32_t
+		std::uint32_t,
+		float,
+		double
 	>;
 
 	using phase_type_list = disposer::type_list<
@@ -40,7 +45,9 @@ namespace disposer_module{ namespace raw_phase{
 	enum class input_t{
 		uint8,
 		uint16,
-		uint32
+		uint32,
+		float32,
+		float64
 	};
 
 	enum class output_t{
@@ -52,10 +59,25 @@ namespace disposer_module{ namespace raw_phase{
 		output_t out_type;
 
 		bool dark_environement;
+		bool have_dark; // needed if parameter dark_environement != true
+	};
 
-		bool second_dir = false;
-		bool have_bright = false;
-		bool have_dark = false;
+
+	template < typename IntensityT >
+	struct data_set_with_dark{
+		using value_type = IntensityT;
+
+		bitmap< IntensityT > bright;
+		bitmap< IntensityT > dark;
+		bitmap_vector< IntensityT > cos;
+	};
+
+	template < typename IntensityT >
+	struct data_set_without_dark{
+		using value_type = IntensityT;
+
+		bitmap< IntensityT > bright;
+		bitmap_vector< IntensityT > cos;
 	};
 
 
@@ -63,22 +85,24 @@ namespace disposer_module{ namespace raw_phase{
 		module(disposer::make_data const& data, parameter&& param):
 			disposer::module_base(
 				data,
-				{
-					slots.bright_image, slots.dark_image,
-					slots.cos_dir1_images,
-					slots.cos_dir2_images
-				},
-				{
-					signals.raw_phase_dir1, signals.quality_image_dir1,
-					signals.raw_phase_dir2, signals.quality_image_dir2
-				}
+				{slots.bright_image, slots.dark_image, slots.cos_images},
+				{signals.phase_image, signals.modulation_image}
 			),
 			param(std::move(param))
 			{}
 
 
-		template < typename T >
-		bitmap< T > raw_phase(bitmap< T > const& image)const;
+		template < typename PhaseT, typename IntensityT >
+		std::tuple< bitmap< PhaseT >, bitmap< IntensityT > >
+		decode(
+			data_set_with_dark< IntensityT > const& data
+		)const;
+
+		template < typename PhaseT, typename IntensityT >
+		std::tuple< bitmap< PhaseT >, bitmap< IntensityT > >
+		decode(
+			data_set_without_dark< IntensityT > const& data
+		)const;
 
 
 		struct{
@@ -89,176 +113,249 @@ namespace disposer_module{ namespace raw_phase{
 				dark_image{"dark_image"};
 
 			disposer::container_input< bitmap_vector, intensity_type_list >
-				gray_code_dir1_images{"gray_code_dir1_images"};
-
-			disposer::container_input< bitmap_vector, intensity_type_list >
-				cos_dir1_images{"cos_dir1_images"};
-
-			disposer::container_input< bitmap_vector, intensity_type_list >
-				gray_code_dir2_images{"gray_code_dir2_images"};
-
-			disposer::container_input< bitmap_vector, intensity_type_list >
-				cos_dir2_images{"cos_dir2_images"};
+				cos_images{"cos_images"};
 		} slots;
 
 		struct{
 			disposer::container_output< bitmap, phase_type_list >
-				raw_phase_dir1{"raw_phase_dir1"};
+				phase_image{"phase_image"};
 
 			disposer::container_output< bitmap, intensity_type_list >
-				quality_image_dir1{"quality_image_dir1"};
-
-			disposer::container_output< bitmap, phase_type_list >
-				raw_phase_dir2{"raw_phase_dir2"};
-
-			disposer::container_output< bitmap, intensity_type_list >
-				quality_image_dir2{"quality_image_dir2"};
+				modulation_image{"modulation_image"};
 		} signals;
 
 
+		void input_ready()override;
+
+
 		void exec()override;
-
-
-		void input_ready()override{
-			// check if all enabled inputs have the same type
-
-			// cos_dir1_images must have the enables types
-			auto types = slots.cos_dir1_images.enabled_types();
-			if(types.size() == 0){
-				throw std::logic_error("no enabled inputs");
-			}
-
-			// others must have the same types enabled as cos_dir1_images
-			// or none
-			auto throw_if_diff_types = [this, &types]
-				(auto const& input, auto const& input_types){
-					if(types == input_types) return;
-
-					std::ostringstream os;
-					os << "different input types in '"
-						<< slots.cos_dir1_images.name << "' (";
-					for(auto& type: types){
-						os << "'" << type.pretty_name() << "'";
-					}
-
-					os << ") and " << input.name << " (";
-					for(auto& type: input_types){
-						os << "'" << type.pretty_name() << "'";
-					}
-
-					os << ")";
-
-					throw std::logic_error(os.str());
-				};
-
-			auto bright_types = slots.bright_image.enabled_types();
-			auto dark_types = slots.dark_image.enabled_types();
-			auto gray_dir1_types = slots.gray_code_dir1_images.enabled_types();
-			auto cos_dir1_types = slots.cos_dir1_images.enabled_types();
-			auto gray_dir2_types = slots.gray_code_dir2_images.enabled_types();
-			auto cos_dir2_types = slots.cos_dir2_images.enabled_types();
-
-			if(bright_types.size() > 0){
-				throw_if_diff_types(slots.bright_image, bright_types);
-				param.have_bright = true;
-			}
-
-			if(dark_types.size() > 0){
-				throw_if_diff_types(slots.dark_image, dark_types);
-				param.have_dark = true;
-			}
-
-			if(gray_dir1_types.size() == 0){
-				throw std::logic_error(
-					"calculation without gray code is not implemented yet"
-				);
-			}
-			throw_if_diff_types(slots.bright_image, gray_dir1_types);
-
-			if(cos_dir2_types.size() > 0){
-				if(gray_dir2_types.size() == 0){
-					throw std::logic_error(
-						"calculation without gray code is not implemented yet"
-					);
-				}
-				throw_if_diff_types(slots.cos_dir2_images, cos_dir2_types);
-				throw_if_diff_types(
-					slots.gray_code_dir2_images, gray_dir2_types);
-				param.second_dir = true;
-			}
-
-
-			// enable outputs
-			switch(param.out_type){
-				case output_t::float32:
-					signals.raw_phase_dir1.enable< float >();
-					if(param.second_dir){
-						signals.raw_phase_dir2.enable< float >();
-					}
-				break;
-				case output_t::float64:
-					signals.raw_phase_dir1.enable< double >();
-					if(param.second_dir){
-						signals.raw_phase_dir2.enable< double >();
-					}
-				break;
-			}
-
-			signals.quality_image_dir1.enable_types(types);
-			if(param.second_dir){
-				signals.quality_image_dir2.enable_types(types);
-			}
-		}
 
 
 		parameter param;
 	};
 
 
-	template < typename T >
-	bitmap< T > difference(bitmap< T > lhs, bitmap< T > const& rhs){
-		std::transform(lhs.begin(), lhs.end(), rhs.begin(), lhs.begin(),
-			[](auto l, auto r){
-				return l > r ? l - r : T(0);
-			});
+	template < typename SizeT, typename T >
+	inline void check_size(
+		SizeT const& size,
+		bitmap< T > const& img,
+		std::string_view img_name
+	){
+		if(size == img.size()) return;
 
-		return lhs;
+		std::ostringstream os;
+		os << "different size in bright image (" << size
+			<< ") and " << img_name << " (" << img.size()
+			<< ") image";
+		throw std::logic_error(os.str());
+	}
+
+	template < typename SizeT, typename T >
+	inline void check_cos_images(
+		SizeT const& size,
+		bitmap_vector< T > const& images
+	){
+		for(auto& img: images){
+			check_size(size, img, "cos");
+		}
 	}
 
 
+
 	template < typename T >
-	bitmap< T > calc_bright(bitmap_vector< T > const& cos_images){
-		bitmap< T > result(cos_images[0].size());
+	inline T save_atan2(T n, T d){
+		using std::atan2;
+		if(n == 0 && d == 0){
+			return T(M_PI) / 2;
+		}else{
+			return atan2(n, d);
+		}
+	}
 
-		for(std::size_t i = 0; i < result.point_count(); ++i){
-			double sum = 0;
 
-			for(std::size_t j = 0; j < cos_images.size(); ++j){
-				sum += cos_images[j].data()[i];
+	/// Calculate roh and modulation (90 degrees phase shift)
+	template < typename PhaseT, typename IntensityT >
+	inline std::tuple< PhaseT, IntensityT > roh_and_modulation(
+		std::array< IntensityT, 4 > const& v
+	){
+		using std::sqrt;
+
+		auto n = static_cast< PhaseT >(v[1] - v[3]);
+		auto d = static_cast< PhaseT >(v[2] - v[0]);
+
+		return std::make_tuple(
+			save_atan2(n, d),
+			static_cast< IntensityT >(sqrt(n * n + d * d))
+		);
+	}
+
+	/// Calculate roh and modulation (60 degrees phase shift)
+	template < typename PhaseT, typename IntensityT >
+	inline std::tuple< PhaseT, IntensityT > roh_and_modulation(
+		std::array< IntensityT, 6 > const& v
+	){
+		using std::sqrt;
+
+		static PhaseT const c_sqrt_0_75 = sqrt(PhaseT(0.75));
+		static PhaseT constexpr c_0_5(0.5);
+
+		auto n = c_sqrt_0_75 *
+			static_cast< PhaseT >(v[2] + v[1] - v[5] - v[4]);
+		auto d = c_0_5 *
+			static_cast< PhaseT >(v[4] - v[5] - v[1] + v[2] + v[3] - v[0]);
+
+		return std::make_tuple(
+			save_atan2(n, d),
+			static_cast< IntensityT >(sqrt(n * n + d * d) / PhaseT(1.5))
+		);
+	}
+
+	/// Calculate roh and modulation (45 degrees phase shift)
+	template < typename PhaseT, typename IntensityT >
+	inline std::tuple< PhaseT, IntensityT > roh_and_modulation(
+		std::array< IntensityT, 8 > const& v
+	){
+		using std::sqrt;
+
+		static PhaseT const c_sqrt_2_d_2 = sqrt(PhaseT(2)) / 2;
+
+		PhaseT n = (v[5] + v[7] - v[3] - v[1]) * c_sqrt_2_d_2 + v[6] - v[2];
+		PhaseT d = (v[1] + v[7] - v[3] - v[5]) * c_sqrt_2_d_2 + v[0] - v[4];
+
+		return std::make_tuple(
+			save_atan2(n, d),
+			static_cast< IntensityT >(sqrt(n * n + d * d) / 2)
+		);
+	}
+
+	/// Calculate roh and modulation (22.5 degrees phase shift)
+	template < typename PhaseT, typename IntensityT >
+	inline std::tuple< PhaseT, IntensityT > roh_and_modulation(
+		std::array< IntensityT, 16 > const& v
+	){
+		using std::sqrt;
+
+		static PhaseT const c_sqrt_2 = sqrt(PhaseT(2));
+		static PhaseT const c1 = sqrt(2 + c_sqrt_2);
+		static PhaseT const c2 = sqrt(2 - c_sqrt_2);
+
+		PhaseT n =
+			c2 * v[1] + c_sqrt_2 * v[2] + c1 * v[3] + 2 * v[4] +
+			c1 * v[5] + c_sqrt_2 * v[6] + c2 * v[7] - c2 * v[9] -
+			c_sqrt_2 * v[10] - c1 * v[11] - 2 * v[12] - c1 * v[13] -
+			c_sqrt_2 * v[14] - c2 * v[15];
+
+		PhaseT d = -2 * v[0] - c1 * v[1] - c_sqrt_2 * v[2] - c2 * v[3] +
+			c2 * v[5] + c_sqrt_2 * v[6] + c1 * v[7] + 2 * v[8] + c1 * v[9] +
+			c_sqrt_2 * v[10] + c2 * v[11] - c2 * v[13] - c_sqrt_2 * v[14] -
+			c1 * v[15];
+
+		return std::make_tuple(
+			save_atan2(n, d),
+			static_cast< IntensityT >(sqrt(n * n + d * d) / 8)
+		);
+	}
+
+	template < typename PhaseT, typename IntensityT >
+	inline std::tuple< PhaseT, IntensityT > roh_and_modulation(
+		bitmap_vector< IntensityT > const& cos,
+		std::size_t x, std::size_t y
+	){
+		switch(cos.size()){
+		case 4:
+			return roh_and_modulation< PhaseT >(std::array< IntensityT, 4 >{{
+					cos[ 0](x, y), cos[ 1](x, y),
+					cos[ 2](x, y), cos[ 3](x, y)
+				}});
+		break;
+		case 6:
+			return roh_and_modulation< PhaseT >(std::array< IntensityT, 6 >{{
+					cos[ 0](x, y), cos[ 1](x, y),
+					cos[ 2](x, y), cos[ 3](x, y),
+					cos[ 4](x, y), cos[ 5](x, y)
+				}});
+		break;
+		case 8:
+			return roh_and_modulation< PhaseT >(std::array< IntensityT, 8 >{{
+					cos[ 0](x, y), cos[ 1](x, y),
+					cos[ 2](x, y), cos[ 3](x, y),
+					cos[ 4](x, y), cos[ 5](x, y),
+					cos[ 6](x, y), cos[ 7](x, y)
+				}});
+		break;
+		case 16:
+			return roh_and_modulation< PhaseT >(std::array< IntensityT, 16 >{{
+					cos[ 0](x, y), cos[ 1](x, y),
+					cos[ 2](x, y), cos[ 3](x, y),
+					cos[ 4](x, y), cos[ 5](x, y),
+					cos[ 6](x, y), cos[ 7](x, y),
+					cos[ 8](x, y), cos[ 9](x, y),
+					cos[10](x, y), cos[11](x, y),
+					cos[12](x, y), cos[13](x, y),
+					cos[14](x, y), cos[14](x, y)
+				}});
+		break;
+		default:
+			throw std::logic_error(
+				"raw_phase calculation is only implemented for 4, 6, "
+				"8 and 16 cos images, you have "
+				+ std::to_string(cos.size()));
+		}
+	}
+
+
+	template < typename PhaseT, typename IntensityT >
+	std::tuple< bitmap< PhaseT >, bitmap< IntensityT > >
+	module::decode(
+		data_set_with_dark< IntensityT > const& data
+	)const{
+		auto size = data.bright.size();
+		check_size(size, data.dark, "dark");
+		check_cos_images(size, data.cos);
+
+		bitmap< PhaseT > phase(size,
+			std::numeric_limits< PhaseT >::quiet_NaN());
+		bitmap< IntensityT > modulation(size);
+
+		for(std::size_t y = 0; y < size.height(); ++y){
+			for(std::size_t x = 0; x < size.width(); ++x){
+				std::uint64_t const min = data.dark(x, y);
+				std::uint64_t const max = data.bright(x, y);
+				if(min >= max) continue;
+
+				std::tie(phase(x, y), modulation(x, y)) =
+					roh_and_modulation< PhaseT >(data.cos, x, y);
 			}
-
-			result.data()[i] = static_cast< T >(sum / cos_images.size());
 		}
 
-		return result;
+		return std::make_tuple(std::move(phase), std::move(modulation));
 	}
 
+	template < typename PhaseT, typename IntensityT >
+	std::tuple< bitmap< PhaseT >, bitmap< IntensityT > >
+	module::decode(
+		data_set_without_dark< IntensityT > const& data
+	)const{
+		auto size = data.bright.size();
+		check_cos_images(size, data.cos);
 
-	template < typename IntensityT, typename PhaseT >
-	std::pair< bitmap< PhaseT >, bitmap< IntensityT > > calc_phase(
-		bitmap< IntensityT > const& diff,
-		bitmap_vector< IntensityT > const& cos
-	){
+		bitmap< PhaseT > phase(size,
+			std::numeric_limits< PhaseT >::quiet_NaN());
+		bitmap< IntensityT > modulation(size);
 
+		for(std::size_t y = 0; y < size.height(); ++y){
+			for(std::size_t x = 0; x < size.width(); ++x){
+				auto const max = data.bright(x, y) / 2;
+				if(max <= 0) continue;
+
+				std::tie(phase(x, y), modulation(x, y)) =
+					roh_and_modulation< PhaseT >(data.cos, x, y);
+			}
+		}
+
+		return std::make_tuple(std::move(phase), std::move(modulation));
 	}
 
-	template < typename IntensityT >
-	bitmap< std::uint16_t > calc_index(
-		bitmap< IntensityT > const& diff,
-		bitmap_vector< IntensityT > const& gray
-	){
-
-	}
 
 	disposer::module_ptr make_module(disposer::make_data& data){
 		if(data.is_first()) throw disposer::module_not_as_start(data);
@@ -267,105 +364,139 @@ namespace disposer_module{ namespace raw_phase{
 
 		data.params.set(param.dark_environement, "dark_environement", false);
 
+		static std::unordered_map< std::string_view, output_t > const
+			output_types{
+				{"float32", output_t::float32},
+				{"float64", output_t::float64}
+			};
+
+		std::string output_type;
+		data.params.set(output_type, "output_type", "float32");
+
+		auto iter = output_types.find(std::string_view(output_type));
+		if(iter == output_types.end()){
+			std::ostringstream os;
+			os << "parameter output_type with unknown value '" << output_type
+				<< "', valid values are: ";
+
+			bool first = true;
+			for(auto const& type: output_types){
+				if(!first){ os << ", "; }else{ first = false; }
+				os << "'" << type.first;
+			}
+
+			throw std::logic_error(os.str());
+		}
+
+		param.out_type = iter->second;
+
 		return std::make_unique< module >(data, std::move(param));
 	}
 
 
-	struct raw_data_set_t{
-		struct none_t{ using value_type = none_t; };
+	void module::input_ready(){
+		auto bitmap_value_type = [](auto type){
+			return hana::type_c<
+				typename decltype(type)::type::value_type >;
+		};
 
-		using bitmap_t = std::variant<
-				none_t,
-				disposer::input_data< bitmap< std::uint8_t > >,
-				disposer::input_data< bitmap< std::uint16_t > >,
-				disposer::input_data< bitmap< std::uint32_t > >
-			>;
+		auto bitmap_vector_value_type = [](auto type){
+			return hana::type_c<
+				typename decltype(type)::type::value_type::value_type >;
+		};
 
-		using bitmap_vector_t = std::variant<
-				none_t,
-				disposer::input_data< bitmap_vector< std::uint8_t > >,
-				disposer::input_data< bitmap_vector< std::uint16_t > >,
-				disposer::input_data< bitmap_vector< std::uint32_t > >
-			>;
+		// bright_image must have enabled types
+		auto bright_types = slots.bright_image.enabled_types_transformed(
+			bitmap_value_type
+		);
+		if(bright_types.size() == 0){
+			throw std::logic_error(
+				"input " + slots.bright_image.name + " enabled types");
+		}
+
+		// others must have the same types enabled as bright_image
+		// or none
+		auto throw_if_diff_types = [this, &bright_types]
+			(auto const& input, auto const& input_types){
+				if(bright_types == input_types) return;
+
+				std::ostringstream os;
+				os << "different input types in '"
+					<< slots.bright_image.name << "' (";
+				for(auto& type: bright_types){
+					os << "'" << type.pretty_name() << "'";
+				}
+
+				os << ") and " << input.name << " (";
+				for(auto& type: input_types){
+					os << "'" << type.pretty_name() << "'";
+				}
+
+				os << ")";
+
+				throw std::logic_error(os.str());
+			};
+
+		auto dark_types = slots.dark_image.enabled_types_transformed(
+			bitmap_value_type
+		);
+		auto cos_types = slots.cos_images.enabled_types_transformed(
+			bitmap_vector_value_type
+		);
+
+		throw_if_diff_types(slots.cos_images, cos_types);
+
+		if(dark_types.size() > 0){
+			throw_if_diff_types(slots.dark_image, dark_types);
+			param.have_dark = true;
+		}else if(!param.dark_environement){
+			throw std::logic_error(
+				"if parameter dark_environement is false (which is the "
+				"default) you need a dark image"
+			);
+		}
+
+		// enable output
+		switch(param.out_type){
+			case output_t::float32:
+				signals.phase_image.enable< float >();
+			break;
+			case output_t::float64:
+				signals.phase_image.enable< double >();
+			break;
+		}
+		signals.modulation_image.enable_types(
+			slots.bright_image.enabled_types());
+	}
 
 
-		raw_data_set_t(bitmap_vector_t&& cos1):
-			cos1(cos1){}
 
-		bitmap_t bright;
-		bitmap_t dark;
-		bitmap_vector_t gray1;
-		bitmap_vector_t cos1;
-		bitmap_vector_t gray2;
-		bitmap_vector_t cos2;
-	};
-
-	template < typename IntensityT >
-	struct data_set_t{
-		bitmap< IntensityT > bright;
-		bitmap< IntensityT > dark;
-		bitmap_vector< IntensityT > gray1;
-		bitmap_vector< IntensityT > cos1;
-		bitmap_vector< IntensityT > gray2;
-		bitmap_vector< IntensityT > cos2;
-	};
-
-	using data_set_variant = std::variant<
-			data_set_t< std::uint8_t >,
-			data_set_t< std::uint16_t >,
-			data_set_t< std::uint32_t >
+	using data_set_variant_with_dark = std::variant<
+			data_set_with_dark< std::uint8_t >,
+			data_set_with_dark< std::uint16_t >,
+			data_set_with_dark< std::uint32_t >,
+			data_set_with_dark< float >,
+			data_set_with_dark< double >
 		>;
 
+	using data_set_variant_without_dark = std::variant<
+			data_set_without_dark< std::uint8_t >,
+			data_set_without_dark< std::uint16_t >,
+			data_set_without_dark< std::uint32_t >,
+			data_set_without_dark< float >,
+			data_set_without_dark< double >
+		>;
+
+
 	void module::exec(){
-		std::multimap< std::size_t, raw_data_set_t > raw_data_sets;
+		using bitmap_variant =
+			disposer::container_input< bitmap, intensity_type_list >
+			::value_type;
 
-		// get all the data
-		auto bright_data = slots.bright_image.get();
-		auto dark_data = slots.dark_image.get();
-		auto gray1_data = slots.gray_code_dir1_images.get();
-		auto cos1_data = slots.cos_dir1_images.get();
-		auto gray2_data = slots.gray_code_dir2_images.get();
-		auto cos2_data = slots.cos_dir2_images.get();
+		using bitmap_vector_variant =
+			disposer::container_input< bitmap_vector, intensity_type_list >
+			::value_type;
 
-		// check count of puts in previous modules with respect to params
-		if(
-			(cos1_data.size() != gray1_data.size()) ||
-			(param.second_dir && cos1_data.size() != cos2_data.size()) ||
-			(param.second_dir && cos1_data.size() != gray2_data.size()) ||
-			(param.have_dark && cos1_data.size() != dark_data.size()) ||
-			(param.have_bright && cos1_data.size() != bright_data.size())
-		){
-			std::ostringstream os;
-			os << "different count of input data (";
-
-			if(param.have_bright){
-				os << slots.bright_image.name << ": "
-					<< bright_data.size() << ", ";
-			}
-
-			if(param.have_dark){
-				os << slots.dark_image.name << ": "
-					<< dark_data.size() << ", ";
-			}
-
-			os << slots.cos_dir1_images.name << ": "
-				<< cos1_data.size() << ", ";
-
-			os << slots.gray_code_dir1_images.name << ": "
-				<< gray1_data.size();
-
-			if(param.second_dir){
-				os << ", " << slots.cos_dir2_images.name << ": "
-					<< cos2_data.size() << ", ";
-
-				os << slots.gray_code_dir2_images.name << ": "
-					<< gray2_data.size();
-			}
-
-			os << ")";
-
-			throw std::logic_error(os.str());
-		}
 
 		// id verificator
 		auto check_ids = [](std::size_t id1, std::size_t id2){
@@ -376,173 +507,203 @@ namespace disposer_module{ namespace raw_phase{
 				throw std::logic_error("id mismatch");
 			};
 
+		auto decode32 = [this](auto const& data){
+			using value_type =
+				typename std::remove_reference_t< decltype(data) >::value_type;
+			auto [phase, modulation] = decode< float >(data);
+			signals.phase_image.put< float >(phase);
+			signals.modulation_image.put< value_type >(modulation);
+		};
+		auto decode64 = [this](auto const& data){
+			using value_type =
+				typename std::remove_reference_t< decltype(data) >::value_type;
+			auto [phase, modulation] = decode< double >(data);
+			signals.phase_image.put< double >(phase);
+			signals.modulation_image.put< value_type >(modulation);
+		};
 
-		// initialize the combined data set with cos1_data is the reference
-		for(auto&& [id, images]: cos1_data){
-			raw_data_sets.emplace(
-				std::piecewise_construct,
-				std::forward_as_tuple(id),
-				std::forward_as_tuple(std::visit([](auto&& data){
-					return raw_data_set_t::bitmap_vector_t(std::move(data));
-				}, std::move(images))));
-		}
-
-		// add other inputs to the data_set
-		auto iter = raw_data_sets.begin();
-		for(auto&& [id, images]: gray1_data){
-			check_ids(iter->first, id);
-			iter->second.gray1 = std::visit([](auto&& data){
-					return raw_data_set_t::bitmap_vector_t(std::move(data));
-				}, std::move(images));
-			++iter;
-		}
-
-		if(param.second_dir){
-			iter = raw_data_sets.begin();
-			for(auto&& [id, images]: cos2_data){
-				check_ids(iter->first, id);
-				iter->second.cos2 = std::visit([](auto&& data){
-					return raw_data_set_t::bitmap_vector_t(std::move(data));
-				}, std::move(images));
-				++iter;
-			}
-
-			iter = raw_data_sets.begin();
-			for(auto&& [id, images]: gray2_data){
-				check_ids(iter->first, id);
-				iter->second.gray2 = std::visit([](auto&& data){
-					return raw_data_set_t::bitmap_vector_t(std::move(data));
-				}, std::move(images));
-				++iter;
-			}
-		}
 
 		if(param.have_dark){
-			iter = raw_data_sets.begin();
-			for(auto&& [id, image]: dark_data){
-				check_ids(iter->first, id);
-				iter->second.dark = std::visit([](auto&& data){
-					return raw_data_set_t::bitmap_t(std::move(data));
-				}, std::move(image));
-				++iter;
+			// get all the data
+			auto bright_data = slots.bright_image.get();
+			auto dark_data = slots.dark_image.get();
+			auto cos_data = slots.cos_images.get();
+
+			// check count of puts in previous modules with respect to params
+			if(
+				(bright_data.size() != dark_data.size()) ||
+				(bright_data.size() != cos_data.size())
+			){
+				std::ostringstream os;
+				os << "different count of input data ("
+					<< slots.bright_image.name << ": " << bright_data.size()
+					<< ", "
+					<< slots.dark_image.name << ": " << dark_data.size()
+					<< ", "
+					<< slots.cos_images.name << ": " << cos_data.size()
+					<< ")";
+
+				throw std::logic_error(os.str());
 			}
-		}
 
-		if(param.have_bright){
-			iter = raw_data_sets.begin();
-			for(auto&& [id, image]: bright_data){
-				check_ids(iter->first, id);
-				iter->second.bright = std::visit([](auto&& data){
-					return raw_data_set_t::bitmap_t(std::move(data));
-				}, std::move(image));
-				++iter;
+			// combine data in a single variant type
+			using raw_data_set = std::tuple<
+					bitmap_variant,
+					bitmap_variant,
+					bitmap_vector_variant
+				>;
+			std::multimap< std::size_t, raw_data_set > raw_data_sets;
+			auto dark_iter = dark_data.begin();
+			auto cos_iter = cos_data.begin();
+			for(
+				auto bright_iter = bright_data.begin();
+				bright_iter != bright_data.end();
+				++bright_iter, ++dark_iter, ++cos_iter
+			){
+				auto&& [bright_id, bright_img] = *bright_iter;
+				auto&& [dark_id, dark_img] = *dark_iter;
+				auto&& [cos_id, cos_img] = *cos_iter;
+
+				check_ids(bright_id, dark_id);
+				check_ids(bright_id, cos_id);
+
+				raw_data_sets.emplace(
+					std::piecewise_construct,
+					std::forward_as_tuple(id),
+					std::forward_as_tuple(bright_img, dark_img, cos_img));
 			}
-		}
 
+			// check corresponding inputs for same data type and move them
+			// into a single variant data set
+			std::multimap< std::size_t, data_set_variant_with_dark >
+				calc_sets;
+			for(auto&& [id, data]: raw_data_sets){
+				calc_sets.emplace(id, std::visit(
+					[this](auto&& bright, auto&& dark, auto&& cos)
+					->data_set_variant_with_dark{
+						using bright_t = typename
+							std::remove_reference_t< decltype(bright) >
+							::value_type::value_type;
+						using dark_t = typename
+							std::remove_reference_t< decltype(dark) >
+							::value_type::value_type;
+						using cos_t = typename
+							std::remove_reference_t< decltype(cos) >
+							::value_type::value_type::value_type;
 
-		// check corresponding inputs for same data type and move them into a
-		// single variant data set
-		std::multimap< std::size_t, data_set_variant > calc_set;
-		for(auto&& [id, data]: raw_data_sets){
-			calc_set.emplace(id, std::visit(
-				[this](
-					auto&& bright, auto&& dark,
-					auto&& gray1, auto&& cos1,
-					auto&& gray2, auto&& cos2
-				){
-					using bright_t = typename
-						std::remove_reference_t< decltype(bright) >
-						::value_type::value_type;
-					using dark_t = typename
-						std::remove_reference_t< decltype(dark) >
-						::value_type::value_type;
-					using gray1_t = typename
-						std::remove_reference_t< decltype(gray1) >
-						::value_type::value_type::value_type;
-					using cos1_t = typename
-						std::remove_reference_t< decltype(cos1) >
-						::value_type::value_type::value_type;
-					using gray2_t = typename
-						std::remove_reference_t< decltype(gray2) >
-						::value_type::value_type::value_type;
-					using cos2_t = typename
-						std::remove_reference_t< decltype(cos2) >
-						::value_type::value_type::value_type;
-
-					using none_t = raw_data_set_t::none_t;
-
-					// Check if all input data has the same value_type or none_t
-					if(
-						!std::is_same_v< cos1_t, none_t > ||
-						std::is_same_v< cos1_t, gray1_t > ||
-						((
-							param.second_dir &&
-							std::is_same_v< cos1_t, gray2_t >
-						) && (
-							!param.second_dir &&
-							std::is_same_v< none_t, gray2_t >
-						)) ||
-						((
-							param.second_dir &&
-							std::is_same_v< cos1_t, cos2_t >
-						) && (
-							!param.second_dir &&
-							std::is_same_v< none_t, cos2_t >
-						)) ||
-						((
-							param.have_bright &&
-							std::is_same_v< cos1_t, bright_t >
-						) && (
-							!param.have_bright &&
-							std::is_same_v< none_t, bright_t >
-						)) ||
-						((
-							param.have_dark &&
-							std::is_same_v< cos1_t, dark_t >
-						) && (
-							!param.have_dark &&
-							std::is_same_v< none_t, dark_t >
-						))
-					){
-						throw std::logic_error("input type mismatch");
-					}
-
-					using value_type = cos1_t;
-
-					if constexpr(!std::is_same_v< value_type, none_t >){
-						data_set_t< value_type > result;
-
-						if constexpr(std::is_same_v< cos1_t, bright_t >){
-							result.bright = std::move(bright.data());
+						if constexpr(
+							std::is_same_v< bright_t, dark_t > &&
+							std::is_same_v< bright_t, cos_t >
+						){
+							return data_set_with_dark< bright_t >{
+								bright.data(),
+								dark.data(),
+								cos.data()
+							};
+						}else{
+							throw std::logic_error("input type mismatch");
 						}
+					},
+					std::move(std::get< 0 >(data)),
+					std::move(std::get< 1 >(data)),
+					std::move(std::get< 2 >(data))
+				));
+			}
 
-						if constexpr(std::is_same_v< cos1_t, dark_t >){
-							result.dark = std::move(dark.data());
+			// exec calculation
+			for(auto& [id, calc_set]: calc_sets){
+				(void)id;
+				switch(param.out_type){
+					case output_t::float32:
+						std::visit(decode32, calc_set);
+					break;
+					case output_t::float64:
+						std::visit(decode64, calc_set);
+					break;
+				}
+
+			}
+		}else{
+			// get all the data
+			auto bright_data = slots.bright_image.get();
+			auto cos_data = slots.cos_images.get();
+
+			// check count of puts in previous modules with respect to params
+			if(bright_data.size() != cos_data.size()){
+				std::ostringstream os;
+				os << "different count of input data ("
+					<< slots.bright_image.name << ": " << bright_data.size()
+					<< ", "
+					<< slots.cos_images.name << ": " << cos_data.size()
+					<< ")";
+
+				throw std::logic_error(os.str());
+			}
+
+			// combine data in a single variant type
+			using raw_data_set = std::tuple<
+					bitmap_variant,
+					bitmap_vector_variant
+				>;
+			std::multimap< std::size_t, raw_data_set > raw_data_sets;
+			auto cos_iter = cos_data.begin();
+			for(
+				auto bright_iter = bright_data.begin();
+				bright_iter == bright_data.end();
+				++bright_iter, ++cos_iter
+			){
+				auto&& [bright_id, bright_img] = *bright_iter;
+				auto&& [cos_id, cos_img] = *cos_iter;
+
+				check_ids(bright_id, cos_id);
+
+				raw_data_sets.emplace(
+					std::piecewise_construct,
+					std::forward_as_tuple(id),
+					std::forward_as_tuple(bright_img, cos_img));
+			}
+
+			// check corresponding inputs for same data type and move them
+			// into a single variant data set
+			std::multimap< std::size_t, data_set_variant_without_dark >
+				calc_sets;
+			for(auto&& [id, data]: raw_data_sets){
+				calc_sets.emplace(id, std::visit(
+					[this](auto&& bright, auto&& cos)
+					->data_set_variant_without_dark{
+						using bright_t = typename
+							std::remove_reference_t< decltype(bright) >
+							::value_type::value_type;
+						using cos_t = typename
+							std::remove_reference_t< decltype(cos) >
+							::value_type::value_type::value_type;
+
+						if constexpr(std::is_same_v< bright_t, cos_t >){
+							return data_set_without_dark< bright_t >{
+								bright.data(),
+								cos.data()
+							};
+						}else{
+							throw std::logic_error("input type mismatch");
 						}
+					},
+					std::move(std::get< 0 >(data)),
+					std::move(std::get< 1 >(data))
+				));
+			}
 
-						if constexpr(std::is_same_v< cos1_t, gray1_t >){
-							result.gray1 = std::move(gray1.data());
-						}
-
-						result.cos1 = std::move(cos1.data());
-
-						if constexpr(std::is_same_v< cos1_t, gray2_t >){
-							result.gray2 = std::move(gray2.data());
-						}
-
-						if constexpr(std::is_same_v< cos1_t, cos2_t >){
-							result.cos2 = std::move(cos2.data());
-						}
-
-						return data_set_variant(result);
-					}else{
-						return data_set_variant();
-					}
-				},
-				std::move(data.bright), std::move(data.dark),
-				std::move(data.gray1), std::move(data.cos1),
-				std::move(data.gray2), std::move(data.cos2)
-			));
+			// exec calculation
+			for(auto& [id, calc_set]: calc_sets){
+				(void)id;
+				switch(param.out_type){
+					case output_t::float32:
+						std::visit(decode32, calc_set);
+					break;
+					case output_t::float64:
+						std::visit(decode64, calc_set);
+					break;
+				}
+			}
 		}
 	}
 

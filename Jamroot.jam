@@ -144,13 +144,13 @@ lib bitmap_vector_join
 	<include>$(bitmap)/include
 	;
 
-# lib fine_phase
-# 	:
-# 	fine_phase.cpp
-# 	/disposer//disposer
-# 	:
-# 	<include>$(bitmap)/include
-# 	;
+lib raw_phase
+	:
+	raw_phase.cpp
+	/disposer//disposer
+	:
+	<include>$(bitmap)/include
+	;
 
 lib gray_code_decoder
 	:

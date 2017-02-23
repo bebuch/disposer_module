@@ -262,80 +262,80 @@ namespace disposer_module{ namespace gray_code_decoder{
 
 
 	void module::input_ready(){
-			auto bitmap_value_type = [](auto type){
-				return hana::type_c<
-					typename decltype(type)::type::value_type >;
-			};
+		auto bitmap_value_type = [](auto type){
+			return hana::type_c<
+				typename decltype(type)::type::value_type >;
+		};
 
-			auto bitmap_vector_value_type = [](auto type){
-				return hana::type_c<
-					typename decltype(type)::type::value_type::value_type >;
-			};
+		auto bitmap_vector_value_type = [](auto type){
+			return hana::type_c<
+				typename decltype(type)::type::value_type::value_type >;
+		};
 
-			// bright_image must have enabled types
-			auto bright_types = slots.bright_image.enabled_types_transformed(
-				bitmap_value_type
-			);
-			if(bright_types.size() == 0){
-				throw std::logic_error(
-					"input " + slots.bright_image.name + " enabled types");
-			}
-
-			// others must have the same types enabled as bright_image
-			// or none
-			auto throw_if_diff_types = [this, &bright_types]
-				(auto const& input, auto const& input_types){
-					if(bright_types == input_types) return;
-
-					std::ostringstream os;
-					os << "different input types in '"
-						<< slots.bright_image.name << "' (";
-					for(auto& type: bright_types){
-						os << "'" << type.pretty_name() << "'";
-					}
-
-					os << ") and " << input.name << " (";
-					for(auto& type: input_types){
-						os << "'" << type.pretty_name() << "'";
-					}
-
-					os << ")";
-
-					throw std::logic_error(os.str());
-				};
-
-			auto dark_types = slots.dark_image.enabled_types_transformed(
-				bitmap_value_type
-			);
-			auto gray_types = slots.gray_code_images.enabled_types_transformed(
-				bitmap_vector_value_type
-			);
-
-			throw_if_diff_types(slots.gray_code_images, gray_types);
-
-			if(dark_types.size() > 0){
-				throw_if_diff_types(slots.dark_image, dark_types);
-				param.have_dark = true;
-			}else if(!param.dark_environement){
-				throw std::logic_error(
-					"if parameter dark_environement is false (which is the "
-					"default) you need a dark image"
-				);
-			}
-
-			// enable output
-			switch(param.out_type){
-				case output_t::uint8:
-					signals.index_image.enable< std::uint8_t >();
-				break;
-				case output_t::uint16:
-					signals.index_image.enable< std::uint16_t >();
-				break;
-				case output_t::uint32:
-					signals.index_image.enable< std::uint32_t >();
-				break;
-			}
+		// bright_image must have enabled types
+		auto bright_types = slots.bright_image.enabled_types_transformed(
+			bitmap_value_type
+		);
+		if(bright_types.size() == 0){
+			throw std::logic_error(
+				"input " + slots.bright_image.name + " enabled types");
 		}
+
+		// others must have the same types enabled as bright_image
+		// or none
+		auto throw_if_diff_types = [this, &bright_types]
+			(auto const& input, auto const& input_types){
+				if(bright_types == input_types) return;
+
+				std::ostringstream os;
+				os << "different input types in '"
+					<< slots.bright_image.name << "' (";
+				for(auto& type: bright_types){
+					os << "'" << type.pretty_name() << "'";
+				}
+
+				os << ") and " << input.name << " (";
+				for(auto& type: input_types){
+					os << "'" << type.pretty_name() << "'";
+				}
+
+				os << ")";
+
+				throw std::logic_error(os.str());
+			};
+
+		auto dark_types = slots.dark_image.enabled_types_transformed(
+			bitmap_value_type
+		);
+		auto gray_types = slots.gray_code_images.enabled_types_transformed(
+			bitmap_vector_value_type
+		);
+
+		throw_if_diff_types(slots.gray_code_images, gray_types);
+
+		if(dark_types.size() > 0){
+			throw_if_diff_types(slots.dark_image, dark_types);
+			param.have_dark = true;
+		}else if(!param.dark_environement){
+			throw std::logic_error(
+				"if parameter dark_environement is false (which is the "
+				"default) you need a dark image"
+			);
+		}
+
+		// enable output
+		switch(param.out_type){
+			case output_t::uint8:
+				signals.index_image.enable< std::uint8_t >();
+			break;
+			case output_t::uint16:
+				signals.index_image.enable< std::uint16_t >();
+			break;
+			case output_t::uint32:
+				signals.index_image.enable< std::uint32_t >();
+			break;
+		}
+	}
 
 
 

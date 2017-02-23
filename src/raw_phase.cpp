@@ -18,7 +18,7 @@
 #include <limits>
 
 
-namespace disposer_module{ namespace fine_phase{
+namespace disposer_module{ namespace raw_phase{
 
 
 	namespace hana = boost::hana;
@@ -65,12 +65,12 @@ namespace disposer_module{ namespace fine_phase{
 				data,
 				{
 					slots.bright_image, slots.dark_image,
-					slots.gray_code_dir1_images, slots.cos_dir1_images,
-					slots.gray_code_dir2_images, slots.cos_dir2_images
+					slots.cos_dir1_images,
+					slots.cos_dir2_images
 				},
 				{
-					signals.fine_phase_dir1, signals.quality_image_dir1,
-					signals.fine_phase_dir2, signals.quality_image_dir2
+					signals.raw_phase_dir1, signals.quality_image_dir1,
+					signals.raw_phase_dir2, signals.quality_image_dir2
 				}
 			),
 			param(std::move(param))
@@ -78,7 +78,7 @@ namespace disposer_module{ namespace fine_phase{
 
 
 		template < typename T >
-		bitmap< T > fine_phase(bitmap< T > const& image)const;
+		bitmap< T > raw_phase(bitmap< T > const& image)const;
 
 
 		struct{
@@ -103,13 +103,13 @@ namespace disposer_module{ namespace fine_phase{
 
 		struct{
 			disposer::container_output< bitmap, phase_type_list >
-				fine_phase_dir1{"fine_phase_dir1"};
+				raw_phase_dir1{"raw_phase_dir1"};
 
 			disposer::container_output< bitmap, intensity_type_list >
 				quality_image_dir1{"quality_image_dir1"};
 
 			disposer::container_output< bitmap, phase_type_list >
-				fine_phase_dir2{"fine_phase_dir2"};
+				raw_phase_dir2{"raw_phase_dir2"};
 
 			disposer::container_output< bitmap, intensity_type_list >
 				quality_image_dir2{"quality_image_dir2"};
@@ -191,15 +191,15 @@ namespace disposer_module{ namespace fine_phase{
 			// enable outputs
 			switch(param.out_type){
 				case output_t::float32:
-					signals.fine_phase_dir1.enable< float >();
+					signals.raw_phase_dir1.enable< float >();
 					if(param.second_dir){
-						signals.fine_phase_dir2.enable< float >();
+						signals.raw_phase_dir2.enable< float >();
 					}
 				break;
 				case output_t::float64:
-					signals.fine_phase_dir1.enable< double >();
+					signals.raw_phase_dir1.enable< double >();
 					if(param.second_dir){
-						signals.fine_phase_dir2.enable< double >();
+						signals.raw_phase_dir2.enable< double >();
 					}
 				break;
 			}
@@ -548,7 +548,7 @@ namespace disposer_module{ namespace fine_phase{
 
 
 	void init(disposer::module_declarant& add){
-		add("fine_phase", &make_module);
+		add("raw_phase", &make_module);
 	}
 
 	BOOST_DLL_AUTO_ALIAS(init)

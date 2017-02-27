@@ -311,10 +311,8 @@ namespace disposer_module{ namespace raw_phase{
 	template < typename PhaseT, typename IntensityT >
 	std::tuple< bitmap< PhaseT >, bitmap< IntensityT > >
 	module::decode(reference_vector< IntensityT >&& cos)const{
-		if(cos.empty()){
-			throw std::logic_error(
-				"input '" + slots.cos_images.name + "' has no images");
-		}
+		auto const image_size = get_size(cos,
+			[](auto& bitmap){ return bitmap.get().size(); });
 
 		if(param.rotate_images > 0){
 			if(param.rotate_images > cos.size()){
@@ -329,22 +327,6 @@ namespace disposer_module{ namespace raw_phase{
 		if(param.reverse_images){
 			std::reverse(cos.begin(), cos.end());
 		}
-
-		auto const image_size = std::accumulate(
-			cos.cbegin() + 1, cos.cend(), (*cos.cbegin()).get().size(),
-			[&cos](auto& ref, auto& test){
-				if(ref == test.get().size()) return ref;
-
-				std::ostringstream os;
-				os << "different cos image sizes (";
-				bool first = true;
-				for(auto& img: cos){
-					if(first){ first = false; }else{ os << ", "; }
-					os << img.get().size();
-				}
-				os << ") image";
-				throw std::logic_error(os.str());
-			});
 
 		switch(cos.size()){
 		case 4:

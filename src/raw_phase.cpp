@@ -7,7 +7,7 @@
 // file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 //-----------------------------------------------------------------------------
 #define _USE_MATH_DEFINES
-#include "bitmap_sequence.hpp"
+#include "get_bitmap_size.hpp"
 
 #include <disposer/module.hpp>
 
@@ -311,8 +311,7 @@ namespace disposer_module{ namespace raw_phase{
 	template < typename PhaseT, typename IntensityT >
 	std::tuple< bitmap< PhaseT >, bitmap< IntensityT > >
 	module::decode(reference_vector< IntensityT >&& cos)const{
-		auto const image_size = get_size(cos,
-			[](auto& bitmap){ return bitmap.get().size(); });
+		auto const image_size = get_bitmap_size(cos);
 
 		if(param.rotate_images > 0){
 			if(param.rotate_images > cos.size()){

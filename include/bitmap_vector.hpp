@@ -23,30 +23,6 @@ namespace disposer_module{
 	template < typename T >
 	using bitmap_vector = std::vector< bitmap< T > >;
 
-	/// \brief Get size of the bitmaps, throw if different sizes
-	template < typename Bitmap, typename F >
-	::bitmap::size< std::size_t > get_size(
-		std::vector< Bitmap > const& vec,
-		F&& f = [](auto const& bitmap){ return bitmap.size(); }
-	){
-		if(vec.empty()) throw std::logic_error("bitmap vector is empty");
-		return std::accumulate(
-			vec.cbegin() + 1, vec.cend(), f(*vec.cbegin()),
-			[&vec, &f](auto& ref, auto& test){
-				if(ref == f(test)) return ref;
-
-				std::ostringstream os;
-				os << "different image sizes (";
-				bool first = true;
-				for(auto& img: vec){
-					if(first){ first = false; }else{ os << ", "; }
-					os << img.get().size();
-				}
-				os << ") image";
-				throw std::logic_error(os.str());
-			});
-	}
-
 
 }
 

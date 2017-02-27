@@ -62,7 +62,7 @@ namespace disposer_module{ namespace raw_phase{
 	};
 
 	struct parameter{
-		std::size_t rotate;
+		std::size_t rotate_images;
 		bool reverse_images;
 
 		output_t out_type;
@@ -316,12 +316,14 @@ namespace disposer_module{ namespace raw_phase{
 				"input '" + slots.cos_images.name + "' has no images");
 		}
 
-		if(param.rotate > 0){
-			if(param.rotate > cos.size()){
+		if(param.rotate_images > 0){
+			if(param.rotate_images > cos.size()){
 				throw std::logic_error("parameter rotate ("
-					+ std::to_string(param.rotate) + ") is out of range");
+					+ std::to_string(param.rotate_images)
+					+ ") is out of range");
 			}
-			std::rotate(cos.begin(), cos.begin() + param.rotate, cos.end());
+			std::rotate(
+				cos.begin(), cos.begin() + param.rotate_images, cos.end());
 		}
 
 		if(param.reverse_images){
@@ -403,7 +405,7 @@ namespace disposer_module{ namespace raw_phase{
 
 
 		data.params.set(param.reverse_images, "reverse_images", false);
-		data.params.set(param.rotate, "rotate", 0);
+		data.params.set(param.rotate_images, "rotate_images", 0);
 
 
 		return std::make_unique< module >(data, std::move(param));

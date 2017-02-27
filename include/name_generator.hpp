@@ -170,9 +170,7 @@ namespace disposer_module{
 		template < std::size_t ... I>
 		std::string
 		get(std::index_sequence< I ... >, T const& ... values)const{
-			visitor v{
-				std::get< I >(functions_)(values) ...
-			};
+			visitor v(std::get< I >(functions_)(values) ...);
 
 			std::ostringstream os;
 			for(auto& data: pattern_){

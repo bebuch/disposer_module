@@ -28,6 +28,11 @@ namespace disposer_module{ namespace raw_phase{
 	namespace hana = boost::hana;
 
 
+	template < typename T >
+	using reference_vector =
+		std::vector< std::reference_wrapper< bitmap< T > const > >;
+
+
 	using disposer::type_position_v;
 
 	using intensity_type_list = disposer::type_list<
@@ -57,6 +62,9 @@ namespace disposer_module{ namespace raw_phase{
 	};
 
 	struct parameter{
+		std::size_t rotate;
+		bool reverse_images;
+
 		output_t out_type;
 	};
 
@@ -74,7 +82,7 @@ namespace disposer_module{ namespace raw_phase{
 
 		template < typename PhaseT, typename IntensityT >
 		std::tuple< bitmap< PhaseT >, bitmap< IntensityT > >
-		decode(bitmap_vector< IntensityT > const& cos)const;
+		decode(reference_vector< IntensityT >&& cos)const;
 
 
 		struct{
@@ -139,7 +147,7 @@ namespace disposer_module{ namespace raw_phase{
 
 		template < typename IntensityT >
 		std::tuple< PhaseT, IntensityT > operator()(
-			bitmap_vector< IntensityT > const& cos,
+			reference_vector< IntensityT > const& cos,
 			std::size_t x, std::size_t y
 		)const{
 			return (*this)(
@@ -177,7 +185,7 @@ namespace disposer_module{ namespace raw_phase{
 
 		template < typename IntensityT >
 		std::tuple< PhaseT, IntensityT > operator()(
-			bitmap_vector< IntensityT > const& cos,
+			reference_vector< IntensityT > const& cos,
 			std::size_t x, std::size_t y
 		)const{
 			return (*this)(
@@ -214,7 +222,7 @@ namespace disposer_module{ namespace raw_phase{
 
 		template < typename IntensityT >
 		std::tuple< PhaseT, IntensityT > operator()(
-			bitmap_vector< IntensityT > const& cos,
+			reference_vector< IntensityT > const& cos,
 			std::size_t x, std::size_t y
 		)const{
 			return (*this)(
@@ -261,7 +269,7 @@ namespace disposer_module{ namespace raw_phase{
 
 		template < typename IntensityT >
 		std::tuple< PhaseT, IntensityT > operator()(
-			bitmap_vector< IntensityT > const& cos,
+			reference_vector< IntensityT > const& cos,
 			std::size_t x, std::size_t y
 		)const{
 			return (*this)(
@@ -284,7 +292,7 @@ namespace disposer_module{ namespace raw_phase{
 	roh_and_modulation(
 		calc_roh_and_modulation< PhaseT, CosCount > const& calc,
 		::bitmap::size< std::size_t > const image_size,
-		bitmap_vector< IntensityT > const& cos
+		reference_vector< IntensityT > const& cos
 	){
 		static constexpr auto NaN = std::numeric_limits< PhaseT >::quiet_NaN();
 		bitmap< PhaseT > phase(image_size, NaN);
@@ -302,23 +310,35 @@ namespace disposer_module{ namespace raw_phase{
 
 	template < typename PhaseT, typename IntensityT >
 	std::tuple< bitmap< PhaseT >, bitmap< IntensityT > >
-	module::decode(bitmap_vector< IntensityT > const& cos)const{
+	module::decode(reference_vector< IntensityT >&& cos)const{
 		if(cos.empty()){
 			throw std::logic_error(
 				"input '" + slots.cos_images.name + "' has no images");
 		}
 
+		if(param.rotate > 0){
+			if(param.rotate > cos.size()){
+				throw std::logic_error("parameter rotate ("
+					+ std::to_string(param.rotate) + ") is out of range");
+			}
+			std::rotate(cos.begin(), cos.begin() + param.rotate, cos.end());
+		}
+
+		if(param.reverse_images){
+			std::reverse(cos.begin(), cos.end());
+		}
+
 		auto const image_size = std::accumulate(
-			cos.cbegin() + 1, cos.cend(), cos.cbegin()->size(),
+			cos.cbegin() + 1, cos.cend(), (*cos.cbegin()).get().size(),
 			[&cos](auto& ref, auto& test){
-				if(ref == test.size()) return ref;
+				if(ref == test.get().size()) return ref;
 
 				std::ostringstream os;
 				os << "different cos image sizes (";
 				bool first = true;
 				for(auto& img: cos){
 					if(first){ first = false; }else{ os << ", "; }
-					os << img.size();
+					os << img.get().size();
 				}
 				os << ") image";
 				throw std::logic_error(os.str());
@@ -381,6 +401,11 @@ namespace disposer_module{ namespace raw_phase{
 
 		param.out_type = iter->second;
 
+
+		data.params.set(param.reverse_images, "reverse_images", false);
+		data.params.set(param.rotate, "rotate", 0);
+
+
 		return std::make_unique< module >(data, std::move(param));
 	}
 
@@ -404,20 +429,31 @@ namespace disposer_module{ namespace raw_phase{
 	}
 
 
+	template < typename T >
+	reference_vector< T > as_reference_vector(bitmap_vector< T > const& bitmaps){
+		reference_vector< T > result;
+		result.reserve(bitmaps.size());
+		for(auto& bitmap: bitmaps) result.emplace_back(std::cref(bitmap));
+		return result;
+	}
+
+
 	void module::exec(){
-		auto decode32 = [this](auto const& cos){
+		auto decode32 = [this](auto& cos){
 			using value_type =
 				typename std::remove_reference_t< decltype(cos.data()) >
 				::value_type::value_type;
-			auto [phase, modulation] = decode< float >(cos.data());
+			auto [phase, modulation] =
+				decode< float >(as_reference_vector(cos.data()));
 			signals.phase_image.put< float >(phase);
 			signals.modulation_image.put< value_type >(modulation);
 		};
-		auto decode64 = [this](auto const& cos){
+		auto decode64 = [this](auto& cos){
 			using value_type =
 				typename std::remove_reference_t< decltype(cos.data()) >
 				::value_type::value_type;
-			auto [phase, modulation] = decode< double >(cos.data());
+			auto [phase, modulation] =
+				decode< double >(as_reference_vector(cos.data()));
 			signals.phase_image.put< double >(phase);
 			signals.modulation_image.put< value_type >(modulation);
 		};

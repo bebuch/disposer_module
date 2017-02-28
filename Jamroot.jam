@@ -160,9 +160,9 @@ lib gray_code_decoder
 	<include>$(bitmap)/include
 	;
 
-lib gray_code_threashold
+lib gray_code_threshold
 	:
-	gray_code_threashold.cpp
+	gray_code_threshold.cpp
 	/disposer//disposer
 	:
 	<include>$(bitmap)/include

@@ -208,7 +208,7 @@ namespace disposer_module{ namespace gray_code_threshold{
 				auto dark_iter = dark_data.begin();
 				for(
 					auto bright_iter = bright_data.begin();
-					bright_iter == bright_data.end();
+					bright_iter != bright_data.end();
 					++bright_iter, ++dark_iter
 				){
 					auto& [bright_id, bright_img] = *bright_iter;
@@ -232,8 +232,9 @@ namespace disposer_module{ namespace gray_code_threshold{
 									bright.begin(), bright.end(),
 									dark.begin(), bright.begin(),
 									[](auto bright, auto dark){
-										return
-											bright > dark ? bright - dark : 0;
+										return bright > dark
+											? dark + (bright - dark) / 2
+											: 0;
 									});
 								signals.threshold_image.put< bright_t >(bright);
 							}else{
@@ -252,20 +253,18 @@ namespace disposer_module{ namespace gray_code_threshold{
 						auto vector = input_data.data();
 						using value_type = typename decltype(vector)
 							::value_type::value_type;
-						auto const half = vector.size() / 2;
 						auto const size = get_bitmap_size(vector);
 						bitmap< value_type > result(size);
 						for(std::size_t i = 0; i < result.point_count(); ++i){
 							std::common_type_t< value_type, std::int64_t >
 								sum = 0;
-							for(std::size_t j = 0; j < half; ++j){
+
+							for(std::size_t j = 0; j < vector.size(); ++j){
 								sum += vector[j].data()[i];
 							}
-							for(std::size_t j = half; j < half * 2; ++j){
-								sum -= vector[j].data()[i];
-							}
+
 							result.data()[i] = static_cast< value_type >(
-								sum > 0 ? sum : 0
+								sum / vector.size()
 							);
 						}
 						signals.threshold_image.put< value_type >(result);

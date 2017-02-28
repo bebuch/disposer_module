@@ -282,7 +282,7 @@ namespace disposer_module{ namespace gray_code_decoder{
 		auto gray_iter = gray_data.begin();
 		for(
 			auto threshold_iter = threshold_data.begin();
-			threshold_iter == threshold_data.end();
+			threshold_iter != threshold_data.end();
 			++threshold_iter, ++gray_iter
 		){
 			auto& [threshold_id, threshold_variant] = *threshold_iter;

@@ -33,9 +33,7 @@ namespace disposer_module{
 		std::ostringstream os;
 		os << std::boolalpha;
 		os << static_cast< T&& >(arg);
-		for(auto&& arg: { static_cast< Ts&& >(args) ... }){
-			os << separator << static_cast< T&& >(arg);
-		}
+		((os << separator) << ... << static_cast< Ts&& >(args));
 		return os.str();
 	}
 

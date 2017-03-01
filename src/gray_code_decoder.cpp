@@ -7,7 +7,7 @@
 // file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 //-----------------------------------------------------------------------------
 #include "get_bitmap_size.hpp"
-#include "graycode.hpp"
+#include "gray_code.hpp"
 
 #include <disposer/module.hpp>
 

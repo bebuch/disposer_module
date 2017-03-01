@@ -1,8 +1,10 @@
 import os ;
 local boost = [ os.environ BOOST ] ;
-local disposer = [ os.environ DISPOSER ] ;
-local bitmap = [ os.environ BITMAP ] ;
-local big = [ os.environ BIG ] ;
+local disposer = ../disposer ;
+local io_tools = ../io_tools ;
+local bitmap = ../bitmap ;
+local tar = ../tar ;
+local big = ../big ;
 
 use-project /boost
 	: $(boost)
@@ -60,8 +62,10 @@ lib big_loader
 	big_loader.cpp
 	/disposer//disposer
 	:
-	<include>$(big)/cpp/include
+	<include>$(io_tools)/include
 	<include>$(bitmap)/include
+	<include>$(tar)/include
+	<include>$(big)/cpp/include
 	;
 
 lib big_saver
@@ -69,8 +73,10 @@ lib big_saver
 	big_saver.cpp
 	/disposer//disposer
 	:
-	<include>$(big)/cpp/include
+	<include>$(io_tools)/include
 	<include>$(bitmap)/include
+	<include>$(tar)/include
+	<include>$(big)/cpp/include
 	;
 
 lib png_loader
@@ -78,7 +84,9 @@ lib png_loader
 	png_loader.cpp
 	/disposer//disposer
 	:
+	<include>$(io_tools)/include
 	<include>$(bitmap)/include
+	<include>$(tar)/include
 	<linkflags>-lpng
 	;
 
@@ -87,7 +95,9 @@ lib png_saver
 	png_saver.cpp
 	/disposer//disposer
 	:
+	<include>$(io_tools)/include
 	<include>$(bitmap)/include
+	<include>$(tar)/include
 	<linkflags>-lpng
 	;
 
@@ -117,6 +127,7 @@ lib raster
 	raster.cpp
 	/disposer//disposer
 	:
+	<include>$(io_tools)/include
 	<include>$(bitmap)/include
 	;
 
@@ -149,6 +160,7 @@ lib raw_phase
 	raw_phase.cpp
 	/disposer//disposer
 	:
+	<include>$(io_tools)/include
 	<include>$(bitmap)/include
 	;
 
@@ -157,6 +169,7 @@ lib gray_code_decoder
 	gray_code_decoder.cpp
 	/disposer//disposer
 	:
+	<include>$(io_tools)/include
 	<include>$(bitmap)/include
 	;
 
@@ -165,6 +178,7 @@ lib gray_code_threshold
 	gray_code_threshold.cpp
 	/disposer//disposer
 	:
+	<include>$(io_tools)/include
 	<include>$(bitmap)/include
 	;
 

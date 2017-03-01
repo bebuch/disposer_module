@@ -7,9 +7,10 @@
 // file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 //-----------------------------------------------------------------------------
 #include "bitmap_sequence.hpp"
-#include "make_string.hpp"
 
 #include <disposer/module.hpp>
+
+#include <io_tools/make_string.hpp>
 
 #include <bitmap/pixel.hpp>
 
@@ -143,7 +144,7 @@ namespace disposer_module{ namespace raster{
 		data.params.set(param.raster_y, "raster_y", raster);
 
 		if(param.raster_x == 0 || param.raster_y == 0){
-			throw std::logic_error(make_string(
+			throw std::logic_error(io_tools::make_string(
 				"raster (x = ", param.raster_x, " & y = ", param.raster_y,
 				") needs to be greater than 0"
 			));

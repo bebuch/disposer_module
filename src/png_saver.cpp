@@ -8,7 +8,8 @@
 //-----------------------------------------------------------------------------
 #include "bitmap_sequence.hpp"
 #include "name_generator.hpp"
-#include "tar.hpp"
+
+#include <tar/tar.hpp>
 
 #include <bitmap/pixel.hpp>
 
@@ -197,7 +198,7 @@ namespace disposer_module{ namespace png_saver{
 			param.input = input_t::image;
 			params.set(param.sequence_count, "sequence_count");
 			if(param.sequence_count == 0){
-				throw std::logic_error(make_string(
+				throw std::logic_error(io_tools::make_string(
 					"sequence_count (value: ", param.sequence_count,
 					") needs to be greater than 0"));
 			}
@@ -262,7 +263,7 @@ namespace disposer_module{ namespace png_saver{
 				os << "write '" << tarname << "'";
 			},
 			[this, id, used_id, &bitmap_sequence, &tarname, &to_png_image]{
-				tar_writer tar(tarname);
+				::tar::tar_writer tar(tarname);
 				std::size_t cam = param.camera_start;
 				for(auto& sequence: bitmap_sequence){
 					std::size_t pos = param.sequence_start;

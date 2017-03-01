@@ -8,7 +8,8 @@
 //-----------------------------------------------------------------------------
 #include "bitmap_sequence.hpp"
 #include "name_generator.hpp"
-#include "tar.hpp"
+
+#include <tar/tar.hpp>
 
 #include <bitmap/pixel.hpp>
 
@@ -336,14 +337,14 @@ namespace disposer_module{ namespace png_loader{
 		load_tar(
 			module const& loader,
 			std::size_t used_id,
-			tar_reader& tar,
+			::tar::tar_reader& tar,
 			std::string const& tarname
 		):
 			loader(loader), used_id(used_id), tar(tar), tarname(tarname) {}
 
 		module const& loader;
 		std::size_t used_id;
-		tar_reader& tar;
+		::tar::tar_reader& tar;
 		std::string const& tarname;
 
 		std::string filename(std::size_t cam, std::size_t pos)const{
@@ -520,7 +521,7 @@ namespace disposer_module{ namespace png_loader{
 
 		if(param.tar){
 			auto tarname = param.dir + "/" + (*param.tar_pattern)(used_id);
-			tar_reader tar(tarname);
+			::tar::tar_reader tar(tarname);
 
 			load_tar loader(*this, used_id, tar, tarname);
 

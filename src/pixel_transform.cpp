@@ -7,7 +7,6 @@
 // file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 //-----------------------------------------------------------------------------
 #include "bitmap_sequence.hpp"
-#include "make_string.hpp"
 
 #include <disposer/module.hpp>
 

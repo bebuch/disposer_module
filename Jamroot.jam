@@ -1,6 +1,7 @@
 import os ;
 local boost = [ os.environ BOOST ] ;
 local disposer = ../disposer ;
+local gray_code = ../gray_code ;
 local io_tools = ../io_tools ;
 local bitmap = ../bitmap ;
 local tar = ../tar ;
@@ -169,6 +170,7 @@ lib gray_code_decoder
 	gray_code_decoder.cpp
 	/disposer//disposer
 	:
+	<include>$(gray_code)/include
 	<include>$(io_tools)/include
 	<include>$(bitmap)/include
 	;

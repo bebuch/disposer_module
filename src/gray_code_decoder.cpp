@@ -7,9 +7,10 @@
 // file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 //-----------------------------------------------------------------------------
 #include "get_bitmap_size.hpp"
-#include "gray_code.hpp"
 
 #include <disposer/module.hpp>
+
+#include <gray_code/gray_code.hpp>
 
 #include <bitmap/size_io.hpp>
 
@@ -143,7 +144,7 @@ namespace disposer_module{ namespace gray_code_decoder{
 					code |= gray_images[i](x, y) < threshold ? 0 : 1;
 				}
 
-				result(x, y) = gray_to_binary_code(code);
+				result(x, y) = gray_code::gray_to_binary_code(code);
 			}
 		}
 

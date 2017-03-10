@@ -480,11 +480,7 @@ namespace disposer_module{
 // 	}
 
 
-	void init(disposer::module_declarant& add){
-		add(module_type::name::c_str(), [](disposer::make_data const& data){
-			return std::make_unique< module_type >(data);
-		});
-	}
+	constexpr auto init = make_register_fn(config);
 
 	BOOST_DLL_AUTO_ALIAS(init)
 

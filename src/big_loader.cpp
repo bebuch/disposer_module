@@ -42,24 +42,22 @@ namespace disposer_module{
 
 	constexpr auto type_list = hana::keys(type_map);
 
-	auto constexpr config = module(
-		"big_loader"_s,
-		out("sequence"_s, type_list),
-		out("vector"_s, type_list),
-		out("image"_s, type_list)
+	auto constexpr config = "big_loader"_module(
+		"sequence"_out(type_list),
+		"vector"_out(type_list),
+		"image"_out(type_list)
 	);
 
-	using module_type = typename decltype(config)::type;
+	using module = typename decltype(config)::type;
 
 
+	enum class output_t{
+		sequence,
+		vector,
+		image
+	};
 
-// 	enum class output_t{
-// 		sequence,
-// 		vector,
-// 		image
-// 	};
-//
-// 	struct parameter{
+	struct parameter{
 // 		bool tar;
 //
 // 		std::size_t sequence_count;
@@ -79,39 +77,16 @@ namespace disposer_module{
 // 		std::optional< name_generator< std::size_t > > tar_pattern;
 // 		std::optional< name_generator< std::size_t, std::size_t, std::size_t > >
 // 			big_pattern;
-// 	};
-
-// 	struct big_loader: module< big_loader >{
-// 		using module< big_loader >::module;
-//
-// // 		std::size_t get_big_type(
-// // 			std::istream& is,
-// // 			std::string const& filename)const;
-//
-//
-// 		void exec()override{}
-//
-// 		void input_ready()override{}
-//
-//
-// 		decltype(hana::make_map(
-// 			output("sequence"_s, type_list),
-// 			output("vector"_s, type_list),
-// 			output("image"_s, type_list)
-// 		)) out;
-//
-//
-// // 		parameter const param;
-// 	};
+	};
 
 
-// 	disposer::module_ptr make_module(disposer::make_data& data){
+// 	parameter init_module(module& m, parameter_processor& params){
 // 		std::array< bool, 3 > const use_output{{
-// 			data.outputs.find(slots.sequence.name) != data.outputs.end(),
-// 			data.outputs.find(slots.vector.name) != data.outputs.end(),
-// 			data.outputs.find(slots.image.name) != data.outputs.end()
+// 			m.is_output_active("sequence"_s]),
+// 			m.is_output_active("vector"_s]),
+// 			m.is_output_active("image"_s])
 // 		}};
-//
+
 // 		std::size_t output_count =
 // 			std::count(use_output.begin(), use_output.end(), true);
 //
@@ -126,9 +101,9 @@ namespace disposer_module{
 // 				"no output defined (use '" + slots.image.name + "', '"
 // 				+ slots.vector.name + "' or '" + slots.sequence.name + "')");
 // 		}
-//
-// 		parameter param;
-//
+
+// 		parameter param{};
+
 // 		data.params.set(param.tar, "tar", false);
 //
 // 		data.params.set(param.sequence_count, "sequence_count");
@@ -199,9 +174,36 @@ namespace disposer_module{
 // 				std::make_pair("pos", format{position_digits})
 // 		);
 //
-// 		return std::make_unique< module >(data, std::move(param));
+// 		return param;
 // 	}
+
+
+	constexpr auto register_fn = make_register_fn(config);
+
+// 	struct big_loader: module< big_loader >{
+// 		using module< big_loader >::module;
 //
+// // 		std::size_t get_big_type(
+// // 			std::istream& is,
+// // 			std::string const& filename)const;
+//
+//
+// 		void exec()override{}
+//
+// 		void input_ready()override{}
+//
+//
+// 		decltype(hana::make_map(
+// 			output("sequence"_s, type_list),
+// 			output("vector"_s, type_list),
+// 			output("image"_s, type_list)
+// 		)) out;
+//
+//
+// // 		parameter const param;
+// 	};
+
+
 //
 // 	void module::input_ready(){
 // 		auto enable = [this](auto type_t){
@@ -480,9 +482,7 @@ namespace disposer_module{
 // 	}
 
 
-	constexpr auto init = make_register_fn(config);
-
-	BOOST_DLL_AUTO_ALIAS(init)
+	BOOST_DLL_AUTO_ALIAS(register_fn)
 
 
 }

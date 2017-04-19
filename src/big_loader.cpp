@@ -9,7 +9,7 @@
 #include "bitmap_sequence.hpp"
 #include "name_generator.hpp"
 
-#include <logsys/log_base.hpp>
+#include <logsys/stdlogb.hpp>
 
 #include <tar/tar.hpp>
 
@@ -259,7 +259,7 @@ namespace disposer_module{ namespace big_loader{
 		bitmap< T > load_bitmap(std::size_t cam, std::size_t pos)const{
 			bitmap< T > result;
 			auto name = filename(cam, pos);
-			loader.log([this, &name](logsys::log_base& os){
+			loader.log([this, &name](logsys::stdlogb& os){
 				os << "read '" << name << "'";
 			}, [&result, &name]{
 				big::read(result, name);
@@ -319,7 +319,7 @@ namespace disposer_module{ namespace big_loader{
 		bitmap< T > load_bitmap(std::size_t cam, std::size_t pos)const{
 			bitmap< T > result;
 			auto name = filename(cam, pos);
-			loader.log([this, &name](logsys::log_base& os){
+			loader.log([this, &name](logsys::stdlogb& os){
 				os << "read '" << tarname << "/" << name << "'";
 			}, [this, &result, &name]{
 				big::read(result, tar.get(name));
@@ -361,7 +361,7 @@ namespace disposer_module{ namespace big_loader{
 		std::istream& is,
 		std::string const& filename
 	)const{
-		return log([this, &filename](logsys::log_base& os){
+		return log([this, &filename](logsys::stdlogb& os){
 			os << "read header of '" << filename << "'";
 		}, [&is, &filename]{
 			auto header = big::read_header(is);
@@ -398,7 +398,7 @@ namespace disposer_module{ namespace big_loader{
 		auto used_id = param.fixed_id ? *param.fixed_id : id;
 
 		auto call_worker = [this](auto& loader, std::size_t data_type){
-			log([this, data_type](logsys::log_base& os){
+			log([this, data_type](logsys::stdlogb& os){
 				os << "data type is '" << io_type_names[data_type] << "'";
 			});
 

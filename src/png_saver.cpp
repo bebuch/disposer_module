@@ -9,7 +9,7 @@
 #include "bitmap_sequence.hpp"
 #include "name_generator.hpp"
 
-#include <logsys/log_base.hpp>
+#include <logsys/stdlogb.hpp>
 
 #include <tar/tar.hpp>
 
@@ -261,7 +261,7 @@ namespace disposer_module{ namespace png_saver{
 
 		if(param.tar){
 			auto tarname = param.dir + "/" + (*param.tar_pattern)(used_id);
-			log([this, &tarname, id](logsys::log_base& os){
+			log([this, &tarname, id](logsys::stdlogb& os){
 				os << "write '" << tarname << "'";
 			},
 			[this, id, used_id, &bitmap_sequence, &tarname, &to_png_image]{
@@ -272,7 +272,7 @@ namespace disposer_module{ namespace png_saver{
 					for(auto& bitmap: sequence){
 						auto filename = (*param.png_pattern)(used_id, cam, pos);
 						log([this, &tarname, &filename, id](
-							logsys::log_base& os
+							logsys::stdlogb& os
 						){
 							os << "write '" << tarname << "/" << filename
 								<< "'";
@@ -301,7 +301,7 @@ namespace disposer_module{ namespace png_saver{
 				for(auto& bitmap: sequence){
 					auto filename = param.dir + "/" +
 						(*param.png_pattern)(used_id, cam, pos);
-					log([this, &filename, id](logsys::log_base& os){
+					log([this, &filename, id](logsys::stdlogb& os){
 						os << "write '" << filename << "'";
 					},
 					[&bitmap, &filename, &to_png_image]{

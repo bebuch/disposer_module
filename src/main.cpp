@@ -6,7 +6,7 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 //-----------------------------------------------------------------------------
-#include <logsys/log_base.hpp>
+#include <logsys/stdlogb.hpp>
 
 #include <disposer/disposer.hpp>
 #include <disposer/module_base.hpp>
@@ -46,7 +46,7 @@ int main(int argc, char** argv){
 	::disposer::disposer disposer;
 
 	if(!logsys::exception_catching_log([](
-		logsys::log_base& os){ os << "loading modules"; },
+		logsys::stdlogb& os){ os << "loading modules"; },
 	[&disposer, &modules]{
 		auto program_dir = boost::dll::program_location().remove_filename();
 		std::cout << "Search for DLLs in '" << program_dir << "'" << std::endl;
@@ -58,7 +58,7 @@ int main(int argc, char** argv){
 				!std::regex_match(file.path().filename().string(), regex)
 			) continue;
 
-			logsys::log([&file](logsys::log_base& os){
+			logsys::log([&file](logsys::stdlogb& os){
 				os << "load shared library '" << file.path().string() << "'";
 			}, [&]{
 				modules.emplace_back(file.path().string());
@@ -71,7 +71,7 @@ int main(int argc, char** argv){
 	})) return 1;
 
 	return !logsys::exception_catching_log(
-		[](logsys::log_base& os){ os << "exec chains"; },
+		[](logsys::stdlogb& os){ os << "exec chains"; },
 	[&disposer, exec_all, &exec_chain, exec_count]{
 		disposer.load("plan.ini");
 

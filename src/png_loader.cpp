@@ -9,6 +9,8 @@
 #include "bitmap_sequence.hpp"
 #include "name_generator.hpp"
 
+#include <logsys/log_base.hpp>
+
 #include <tar/tar.hpp>
 
 #include <bitmap/pixel.hpp>
@@ -286,7 +288,7 @@ namespace disposer_module{ namespace png_loader{
 		template < typename T >
 		bitmap< T > load_bitmap(std::size_t cam, std::size_t pos)const{
 			auto name = filename(cam, pos);
-			return loader.log([this, &name](disposer::log_base& os){
+			return loader.log([this, &name](logsys::log_base& os){
 				os << "read '" << name << "'";
 			}, [&name]{
 				png::image< bitmap_to_png_type_t< T > > img(name);
@@ -354,7 +356,7 @@ namespace disposer_module{ namespace png_loader{
 		template < typename T >
 		bitmap< T > load_bitmap(std::size_t cam, std::size_t pos)const{
 			auto name = filename(cam, pos);
-			return loader.log([this, &name](disposer::log_base& os){
+			return loader.log([this, &name](logsys::log_base& os){
 				os << "read '" << tarname << "/" << name << "'";
 			}, [this, &name]{
 				png::image< bitmap_to_png_type_t< T > > img(tar.get(name));
@@ -405,7 +407,7 @@ namespace disposer_module{ namespace png_loader{
 		std::istream& is,
 		std::string const& filename
 	)const{
-		return log([this, &filename](disposer::log_base& os){
+		return log([this, &filename](logsys::log_base& os){
 			os << "read header of '" << filename << "'";
 		}, [&is, &filename]{
 			png::reader< std::istream > reader(is);
@@ -456,7 +458,7 @@ namespace disposer_module{ namespace png_loader{
 		auto used_id = param.fixed_id ? *param.fixed_id : id;
 
 		auto call_worker = [this](auto& loader, std::size_t data_type){
-			log([this, data_type](disposer::log_base& os){
+			log([this, data_type](logsys::log_base& os){
 				os << "data type is '" << io_type_names[data_type] << "'";
 			});
 

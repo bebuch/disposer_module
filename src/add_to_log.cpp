@@ -8,6 +8,8 @@
 //-----------------------------------------------------------------------------
 #include <disposer/module.hpp>
 
+#include <logsys/log_base.hpp>
+
 #include <boost/dll.hpp>
 
 
@@ -26,7 +28,7 @@ namespace disposer_module{ namespace add_to_log{
 				auto id = pair.first;
 				auto& data = pair.second.data();
 
-				disposer::log([this, id, &data](disposer::log_base& os){
+				logsys::log([this, id, &data](logsys::log_base& os){
 					os << type_name << ": id=" << id << " chain '" << chain
 						<< "' module '" << name << "' data='"
 						<< data << "'";

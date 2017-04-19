@@ -6,6 +6,7 @@ local io_tools = ../io_tools ;
 local bitmap = ../bitmap ;
 local tar = ../tar ;
 local big = ../big ;
+local logsys = ../logsys ;
 
 use-project /boost
 	: $(boost)
@@ -52,6 +53,7 @@ project disposer_module
 exe disposer_module
 	:
 	main.cpp
+	/logsys//logsys
 	/disposer//disposer
 	/boost//filesystem
 	:
@@ -61,6 +63,7 @@ exe disposer_module
 lib big_loader
 	:
 	big_loader.cpp
+	/logsys//logsys
 	/disposer//disposer
 	:
 	<include>$(io_tools)/include
@@ -72,6 +75,7 @@ lib big_loader
 lib big_saver
 	:
 	big_saver.cpp
+	/logsys//logsys
 	/disposer//disposer
 	:
 	<include>$(io_tools)/include
@@ -83,6 +87,7 @@ lib big_saver
 lib png_loader
 	:
 	png_loader.cpp
+	/logsys//logsys
 	/disposer//disposer
 	:
 	<include>$(io_tools)/include
@@ -94,6 +99,7 @@ lib png_loader
 lib png_saver
 	:
 	png_saver.cpp
+	/logsys//logsys
 	/disposer//disposer
 	:
 	<include>$(io_tools)/include
@@ -105,6 +111,7 @@ lib png_saver
 lib camera_ximea
 	:
 	camera_ximea.cpp
+	/logsys//logsys
 	/disposer//disposer
 	:
 	<include>$(bitmap)/include
@@ -114,6 +121,7 @@ lib camera_ximea
 lib show_image
 	:
 	show_image.cpp
+	/logsys//logsys
 	/disposer//disposer
 	:
 	<include>$(bitmap)/include
@@ -126,6 +134,7 @@ lib show_image
 lib raster
 	:
 	raster.cpp
+	/logsys//logsys
 	/disposer//disposer
 	:
 	<include>$(io_tools)/include
@@ -135,6 +144,7 @@ lib raster
 lib add_to_log
 	:
 	add_to_log.cpp
+	/logsys//logsys
 	/disposer//disposer
 	:
 	<include>$(bitmap)/include
@@ -143,6 +153,7 @@ lib add_to_log
 lib demosaic
 	:
 	demosaic.cpp
+	/logsys//logsys
 	/disposer//disposer
 	:
 	<include>$(bitmap)/include
@@ -151,6 +162,7 @@ lib demosaic
 lib bitmap_vector_join
 	:
 	bitmap_vector_join.cpp
+	/logsys//logsys
 	/disposer//disposer
 	:
 	<include>$(bitmap)/include
@@ -159,6 +171,7 @@ lib bitmap_vector_join
 lib raw_phase
 	:
 	raw_phase.cpp
+	/logsys//logsys
 	/disposer//disposer
 	:
 	<include>$(io_tools)/include
@@ -168,6 +181,7 @@ lib raw_phase
 lib gray_code_decoder
 	:
 	gray_code_decoder.cpp
+	/logsys//logsys
 	/disposer//disposer
 	:
 	<include>$(gray_code)/include
@@ -178,6 +192,7 @@ lib gray_code_decoder
 lib gray_code_threshold
 	:
 	gray_code_threshold.cpp
+	/logsys//logsys
 	/disposer//disposer
 	:
 	<include>$(io_tools)/include
@@ -187,6 +202,7 @@ lib gray_code_threshold
 lib phase_unwrapp_by_index
 	:
 	phase_unwrapp_by_index.cpp
+	/logsys//logsys
 	/disposer//disposer
 	:
 	<include>$(bitmap)/include
@@ -195,6 +211,7 @@ lib phase_unwrapp_by_index
 lib pixel_transform
 	:
 	pixel_transform.cpp
+	/logsys//logsys
 	/disposer//disposer
 	:
 	<include>$(bitmap)/include
@@ -203,6 +220,7 @@ lib pixel_transform
 lib subbitmap
 	:
 	subbitmap.cpp
+	/logsys//logsys
 	/disposer//disposer
 	:
 	<include>$(bitmap)/include
@@ -211,6 +229,7 @@ lib subbitmap
 lib bitmap_bounding_rect
 	:
 	bitmap_bounding_rect.cpp
+	/logsys//logsys
 	/disposer//disposer
 	:
 	<include>$(bitmap)/include

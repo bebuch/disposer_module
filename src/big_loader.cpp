@@ -43,8 +43,7 @@ namespace disposer_module{ namespace big_loader{
 		std::int64_t,
 		std::uint64_t,
 		float,
-		double,
-		long double
+		double
 	>;
 
 	constexpr auto hana_type_list = disposer::hana_type_list< type_list >;
@@ -62,8 +61,7 @@ namespace disposer_module{ namespace big_loader{
 		"int64",
 		"uint64",
 		"float",
-		"double",
-		"long_double"
+		"double"
 	}};
 
 
@@ -167,7 +165,7 @@ namespace disposer_module{ namespace big_loader{
 				"no type enabled (set at least one of 'type_int8', "
 				"'type_uint8', 'type_int16', 'type_uint16', 'type_int32', "
 				"'type_uint32', 'type_int64', 'type_uint64', 'type_float', "
-				"'type_double', 'type_long_double' to true)"
+				"'type_double' to true)"
 			);
 		}
 
@@ -386,8 +384,6 @@ namespace disposer_module{ namespace big_loader{
 					return type_v< float >;
 				case big::type_v< double >:
 					return type_v< double >;
-				case big::type_v< long double >:
-					return type_v< long double >;
 			}
 
 			throw std::runtime_error(
@@ -472,8 +468,6 @@ namespace disposer_module{ namespace big_loader{
 					worker(hana::type_c< float >); break;
 				case type_v< double >:
 					worker(hana::type_c< double >); break;
-				case type_v< long double >:
-					worker(hana::type_c< long double >); break;
 			}
 		};
 

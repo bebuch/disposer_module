@@ -57,8 +57,7 @@ namespace disposer_module{ namespace big_saver{
 			std::reference_wrapper< bitmap< std::int64_t > const >,
 			std::reference_wrapper< bitmap< std::uint64_t > const >,
 			std::reference_wrapper< bitmap< float > const >,
-			std::reference_wrapper< bitmap< double > const >,
-			std::reference_wrapper< bitmap< long double > const >
+			std::reference_wrapper< bitmap< double > const >
 		>;
 
 	using save_vector = std::vector< save_image >;
@@ -83,8 +82,7 @@ namespace disposer_module{ namespace big_saver{
 			std::int64_t,
 			std::uint64_t,
 			float,
-			double,
-			long double
+			double
 		>;
 
 

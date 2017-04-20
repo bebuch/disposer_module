@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------------
-// Copyright (c) 2015-2017 Benjamin Buch
+// Copyright (c) 2017 Benjamin Buch
 //
 // https://github.com/bebuch/disposer_module
 //
@@ -12,7 +12,7 @@
 #include <http/server_file_request_handler.hpp>
 #include <http/server_lambda_request_handler.hpp>
 #include <http/websocket_server_request_handler.hpp>
-#include <http/websocket_server_service.hpp>
+#include <http/websocket_server_json_service.hpp>
 
 #include <boost/dll.hpp>
 #include <boost/property_tree/ptree.hpp>
@@ -21,9 +21,30 @@
 namespace disposer_module{ namespace websocket_live_stream{
 
 
-	class service: public http::websocket::server::service{
+	class service: public http::websocket::server::json_service{
 	public:
 		service(std::string const& ready_signal):
+			http::websocket::server::json_service(
+				[this](
+					boost::property_tree::ptree const& data,
+					http::server::connection_ptr const& con
+				){
+					try{
+						if(!data.get< bool >(ready_signal_)) return;
+						std::lock_guard< std::mutex > lock(mutex_);
+						ready_.at(con) = true;
+					}catch(...){}
+				},
+				http::websocket::server::data_callback_fn(),
+				[this](http::server::connection_ptr const& con){
+					std::lock_guard< std::mutex > lock(mutex_);
+					ready_.emplace(con, false);
+				},
+				[this](http::server::connection_ptr const& con){
+					std::lock_guard< std::mutex > lock(mutex_);
+					ready_.erase(con);
+				}
+			),
 			ready_signal_(ready_signal) {}
 
 		void send(std::string const& data){
@@ -37,26 +58,6 @@ namespace disposer_module{ namespace websocket_live_stream{
 
 
 	private:
-		/// \brief Handle a new connection
-		void new_connection(http::server::connection_ptr const& con){
-			ready_.emplace(con, false);
-		}
-
-		/// \brief Handle a closed connection
-		void erase_connection(http::server::connection_ptr const& con){
-			ready_.erase(con);
-		}
-
-		/// \brief Handle a JSON message
-		void ready_connection(
-			boost::property_tree::ptree const& data,
-			http::server::connection_ptr const& con
-		)try{
-			if(!data.get< bool >(ready_signal_)) return;
-			std::lock_guard< std::mutex > lock(mutex_);
-			ready_.at(con) = true;
-		}catch(...){}
-
 		std::string const ready_signal_;
 
 		std::mutex mutex_;
@@ -154,7 +155,7 @@ namespace disposer_module{ namespace websocket_live_stream{
 	disposer::module_ptr make_module(disposer::make_data& data){
 		if(data.is_first()) throw disposer::module_not_as_start(data);
 
-		if(data.inputs.find("data") != data.inputs.end()){
+		if(data.inputs.find("data") == data.inputs.end()){
 			throw std::logic_error("no input defined (use 'data')");
 		}
 
@@ -173,7 +174,9 @@ namespace disposer_module{ namespace websocket_live_stream{
 	void module::exec(){
 		auto list = data.get();
 		if(list.empty()) return;
-		handler_.send(list.end()->second.data());
+		auto iter = list.end();
+		--iter;
+		handler_.send(iter->second.data());
 	}
 
 

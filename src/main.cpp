@@ -61,11 +61,18 @@ int main(int argc, char** argv){
 			logsys::log([&file](logsys::stdlogb& os){
 				os << "load shared library '" << file.path().string() << "'";
 			}, [&]{
-				modules.emplace_back(file.path().string());
+				modules.emplace_back(file.path().string(), boost::dll::load_mode::rtld_deepbind);
 
-				modules.back().get_alias<
-					void(::disposer::module_declarant&)
-				>("init")(disposer.declarant());
+				if(modules.back().has("init")){
+					modules.back().get_alias<
+							void(::disposer::module_declarant&)
+						>("init")(disposer.declarant());
+				}else{
+					logsys::log([&file](logsys::stdlogb& os){
+						os << "shared library '" << file.path().string()
+							<< "' is not a module";
+					});
+				}
 			});
 		}
 	})) return 1;

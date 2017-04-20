@@ -6,10 +6,19 @@ local io_tools = ../io_tools ;
 local bitmap = ../bitmap ;
 local tar = ../tar ;
 local big = ../big ;
+local http = ../http ;
 local logsys = ../logsys ;
 
 use-project /boost
 	: $(boost)
+	;
+
+use-project /logsys
+	: $(logsys)
+	;
+
+use-project /http
+	: $(http)
 	;
 
 use-project /disposer
@@ -233,4 +242,12 @@ lib bitmap_bounding_rect
 	/disposer//disposer
 	:
 	<include>$(bitmap)/include
+	;
+
+lib websocket_live_stream
+	:
+	websocket_live_stream.cpp
+	/logsys//logsys
+	/disposer//disposer
+	/http//http
 	;

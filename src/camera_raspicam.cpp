@@ -35,6 +35,7 @@ namespace disposer_module{ namespace camera_raspicam{
 
 
 	struct parameter{
+		bool fix_rgb;
 		pixel_format format;
 	};
 
@@ -59,19 +60,24 @@ namespace disposer_module{ namespace camera_raspicam{
 			log([](logsys::stdlogb& os){
 					os << "Connect to camera";
 				}, [this]{
-					if(!cam_.open(true)){
-						throw std::runtime_error("Can not connect to raspicam");
-					}
 					auto format = raspicam::RASPICAM_FORMAT_IGNORE;
 					switch(param.format){
 					case pixel_format::gray:
 						format = raspicam::RASPICAM_FORMAT_GRAY;
 					break;
 					case pixel_format::rgb:
-						format = raspicam::RASPICAM_FORMAT_RGB;
+						if(param.fix_rgb){
+							format = raspicam::RASPICAM_FORMAT_BGR;
+						}else{
+							format = raspicam::RASPICAM_FORMAT_RGB;
+						}
 					break;
 					}
 					cam_.setFormat(format);
+
+					if(!cam_.open(true)){
+						throw std::runtime_error("Can not connect to raspicam");
+					}
 				});
 		}
 
@@ -102,8 +108,10 @@ namespace disposer_module{ namespace camera_raspicam{
 				cam_.grab();
 
 				bitmap< T > image(cam_.getWidth(), cam_.getHeight());
-				auto data = reinterpret_cast< T* >(cam_.getImageBufferData());
-				std::copy(data, data + image.point_count(), image.data());
+				auto data = cam_.getImageBufferData();
+				auto data_size = sizeof(T) * image.point_count();
+				auto image_data = reinterpret_cast< decltype(data) >(image.data());
+				std::copy(data, data + data_size, image_data);
 				return image;
 			});
 	}
@@ -137,6 +145,7 @@ namespace disposer_module{ namespace camera_raspicam{
 
 		parameter param{};
 		param.format = iter->second;
+		data.params.set(param.fix_rgb, "fix_rgb", false);
 
 		return std::make_unique< module >(data, std::move(param));
 	}

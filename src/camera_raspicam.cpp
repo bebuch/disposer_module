@@ -42,7 +42,7 @@ namespace disposer_module{ namespace camera_raspicam{
 
 	using type_list = disposer::type_list<
 		std::uint8_t,
-		pixel::rgb8
+		pixel::rgb8u
 	>;
 
 
@@ -157,7 +157,7 @@ namespace disposer_module{ namespace camera_raspicam{
 				image.put< std::uint8_t >(get_image< std::uint8_t >());
 				break;
 			case pixel_format::rgb:
-				image.put< pixel::rgb8 >(get_image< pixel::rgb8 >());
+				image.put< pixel::rgb8u >(get_image< pixel::rgb8u >());
 				break;
 		}
 	}
@@ -168,7 +168,7 @@ namespace disposer_module{ namespace camera_raspicam{
 				image.enable< std::uint8_t >();
 				break;
 			case pixel_format::rgb:
-				image.enable< pixel::rgb8 >();
+				image.enable< pixel::rgb8u >();
 				break;
 		}
 	}

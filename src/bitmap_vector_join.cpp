@@ -179,7 +179,6 @@ namespace disposer_module{ namespace bitmap_vector_join{
 		std::uint64_t,
 		float,
 		double,
-		long double,
 		pixel::ga8,
 		pixel::ga16,
 		pixel::ga32,
@@ -359,7 +358,8 @@ namespace disposer_module{ namespace bitmap_vector_join{
 		signals.image.enable_types(
 			slots.image_vector.enabled_types_transformed(
 				[](auto type){
-					return hana::type_c< typename decltype(type)::type::value_type >;
+					return hana::type_c<
+						typename decltype(type)::type::value_type >;
 				}
 			)
 		);

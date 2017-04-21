@@ -41,7 +41,6 @@ namespace disposer_module{ namespace demosaic{
 		std::uint64_t,
 		float,
 		double,
-		long double,
 		pixel::ga8,
 		pixel::ga16,
 		pixel::ga32,
@@ -187,12 +186,13 @@ namespace disposer_module{ namespace demosaic{
 	void module::exec(){
 		for(auto const& [id, img]: slots.image.get()){
 			(void)id;
-			std::visit([this](auto const& vector){
+			std::visit([this](auto const& img_input_data){
 				using value_type =
-					typename std::decay_t< decltype(vector.data()) >
+					typename std::decay_t< decltype(img_input_data.data()) >
 					::value_type;
 
-				signals.image_vector.put< value_type >(demosaic(vector.data()));
+				signals.image_vector.put< value_type >
+					(demosaic(img_input_data.data()));
 			}, img);
 		}
 	}

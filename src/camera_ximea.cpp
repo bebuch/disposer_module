@@ -319,7 +319,7 @@ namespace disposer_module{ namespace camera_ximea{
 	using type_list = disposer::type_list<
 		std::uint8_t,
 		std::uint16_t,
-		pixel::rgb8
+		pixel::rgb8u
 	>;
 
 
@@ -656,8 +656,8 @@ namespace disposer_module{ namespace camera_ximea{
 						(cam_->get_image< std::uint16_t >());
 					break;
 				case pixel_format::rgb8:
-					image.put< pixel::rgb8 >
-						(cam_->get_image< pixel::rgb8 >());
+					image.put< pixel::rgb8u >
+						(cam_->get_image< pixel::rgb8u >());
 					break;
 			}
 		}
@@ -677,7 +677,7 @@ namespace disposer_module{ namespace camera_ximea{
 					image.enable< std::uint16_t >();
 					break;
 				case pixel_format::rgb8:
-					image.enable< pixel::rgb8 >();
+					image.enable< pixel::rgb8u >();
 					break;
 			}
 		}

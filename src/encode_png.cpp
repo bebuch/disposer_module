@@ -30,14 +30,22 @@ namespace disposer_module{ namespace encode_png{
 
 
 		using types = disposer::type_list<
+			std::int8_t,
+			std::int16_t,
 			std::uint8_t,
 			std::uint16_t,
 			pixel::ga8,
 			pixel::ga16,
+			pixel::ga8u,
+			pixel::ga16u,
 			pixel::rgb8,
 			pixel::rgb16,
+			pixel::rgb8u,
+			pixel::rgb16u,
 			pixel::rgba8,
-			pixel::rgba16
+			pixel::rgba16,
+			pixel::rgba8u,
+			pixel::rgba16u
 		>;
 
 		struct{
@@ -61,8 +69,14 @@ namespace disposer_module{ namespace encode_png{
 	template < typename T >
 	struct bitmap_to_png_type;
 
+	template <> struct bitmap_to_png_type< std::int8_t >
+		{ using type = png::gray_pixel; };
+
 	template <> struct bitmap_to_png_type< std::uint8_t >
 		{ using type = png::gray_pixel; };
+
+	template <> struct bitmap_to_png_type< std::int16_t >
+		{ using type = png::gray_pixel_16; };
 
 	template <> struct bitmap_to_png_type< std::uint16_t >
 		{ using type = png::gray_pixel_16; };
@@ -70,19 +84,37 @@ namespace disposer_module{ namespace encode_png{
 	template <> struct bitmap_to_png_type< pixel::ga8 >
 		{ using type = png::ga_pixel; };
 
+	template <> struct bitmap_to_png_type< pixel::ga8u >
+		{ using type = png::ga_pixel; };
+
 	template <> struct bitmap_to_png_type< pixel::ga16 >
+		{ using type = png::ga_pixel_16; };
+
+	template <> struct bitmap_to_png_type< pixel::ga16u >
 		{ using type = png::ga_pixel_16; };
 
 	template <> struct bitmap_to_png_type< pixel::rgb8 >
 		{ using type = png::rgb_pixel; };
 
+	template <> struct bitmap_to_png_type< pixel::rgb8u >
+		{ using type = png::rgb_pixel; };
+
 	template <> struct bitmap_to_png_type< pixel::rgb16 >
+		{ using type = png::rgb_pixel_16; };
+
+	template <> struct bitmap_to_png_type< pixel::rgb16u >
 		{ using type = png::rgb_pixel_16; };
 
 	template <> struct bitmap_to_png_type< pixel::rgba8 >
 		{ using type = png::rgba_pixel; };
 
+	template <> struct bitmap_to_png_type< pixel::rgba8u >
+		{ using type = png::rgba_pixel; };
+
 	template <> struct bitmap_to_png_type< pixel::rgba16 >
+		{ using type = png::rgba_pixel_16; };
+
+	template <> struct bitmap_to_png_type< pixel::rgba16u >
 		{ using type = png::rgba_pixel_16; };
 
 	template < typename T >

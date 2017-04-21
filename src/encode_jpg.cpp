@@ -30,8 +30,10 @@ namespace disposer_module{ namespace encode_jpg{
 
 
 		using types = disposer::type_list<
+			std::int8_t,
 			std::uint8_t,
-			pixel::rgb8
+			pixel::rgb8,
+			pixel::rgb8u
 		>;
 
 		struct{

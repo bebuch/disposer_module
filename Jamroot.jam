@@ -272,3 +272,14 @@ lib encode_jpg
 	<include>$(bitmap)/include
 	<linkflags>-lturbojpeg
 	;
+
+
+lib camera_raspicam
+	:
+	camera_raspicam.cpp
+	/logsys//logsys
+	/disposer//disposer
+	:
+	<include>$(bitmap)/include
+	<linkflags>-lraspicam
+	;

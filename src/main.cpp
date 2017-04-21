@@ -20,23 +20,27 @@
 
 
 int main(int argc, char** argv){
+	using namespace std::literals::string_literals;
 	namespace fs = boost::filesystem;
 
-	bool exec_all = (argc == 1);
+	bool multithreading = argc > 1 ? argv[1] == "--multithreading"s : false;
+	bool exec_all = (argc == (multithreading ? 2 : 1));
 	std::string exec_chain;
 	std::size_t exec_count = 0;
 	if(!exec_all){
-		if(argc != 3){
-			std::cerr << argv[0] << " [chain exec_count]" << std::endl;
+		if(argc != (multithreading ? 4 : 3)){
+			std::cerr << argv[0] << " [--multithreading] [chain exec_count]" << std::endl;
 			return 1;
 		}
 
-		exec_chain = argv[1];
+		exec_chain = argv[multithreading ? 2 : 1];
 		try{
-			exec_count = boost::lexical_cast< std::size_t >(argv[2]);
+			exec_count = boost::lexical_cast< std::size_t >(
+				argv[multithreading ? 3 : 2]);
 		}catch(...){
 			std::cerr << argv[0] << " [chain exec_count]" << std::endl;
-			std::cerr << "exec_count parsing failed: " << argv[2] << std::endl;
+			std::cerr << "exec_count parsing failed: "
+				<< argv[multithreading ? 3 : 2] << std::endl;
 			return 1;
 		}
 	}
@@ -79,7 +83,7 @@ int main(int argc, char** argv){
 
 	return !logsys::exception_catching_log(
 		[](logsys::stdlogb& os){ os << "exec chains"; },
-	[&disposer, exec_all, &exec_chain, exec_count]{
+	[&disposer, exec_all, &exec_chain, exec_count, multithreading]{
 		disposer.load("plan.ini");
 
 		if(exec_all){
@@ -92,33 +96,34 @@ int main(int argc, char** argv){
 		}else{
 			auto& chain = disposer.get_chain(exec_chain);
 
-			// single thread version
-			chain.enable();
-			for(std::size_t i = 0; i < exec_count; ++i){
-				chain.exec();
+			if(!multithreading){
+				// single thread version
+				chain.enable();
+				for(std::size_t i = 0; i < exec_count; ++i){
+					chain.exec();
+				}
+				chain.disable();
+			}else{
+				// multi threaded version
+				auto const cores = std::thread::hardware_concurrency();
+				std::vector< std::thread > workers;
+				workers.reserve(cores);
+
+				chain.enable();
+				std::atomic< std::size_t > index(0);
+				for(std::size_t i = 0; i < cores; ++i){
+					workers.emplace_back([&chain, &index]{
+						while(index++ < 1000){
+							chain.exec();
+						}
+					});
+				}
+
+				for(auto& worker: workers){
+					worker.join();
+				}
+				chain.disable();
 			}
-			chain.disable();
-
-
-// 			// multi threaded version
-// 			auto const cores = std::thread::hardware_concurrency();
-// 			std::vector< std::thread > workers;
-// 			workers.reserve(cores);
-//
-// 			chain.enable();
-// 			std::atomic< std::size_t > index(0);
-// 			for(std::size_t i = 0; i < cores; ++i){
-// 				workers.emplace_back([&chain, &index]{
-// 					while(index++ < 1000){
-// 						chain.exec();
-// 					}
-// 				});
-// 			}
-//
-// 			for(auto& worker: workers){
-// 				worker.join();
-// 			}
-// 			chain.disable();
 		}
 	});
 }

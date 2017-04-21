@@ -35,7 +35,6 @@ namespace disposer_module{ namespace raster{
 		std::uint64_t,
 		float,
 		double,
-		long double,
 		pixel::ga8,
 		pixel::ga16,
 		pixel::ga32,

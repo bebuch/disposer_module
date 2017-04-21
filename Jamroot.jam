@@ -68,7 +68,6 @@ exe disposer_module
 	/http//http
 	:
 	<include>$(bitmap)/include
-	<linkflags>-lpng
 	;
 
 lib big_loader
@@ -252,8 +251,6 @@ lib websocket_live_stream
 	/logsys//logsys
 	/disposer//disposer
 	/http//http
-	:
-	<linkflags>-lpng
 	;
 
 lib encode_png
@@ -263,4 +260,15 @@ lib encode_png
 	/disposer//disposer
 	:
 	<include>$(bitmap)/include
+	<linkflags>-lpng
+	;
+
+lib encode_jpg
+	:
+	encode_jpg.cpp
+	/logsys//logsys
+	/disposer//disposer
+	:
+	<include>$(bitmap)/include
+	<linkflags>-lturbojpeg
 	;

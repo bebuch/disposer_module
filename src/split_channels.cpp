@@ -16,7 +16,6 @@
 #include <boost/dll.hpp>
 
 #include <cstdint>
-#include <iostream>
 
 #include "thread_pool.hpp"
 
@@ -136,9 +135,20 @@ namespace disposer_module{ namespace split_channels{
 
 		template < typename T >
 		auto split_channels(bitmap< T > const& image){
-			bitmap_vector< typename T::value_type > result(T::channel_count,
-				bitmap< typename T::value_type >(image.size())
-			);
+			bitmap_vector< typename T::value_type > result;
+			result.reserve(T::channel_count);
+
+			thread_pool pool;
+
+			std::mutex mutex;
+			pool(0, T::channel_count,
+				[&result, &image, &mutex](std::size_t){
+					bitmap< typename T::value_type > res_img(image.size());
+
+					// emplace_back is not thread safe
+					std::lock_guard< std::mutex > lock(mutex);
+					result.emplace_back(std::move(res_img));
+				});
 
 			constexpr auto type = get_pixel_type(T());
 			static_assert(
@@ -146,7 +156,8 @@ namespace disposer_module{ namespace split_channels{
 				type == pixel_type::rgb ||
 				type == pixel_type::rgba);
 
-			for(std::size_t y = 0; y < image.height(); ++y){
+		pool(0, image.height(),
+			[&result, &image](std::size_t y){
 				for(std::size_t x = 0; x < image.width(); ++x){
 					if constexpr(type == pixel_type::ga){
 						result[0](x, y) = image(x, y).g;
@@ -162,7 +173,7 @@ namespace disposer_module{ namespace split_channels{
 						result[3](x, y) = image(x, y).a;
 					}
 				}
-			}
+			});
 
 			return result;
 		}

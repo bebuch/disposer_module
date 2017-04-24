@@ -23,9 +23,15 @@ namespace disposer_module{ namespace encode_jpg{
 	using ::bitmap::bitmap;
 
 
+	struct parameter{
+		unsigned quality;
+	};
+
+
 	struct module: disposer::module_base{
-		module(disposer::make_data const& mdata):
-			disposer::module_base(mdata, {slots.image}, {signals.data})
+		module(disposer::make_data const& mdata, parameter&& param):
+			disposer::module_base(mdata, {slots.image}, {signals.data}),
+			param(std::move(param))
 			{}
 
 
@@ -51,6 +57,9 @@ namespace disposer_module{ namespace encode_jpg{
 
 
 		void exec()override;
+
+
+		parameter const param;
 	};
 
 
@@ -65,7 +74,17 @@ namespace disposer_module{ namespace encode_jpg{
 			throw std::logic_error("no output defined (use 'data')");
 		}
 
-		return std::make_unique< module >(data);
+		parameter param;
+		data.params.set(param.quality, "quality", 80);
+
+		if(param.quality > 100){
+			throw std::runtime_error(
+				"parameter quality must be between 0 and 100. quality is "
+				+ std::to_string(param.quality)
+			);
+		}
+
+		return std::make_unique< module >(data, std::move(param));
 	}
 
 
@@ -73,7 +92,7 @@ namespace disposer_module{ namespace encode_jpg{
 
 
 		template < typename T >
-		auto to_jpg_image(bitmap< T > const& img){
+		auto to_jpg_image(bitmap< T > const& img, int quality){
 			// JPEG encoding
 			auto compressor_deleter = [](void* data){ tjDestroy(data); };
 			std::unique_ptr< void, decltype(compressor_deleter) > compressor(
@@ -97,7 +116,7 @@ namespace disposer_module{ namespace encode_jpg{
 				&data,
 				&size,
 				sizeof(T) == 3 ? TJSAMP_420 : TJSAMP_GRAY,
-				70,
+				quality,
 				0
 			) != 0) throw std::runtime_error("tjCompress2 failed");
 
@@ -117,8 +136,8 @@ namespace disposer_module{ namespace encode_jpg{
 
 	void module::exec(){
 		for(auto const& pair: slots.image.get()){
-			auto encoded_data = std::visit([](auto const& img){
-					return to_jpg_image(img.data());
+			auto encoded_data = std::visit([this](auto const& img){
+					return to_jpg_image(img.data(), param.quality);
 				}, pair.second);
 			signals.data.put(std::move(encoded_data));
 		}

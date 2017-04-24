@@ -18,6 +18,8 @@
 #include <boost/hana.hpp>
 #include <boost/dll.hpp>
 
+#include <iostream>
+
 
 template <>
 struct disposer::parameter_cast< std::vector< bitmap::pixel::rgb8u > >{
@@ -38,13 +40,13 @@ struct disposer::parameter_cast< std::vector< bitmap::pixel::rgb8u > >{
 			assert(hex_vector6.size() == 6);
 			bitmap::pixel::rgb8u rgb;
 			rgb.r =
-				(xdigit2value(hex_vector6[0]) << 8) &
+				(xdigit2value(hex_vector6[0]) << 4) |
 				(xdigit2value(hex_vector6[1]));
 			rgb.g =
-				(xdigit2value(hex_vector6[2]) << 8) &
+				(xdigit2value(hex_vector6[2]) << 4) |
 				(xdigit2value(hex_vector6[3]));
 			rgb.b =
-				(xdigit2value(hex_vector6[4]) << 8) &
+				(xdigit2value(hex_vector6[4]) << 4) |
 				(xdigit2value(hex_vector6[5]));
 			colors.push_back(rgb);
 		};

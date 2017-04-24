@@ -291,3 +291,13 @@ lib split_channels
 	:
 	<include>$(bitmap)/include
 	;
+
+lib dye_bitmaps
+	:
+	dye_bitmaps.cpp
+	/logsys//logsys
+	/disposer//disposer
+	:
+	<include>$(io_tools)/include
+	<include>$(bitmap)/include
+	;

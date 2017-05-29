@@ -35,7 +35,11 @@ project disposer_module
 	<warnings>all
 	<c++-template-depth>1024
 
-	<toolset>gcc:<cxxflags>-std=c++1z
+	<define>BOOST_HANA_CONFIG_ENABLE_STRING_UDL
+	<define>BOOST_ASIO_HAS_STD_CHRONO
+	<define>BOOST_NO_AUTO_PTR
+
+	<toolset>gcc:<cxxflags>-std=gnu++1z
 	<toolset>gcc:<cxxflags>-fconstexpr-depth=1024
 	<toolset>gcc:<cxxflags>-Wall
 	<toolset>gcc:<cxxflags>-Wextra
@@ -47,6 +51,7 @@ project disposer_module
 	<toolset>clang:<cxxflags>-Wall
 	<toolset>clang:<cxxflags>-Wextra
 	<toolset>clang:<cxxflags>-stdlib=libc++
+	<toolset>clang:<cxxflags>-Wno-gnu-string-literal-operator-template
 	<toolset>clang:<cxxflags>-DBOOST_ASIO_HAS_STD_CHRONO
 	<toolset>clang:<linkflags>-lpthread
 	<toolset>clang:<linkflags>-ldl
@@ -54,6 +59,7 @@ project disposer_module
 	<toolset>clang:<linkflags>-stdlib=libc++
 
 	<include>$(boost)
+	<include>$(io_tools)/include
 	:
 	usage-requirements <include>include
 	;
@@ -70,6 +76,24 @@ exe disposer_module
 	<include>$(bitmap)/include
 	;
 
+lib vector_join
+	:
+	vector_join.cpp
+	/logsys//logsys
+	/disposer//disposer
+	:
+	<include>$(bitmap)/include
+	;
+
+lib vector_disjoin
+	:
+	vector_disjoin.cpp
+	/logsys//logsys
+	/disposer//disposer
+	:
+	<include>$(bitmap)/include
+	;
+
 # lib big_loader
 # 	:
 # 	big_loader.cpp
@@ -81,19 +105,19 @@ exe disposer_module
 # 	<include>$(tar)/include
 # 	<include>$(big)/cpp/include
 # 	;
-# 
-# lib big_saver
-# 	:
-# 	big_saver.cpp
-# 	/logsys//logsys
-# 	/disposer//disposer
-# 	:
-# 	<include>$(io_tools)/include
-# 	<include>$(bitmap)/include
-# 	<include>$(tar)/include
-# 	<include>$(big)/cpp/include
-# 	;
-# 
+
+lib save
+	:
+	save.cpp
+	/logsys//logsys
+	/disposer//disposer
+	:
+	<include>$(io_tools)/include
+	<include>$(bitmap)/include
+	<include>$(tar)/include
+	<include>$(big)/cpp/include
+	;
+
 # lib png_loader
 # 	:
 # 	png_loader.cpp
@@ -105,7 +129,7 @@ exe disposer_module
 # 	<include>$(tar)/include
 # 	<linkflags>-lpng
 # 	;
-# 
+#
 # lib png_saver
 # 	:
 # 	png_saver.cpp
@@ -117,7 +141,7 @@ exe disposer_module
 # 	<include>$(tar)/include
 # 	<linkflags>-lpng
 # 	;
-# 
+#
 # lib camera_ximea
 # 	:
 # 	camera_ximea.cpp
@@ -127,7 +151,7 @@ exe disposer_module
 # 	<include>$(bitmap)/include
 # 	<linkflags>-lm3api
 # 	;
-# 
+#
 # lib show_image
 # 	:
 # 	show_image.cpp
@@ -140,7 +164,7 @@ exe disposer_module
 # 	<linkflags>-lpthread
 # 	<linkflags>-lX11
 # 	;
-# 
+#
 # lib raster
 # 	:
 # 	raster.cpp
@@ -150,7 +174,7 @@ exe disposer_module
 # 	<include>$(io_tools)/include
 # 	<include>$(bitmap)/include
 # 	;
-# 
+#
 # lib add_to_log
 # 	:
 # 	add_to_log.cpp
@@ -159,7 +183,7 @@ exe disposer_module
 # 	:
 # 	<include>$(bitmap)/include
 # 	;
-# 
+#
 # lib demosaic
 # 	:
 # 	demosaic.cpp
@@ -168,7 +192,7 @@ exe disposer_module
 # 	:
 # 	<include>$(bitmap)/include
 # 	;
-# 
+#
 # lib bitmap_vector_join
 # 	:
 # 	bitmap_vector_join.cpp
@@ -177,7 +201,7 @@ exe disposer_module
 # 	:
 # 	<include>$(bitmap)/include
 # 	;
-# 
+#
 # lib raw_phase
 # 	:
 # 	raw_phase.cpp
@@ -187,7 +211,7 @@ exe disposer_module
 # 	<include>$(io_tools)/include
 # 	<include>$(bitmap)/include
 # 	;
-# 
+#
 # lib gray_code_decoder
 # 	:
 # 	gray_code_decoder.cpp
@@ -198,7 +222,7 @@ exe disposer_module
 # 	<include>$(io_tools)/include
 # 	<include>$(bitmap)/include
 # 	;
-# 
+#
 # lib gray_code_threshold
 # 	:
 # 	gray_code_threshold.cpp
@@ -208,7 +232,7 @@ exe disposer_module
 # 	<include>$(io_tools)/include
 # 	<include>$(bitmap)/include
 # 	;
-# 
+#
 # lib phase_unwrapp_by_index
 # 	:
 # 	phase_unwrapp_by_index.cpp
@@ -217,7 +241,7 @@ exe disposer_module
 # 	:
 # 	<include>$(bitmap)/include
 # 	;
-# 
+#
 # lib pixel_transform
 # 	:
 # 	pixel_transform.cpp
@@ -226,7 +250,7 @@ exe disposer_module
 # 	:
 # 	<include>$(bitmap)/include
 # 	;
-# 
+#
 # lib subbitmap
 # 	:
 # 	subbitmap.cpp
@@ -235,7 +259,7 @@ exe disposer_module
 # 	:
 # 	<include>$(bitmap)/include
 # 	;
-# 
+#
 # lib bitmap_bounding_rect
 # 	:
 # 	bitmap_bounding_rect.cpp
@@ -244,7 +268,7 @@ exe disposer_module
 # 	:
 # 	<include>$(bitmap)/include
 # 	;
-# 
+#
 # lib websocket_live_stream
 # 	:
 # 	websocket_live_stream.cpp
@@ -252,27 +276,27 @@ exe disposer_module
 # 	/disposer//disposer
 # 	/http//http
 # 	;
-# 
-# lib encode_png
-# 	:
-# 	encode_png.cpp
-# 	/logsys//logsys
-# 	/disposer//disposer
-# 	:
-# 	<include>$(bitmap)/include
-# 	<linkflags>-lpng
-# 	;
-# 
-# lib encode_jpg
-# 	:
-# 	encode_jpg.cpp
-# 	/logsys//logsys
-# 	/disposer//disposer
-# 	:
-# 	<include>$(bitmap)/include
-# 	<linkflags>-lturbojpeg
-# 	;
-# 
+
+lib encode_png
+	:
+	encode_png.cpp
+	/logsys//logsys
+	/disposer//disposer
+	:
+	<include>$(bitmap)/include
+	<linkflags>-lpng
+	;
+
+lib encode_jpg
+	:
+	encode_jpg.cpp
+	/logsys//logsys
+	/disposer//disposer
+	:
+	<include>$(bitmap)/include
+	<linkflags>-lturbojpeg
+	;
+
 # lib camera_raspicam
 # 	:
 # 	camera_raspicam.cpp
@@ -282,7 +306,7 @@ exe disposer_module
 # 	<include>$(bitmap)/include
 # 	<linkflags>-lraspicam
 # 	;
-# 
+#
 # lib split_channels
 # 	:
 # 	split_channels.cpp
@@ -291,7 +315,7 @@ exe disposer_module
 # 	:
 # 	<include>$(bitmap)/include
 # 	;
-# 
+#
 # lib dye_bitmaps
 # 	:
 # 	dye_bitmaps.cpp

@@ -16,20 +16,18 @@
 #include <png++/png.hpp>
 
 
-namespace disposer_module{ namespace encode_png{
+namespace disposer_module::encode_png{
 
+
+	using namespace disposer;
+	using namespace disposer::literals;
+	namespace hana = boost::hana;
 
 	namespace pixel = ::bitmap::pixel;
 	using ::bitmap::bitmap;
 
 
-	struct module: disposer::module_base{
-		module(disposer::make_data const& mdata):
-			disposer::module_base(mdata, {slots.image}, {signals.data})
-			{}
-
-
-		using types = disposer::type_list<
+	constexpr auto types = hana::tuple_t<
 			std::int8_t,
 			std::int16_t,
 			std::uint8_t,
@@ -48,135 +46,76 @@ namespace disposer_module{ namespace encode_png{
 			pixel::rgba16u
 		>;
 
-		struct{
-			disposer::container_input< bitmap, types > image{"image"};
-		} slots;
 
-		struct{
-			disposer::output< std::string > data{"data"};
-		} signals;
-
-
-		void input_ready()override{
-			signals.data.enable< std::string >();
-		}
-
-
-		void exec()override;
-	};
-
-
-	template < typename T >
-	struct bitmap_to_png_type;
-
-	template <> struct bitmap_to_png_type< std::int8_t >
-		{ using type = png::gray_pixel; };
-
-	template <> struct bitmap_to_png_type< std::uint8_t >
-		{ using type = png::gray_pixel; };
-
-	template <> struct bitmap_to_png_type< std::int16_t >
-		{ using type = png::gray_pixel_16; };
-
-	template <> struct bitmap_to_png_type< std::uint16_t >
-		{ using type = png::gray_pixel_16; };
-
-	template <> struct bitmap_to_png_type< pixel::ga8 >
-		{ using type = png::ga_pixel; };
-
-	template <> struct bitmap_to_png_type< pixel::ga8u >
-		{ using type = png::ga_pixel; };
-
-	template <> struct bitmap_to_png_type< pixel::ga16 >
-		{ using type = png::ga_pixel_16; };
-
-	template <> struct bitmap_to_png_type< pixel::ga16u >
-		{ using type = png::ga_pixel_16; };
-
-	template <> struct bitmap_to_png_type< pixel::rgb8 >
-		{ using type = png::rgb_pixel; };
-
-	template <> struct bitmap_to_png_type< pixel::rgb8u >
-		{ using type = png::rgb_pixel; };
-
-	template <> struct bitmap_to_png_type< pixel::rgb16 >
-		{ using type = png::rgb_pixel_16; };
-
-	template <> struct bitmap_to_png_type< pixel::rgb16u >
-		{ using type = png::rgb_pixel_16; };
-
-	template <> struct bitmap_to_png_type< pixel::rgba8 >
-		{ using type = png::rgba_pixel; };
-
-	template <> struct bitmap_to_png_type< pixel::rgba8u >
-		{ using type = png::rgba_pixel; };
-
-	template <> struct bitmap_to_png_type< pixel::rgba16 >
-		{ using type = png::rgba_pixel_16; };
-
-	template <> struct bitmap_to_png_type< pixel::rgba16u >
-		{ using type = png::rgba_pixel_16; };
-
-	template < typename T >
-	using bitmap_to_png_type_t = typename bitmap_to_png_type< T >::type;
-
-
-	disposer::module_ptr make_module(disposer::make_data& data){
-		if(data.is_first()) throw disposer::module_not_as_start(data);
-
-		if(data.inputs.find("image") == data.inputs.end()){
-			throw std::logic_error("no input defined (use 'image')");
-		}
-
-		if(data.outputs.find("data") == data.outputs.end()){
-			throw std::logic_error("no output defined (use 'data')");
-		}
-
-		return std::make_unique< module >(data);
+	template < typename T1, typename T2 >
+	constexpr auto make_type_pair()noexcept{
+		return hana::make_pair(hana::type_c< T1 >, hana::type_c< T2 >);
 	}
 
+	auto constexpr bitmap_to_png_type = hana::make_map(
+		make_type_pair< std::int8_t, png::gray_pixel >(),
+		make_type_pair< std::uint8_t, png::gray_pixel >(),
+		make_type_pair< std::int16_t, png::gray_pixel_16 >(),
+		make_type_pair< std::uint16_t, png::gray_pixel_16 >(),
+		make_type_pair< pixel::ga8, png::gray_pixel >(),
+		make_type_pair< pixel::ga8u, png::gray_pixel >(),
+		make_type_pair< pixel::ga16, png::gray_pixel_16 >(),
+		make_type_pair< pixel::ga16u, png::gray_pixel_16 >(),
+		make_type_pair< pixel::rgb8, png::rgb_pixel >(),
+		make_type_pair< pixel::rgb8u, png::rgb_pixel >(),
+		make_type_pair< pixel::rgb16, png::rgb_pixel_16 >(),
+		make_type_pair< pixel::rgb16u, png::rgb_pixel_16 >(),
+		make_type_pair< pixel::rgba8, png::rgba_pixel >(),
+		make_type_pair< pixel::rgba8u, png::rgba_pixel >(),
+		make_type_pair< pixel::rgba16, png::rgba_pixel_16 >(),
+		make_type_pair< pixel::rgba16u, png::rgba_pixel_16 >()
+	);
 
-	namespace{
 
+	template < typename T >
+	auto to_png_image(bitmap< T > const& img){
+		using png_type =
+			typename decltype(+bitmap_to_png_type[hana::type_c< T >])::type;
 
-		template < typename T >
-		auto to_png_image(bitmap< T > const& img){
-			using png_type = bitmap_to_png_type_t< T >;
+		png::image< png_type > png_image(img.width(), img.height());
 
-			png::image< png_type > png_image(img.width(), img.height());
-
-			for(std::size_t y = 0; y < img.height(); ++y){
-				for(std::size_t x = 0; x < img.width(); ++x){
-					auto& pixel = img(x, y);
-					png_image.set_pixel(x, y,
-						*reinterpret_cast< png_type const* >(&pixel));
-				}
+		for(std::size_t y = 0; y < img.height(); ++y){
+			for(std::size_t x = 0; x < img.width(); ++x){
+				auto& pixel = img(x, y);
+				png_image.set_pixel(x, y,
+					*reinterpret_cast< png_type const* >(&pixel));
 			}
-
-			return png_image;
 		}
 
-
+		return png_image;
 	}
 
+	void init(std::string const& name, module_declarant& disposer){
+		auto init = make_register_fn(
+			configure(
+				"image"_in(types,
+					template_transform_c< bitmap >,
+					required),
+				"data"_out(hana::type_c< std::string >)
+			),
+			[](auto const& /*module*/){
+				return [](auto& module, std::size_t /*id*/){
+					auto values = module("image"_in).get_references();
+					for(auto const& pair: values){
+						std::visit([&module](auto const& img){
+							std::ostringstream os;
+							to_png_image(img.get()).write_stream(os);
+							module("data"_out).put(os.str());
+						}, pair.second);
+					}
+				};
+			}
+		);
 
-	void module::exec(){
-		for(auto const& pair: slots.image.get()){
-			auto encoded_data = std::visit([](auto const& img){
-					std::ostringstream os;
-					to_png_image(img.data()).write_stream(os);
-					return os.str();
-				}, pair.second);
-			signals.data.put(std::move(encoded_data));
-		}
-	}
-
-
-	void init(disposer::module_declarant& add){
-		add("encode_png", &make_module);
+		init(name, disposer);
 	}
 
 	BOOST_DLL_AUTO_ALIAS(init)
 
 
-} }
+}

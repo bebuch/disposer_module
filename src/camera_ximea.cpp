@@ -30,6 +30,13 @@ namespace disposer_module::camera_ximea{
 	using ::bitmap::bitmap;
 
 
+	constexpr auto types = hana::tuple_t<
+			std::uint8_t,
+			std::uint16_t,
+			pixel::rgb8u
+		>;
+
+
 	void verify(XI_RETURN xi_return){
 		// Conversion to enum XI_RET to get a warning if ximea extended the enum
 		switch(XI_RET(xi_return)){
@@ -544,12 +551,6 @@ namespace disposer_module::camera_ximea{
 		ximea_cam cam_;
 	};
 
-
-	constexpr auto types = hana::tuple_t<
-			std::uint8_t,
-			std::uint16_t,
-			pixel::rgb8u
-		>;
 
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = make_register_fn(

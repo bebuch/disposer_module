@@ -98,7 +98,7 @@ namespace disposer_module::save{
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = make_register_fn(
 			configure(
-				"file"_in(types, required),
+				"content"_in(types, required),
 				"type"_param(hana::type_c< data_type >,
 					parser([](auto const& /*iop*/, std::string_view data,
 						hana::basic_type< data_type >
@@ -115,7 +115,7 @@ namespace disposer_module::save{
 						hana::make_pair(hana::type_c< data_type >, "type"_s)
 					),
 					value_verify([](auto const& iop, data_type type){
-						auto const& in = iop("file"_in);
+						auto const& in = iop("content"_in);
 						auto file_on =
 							in.is_enabled(hana::type_c< std::string >);
 						auto list1_on =
@@ -127,27 +127,28 @@ namespace disposer_module::save{
 						switch(type){
 							case data_type::file:
 								if(!file_on) throw std::runtime_error(
-									"parameter is file, but input file type "
-									"std::string is not enabled");
+									"parameter is file, but input constent "
+									"type std::string is not enabled");
 								if(!list1_on && !list2_on) return;
 							break;
 							case data_type::list:
 								if(!list1_on) throw std::runtime_error(
-									"parameter is list, but input list type "
-									"std::vector< std::string > is not enabled");
+									"parameter is list, but input content "
+									"type std::vector< std::string > is not "
+									"enabled");
 								if(!file_on && !list2_on) return;
 							break;
 							case data_type::list_list:
 								if(!list2_on) throw std::runtime_error(
 									"parameter type is list_list, but input "
-									"file type "
+									"content type "
 									"std::vector< std::vector< std::string > > "
 									"is not enabled");
 								if(!file_on && !list1_on) return;
 							break;
 						}
 						throw std::runtime_error("more than one type of input "
-							"file is enabled");
+							"content is enabled");
 					})
 				),
 				"id_digits"_param(hana::type_c< std::size_t >,
@@ -163,14 +164,15 @@ namespace disposer_module::save{
 							auto ng2_parser = type == hana::type_c< ng2 >;
 							(void)ng2_parser; // silence GCC
 							if constexpr(ng1_parser){
-								return iop("file"_in).is_enabled(hana::type_c<
-									std::string >);
+								return iop("content"_in).is_enabled(
+									hana::type_c< std::string >);
 							}else if constexpr(ng2_parser){
-								return iop("file"_in).is_enabled(hana::type_c<
-									std::vector< std::string > >);
+								return iop("content"_in).is_enabled(
+									hana::type_c< std::vector< std::string > >);
 							}else{
-								return iop("file"_in).is_enabled(hana::type_c<
-									std::vector< std::vector< std::string > > >
+								return iop("content"_in).is_enabled(
+									hana::type_c< std::vector<
+										std::vector< std::string > > >
 								);
 							}
 						}),
@@ -218,7 +220,7 @@ namespace disposer_module::save{
 			),
 			[](auto const& /*module*/){
 				return [](auto& module, std::size_t /*id*/){
-					auto values = module("file"_in).get_references();
+					auto values = module("content"_in).get_references();
 					for(auto const& pair: values){
 						auto id = pair.first;
 						std::visit(

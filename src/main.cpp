@@ -21,16 +21,17 @@
 
 
 int main(int argc, char** argv){
-	using namespace std::literals::string_literals;
+	using namespace std::literals::string_view_literals;
 	namespace fs = boost::filesystem;
 
-	bool multithreading = argc > 1 ? argv[1] == "--multithreading"s : false;
+	bool multithreading = argc > 1 ? argv[1] == "--multithreading"sv : false;
 	bool exec_all = (argc == (multithreading ? 2 : 1));
 	std::string exec_chain;
 	std::size_t exec_count = 0;
 	if(!exec_all){
 		if(argc != (multithreading ? 4 : 3)){
-			std::cerr << argv[0] << " [--multithreading] [chain exec_count]" << std::endl;
+			std::cerr << argv[0] << " [--multithreading] [chain exec_count]"
+				<< std::endl;
 			return 1;
 		}
 
@@ -56,25 +57,31 @@ int main(int argc, char** argv){
 		auto program_dir = boost::dll::program_location().remove_filename();
 		std::cout << "Search for DLLs in '" << program_dir << "'" << std::endl;
 
-		std::regex regex(".*\\.so");
+		std::regex regex("lib.*\\.so");
 		for(auto const& file: fs::directory_iterator(program_dir)){
 			if(
 				!is_regular_file(file) ||
 				!std::regex_match(file.path().filename().string(), regex)
 			) continue;
 
-			logsys::log([&file](logsys::stdlogb& os){
-				os << "load shared library '" << file.path().string() << "'";
+			auto const lib_name = file.path().stem().string().substr(3);
+
+			logsys::log([&lib_name](logsys::stdlogb& os){
+				os << "load shared library '" << lib_name << "'";
 			}, [&]{
-				modules.emplace_back(file.path().string(), boost::dll::load_mode::rtld_deepbind);
+				modules.emplace_back(file.path().string(),
+					boost::dll::load_mode::rtld_deepbind);
 
 				if(modules.back().has("init")){
 					modules.back().get_alias<
-							void(::disposer::module_declarant&)
-						>("init")(disposer.declarant());
+							void(
+								std::string const&,
+								::disposer::module_declarant&
+							)
+						>("init")(lib_name, disposer.declarant());
 				}else{
-					logsys::log([&file](logsys::stdlogb& os){
-						os << "shared library '" << file.path().string()
+					logsys::log([&lib_name](logsys::stdlogb& os){
+						os << "shared library '" << lib_name
 							<< "' is not a module";
 					});
 				}

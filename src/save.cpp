@@ -22,6 +22,7 @@ namespace disposer_module::save{
 	using namespace disposer::literals;
 	namespace hana = boost::hana;
 	using namespace hana::literals;
+	using namespace std::literals::string_literals;
 
 
 	constexpr auto types = hana::tuple_t<
@@ -124,18 +125,27 @@ namespace disposer_module::save{
 						auto list2_on =
 							in.is_enabled(hana::type_c<
 								std::vector< std::vector< std::string > > >);
+						auto message = [file_on, list1_on, list2_on]{
+							auto ed = [](bool enabled){
+								return enabled ? "enabled"s : "disabled"s;
+							};
+							return "; file:"s + ed(file_on) + ", list:"
+								+ ed(list1_on) + ", list_list:"
+								+ ed(list2_on) + "";
+						};
 						switch(type){
 							case data_type::file:
 								if(!file_on) throw std::runtime_error(
 									"parameter format is file, but input "
-									"content type std::string is not enabled");
+									"content type std::string is not enabled"
+									+ message());
 								if(!list1_on && !list2_on) return;
 							break;
 							case data_type::list:
 								if(!list1_on) throw std::runtime_error(
 									"parameter format is list, but input "
 									"content type std::vector< std::string > "
-									"is not enabled");
+									"is not enabled" + message());
 								if(!file_on && !list2_on) return;
 							break;
 							case data_type::list_list:
@@ -143,7 +153,7 @@ namespace disposer_module::save{
 									"parameter format is list_list, but "
 									"input content type "
 									"std::vector< std::vector< std::string > > "
-									"is not enabled");
+									"is not enabled" + message());
 								if(!file_on && !list1_on) return;
 							break;
 						}

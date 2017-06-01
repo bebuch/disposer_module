@@ -17,6 +17,11 @@
 #undef align
 
 
+// == note to  realtime priority ==
+//
+// sudo setcap cap_sys_nice+ep ./executbale
+//
+
 namespace disposer_module::camera_ximea{
 
 
@@ -506,7 +511,19 @@ namespace disposer_module::camera_ximea{
 			, handle_(open_ximea_cam(module("cam_id"_param).get()))
 			, cam_(make_ximea_cam(module, handle_)) {}
 
+		ximea_cam_init(ximea_cam_init const&) = delete;
+
+		ximea_cam_init(ximea_cam_init&& other):
+			module_(other.module_),
+			handle_(other.handle_),
+			cam_(std::move(other.cam_))
+		{
+			other.handle_ = nullptr;
+		}
+
 		~ximea_cam_init(){
+			if(handle_ == nullptr) return;
+
 			try{
 				verify(xiStopAcquisition(handle_));
 				verify(xiCloseDevice(handle_));

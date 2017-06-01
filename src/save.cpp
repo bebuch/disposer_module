@@ -127,7 +127,7 @@ namespace disposer_module::save{
 						switch(type){
 							case data_type::file:
 								if(!file_on) throw std::runtime_error(
-									"parameter is file, but input constent "
+									"parameter is file, but input content "
 									"type std::string is not enabled");
 								if(!list1_on && !list2_on) return;
 							break;

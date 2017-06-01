@@ -127,21 +127,21 @@ namespace disposer_module::save{
 						switch(type){
 							case data_type::file:
 								if(!file_on) throw std::runtime_error(
-									"parameter is file, but input content "
-									"type std::string is not enabled");
+									"parameter format is file, but input "
+									"content type std::string is not enabled");
 								if(!list1_on && !list2_on) return;
 							break;
 							case data_type::list:
 								if(!list1_on) throw std::runtime_error(
-									"parameter is list, but input content "
-									"type std::vector< std::string > is not "
-									"enabled");
+									"parameter format is list, but input "
+									"content type std::vector< std::string > "
+									"is not enabled");
 								if(!file_on && !list2_on) return;
 							break;
 							case data_type::list_list:
 								if(!list2_on) throw std::runtime_error(
-									"parameter type is list_list, but input "
-									"content type "
+									"parameter format is list_list, but "
+									"input content type "
 									"std::vector< std::vector< std::string > > "
 									"is not enabled");
 								if(!file_on && !list1_on) return;

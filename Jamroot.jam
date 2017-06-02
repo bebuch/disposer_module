@@ -68,6 +68,8 @@ project disposer_module
 exe disposer_module
 	:
 	main.cpp
+	http_server.cpp
+	websocket.cpp
 	/logsys//logsys
 	/disposer//disposer
 	/boost//filesystem

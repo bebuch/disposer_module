@@ -59,7 +59,6 @@ project disposer_module
 	<toolset>clang:<linkflags>-stdlib=libc++
 
 	<include>$(boost)
-	<include>$(io_tools)/include
 	:
 	usage-requirements <include>include
 	;
@@ -183,16 +182,17 @@ lib show_image
 # 	:
 # 	<include>$(bitmap)/include
 # 	;
-#
-# lib demosaic
-# 	:
-# 	demosaic.cpp
-# 	/logsys//logsys
-# 	/disposer//disposer
-# 	:
-# 	<include>$(bitmap)/include
-# 	;
-#
+
+lib demosaic
+	:
+	demosaic.cpp
+	/logsys//logsys
+	/disposer//disposer
+	:
+	<include>$(io_tools)/include
+	<include>$(bitmap)/include
+	;
+
 # lib bitmap_vector_join
 # 	:
 # 	bitmap_vector_join.cpp

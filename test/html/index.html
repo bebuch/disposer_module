@@ -15,38 +15,73 @@ file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 <body style="text-align:center;">
 	<canvas id="image"></canvas>
 	<h1>live view</h1>
+	<button id="enable">enable</button>
 	<script>
 		var image = document.getElementById("image");
-		var socket = new WebSocket('ws://' + window.location.host + '/scheduler');
-		socket.binaryType = 'arraybuffer';
-		socket.onmessage = function(evt){
-			console.log("onmessage");
-			if(evt.data instanceof ArrayBuffer){
-				var length = evt.data.byteLength;
-				var blob = new Blob([evt.data],{type:'image/jpeg'});
-				var url = URL.createObjectURL(blob);
-				var img = new Image();
-				img.onload = function(){
-					var ctx = image.getContext("2d");
-					if(image.width != img.width) image.width = img.width;
-					if(image.height != img.height) image.height = img.height;
-					ctx.drawImage(img, 0, 0);
+		var live_image = function(){
+			var socket = new WebSocket('ws://' + window.location.host + '/scheduler');
+			socket.binaryType = 'arraybuffer';
+			socket.onmessage = function(evt){
+				console.log("onmessage");
+				if(evt.data instanceof ArrayBuffer){
+					var length = evt.data.byteLength;
+					var blob = new Blob([evt.data],{type:'image/jpeg'});
+					var url = URL.createObjectURL(blob);
+					var img = new Image();
+					img.onload = function(){
+						var ctx = image.getContext("2d");
+						if(image.width != img.width) image.width = img.width;
+						if(image.height != img.height) image.height = img.height;
+						ctx.drawImage(img, 0, 0);
+					}
+					img.src = url;
+					socket.send(JSON.stringify({'ready': true}));
+				}else if(typeof(evt.data) === 'string'){
+					console.log("onmessage string: " + evt.data);
 				}
-				img.src = url;
+			};
+			socket.onopen = function(event){
+				console.log("onopen: " + JSON.stringify(event));
 				socket.send(JSON.stringify({'ready': true}));
-			}else if(typeof(evt.data) === 'string'){
+			};
+			socket.onerror = function(event){
+				console.log("onerror: " + JSON.stringify(event));
+			};
+			socket.onclose = function(event){
+				console.log("onclose: " + JSON.stringify(event));
+			};
+			return socket;
+		};
+
+		var live_connection = live_image();
+		var command_socket = new WebSocket('ws://' + window.location.host + '/controller');
+		command_socket.onmessage = function(evt){
+			console.log("onmessage");
+			if(typeof(evt.data) === 'string'){
 				console.log("onmessage string: " + evt.data);
+				var data = JSON.parse(evt.data);
+				if(data.live.chain === 'live_image' && data.live.is === true){
+					live_connection = live_image();
+				}
 			}
 		};
-		socket.onopen = function(event){
+		command_socket.onopen = function(event){
 			console.log("onopen: " + JSON.stringify(event));
-			socket.send(JSON.stringify({'ready': true}));
 		};
-		socket.onerror = function(event){
+		command_socket.onerror = function(event){
 			console.log("onerror: " + JSON.stringify(event));
 		};
-		socket.onclose = function(event){
+		command_socket.onclose = function(event){
 			console.log("onclose: " + JSON.stringify(event));
+		};
+
+		var enable = document.getElementById("enable");
+		enable.onclick = function(event){
+			var set_enable = enable.innerText === 'enable';
+			enable.innerText = set_enable ? 'disable' : 'enable';
+			var message = JSON.stringify({command: {chain: 'live_image', live: set_enable}});
+			console.log("send: " + message);
+			command_socket.send(message);
 		};
 	</script>
 </body>

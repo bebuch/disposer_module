@@ -1,5 +1,7 @@
 #include "http_server.hpp"
 
+#include <disposer/disposer.hpp>
+
 #include <http/server_server.hpp>
 #include <http/server_file_request_handler.hpp>
 #include <http/server_lambda_request_handler.hpp>
@@ -56,16 +58,59 @@ namespace disposer_module{
 	};
 
 
+	class live_chain{
+	public:
+		live_chain(::disposer::disposer& disposer, std::string const& chain)
+			: disposer_(disposer)
+			, chain_(chain)
+			, active_(true)
+			, thread_([this]{
+				while(active_){
+					auto& chain = disposer_.get_chain(chain_);
+					chain.enable();
+					while(active_){
+						chain.exec();
+					}
+					chain.disable();
+				}
+			}) {}
+
+		live_chain(live_chain const&) = delete;
+		live_chain(live_chain&&) = delete;
+
+		~live_chain(){
+			active_ = false;
+			thread_.join();
+		}
+
+	private:
+		::disposer::disposer& disposer_;
+		std::string chain_;
+		std::atomic< bool > active_;
+		std::thread thread_;
+	};
+
 	class control_service: public http::websocket::server::json_service{
 	public:
 		control_service(::disposer::disposer& disposer)
 			: http::websocket::server::json_service(
 				[this](
-					boost::property_tree::ptree const& /*data*/,
+					boost::property_tree::ptree const& data,
 					http::server::connection_ptr const& /*con*/
 				){
 					try{
+						auto chain = data.get< std::string >("command.chain");
+						auto on = data.get< bool >("command.live");
 						std::lock_guard< std::mutex > lock(mutex_);
+						if(on){
+							active_chains_.try_emplace(chain, disposer_, chain);
+						}else{
+							active_chains_.erase(chain);
+						}
+						boost::property_tree::ptree answer;
+						answer.put("live.chain", chain);
+						answer.put("live.is", on);
+						send(answer);
 					}catch(...){}
 				},
 				http::websocket::server::data_callback_fn(),
@@ -80,22 +125,20 @@ namespace disposer_module{
 			)
 			, disposer_(disposer) {}
 
-		void send(std::string const& data){
-			std::lock_guard< std::mutex > lock(mutex_);
+	private:
+		void send(boost::property_tree::ptree const& data){
 			for(auto& controller: controller_){
-				send_binary(data, controller);
+				send_json(data, controller);
 			}
 		}
 
-
-	private:
 		::disposer::disposer& disposer_;
 
 		std::mutex mutex_;
 
 		std::set< http::server::connection_ptr > controller_;
 
-		std::map< std::string, std::thread > active_chains_;
+		std::map< std::string, live_chain > active_chains_;
 	};
 
 
@@ -119,7 +162,15 @@ namespace disposer_module{
 				}
 			)
 			, control_service_(disposer)
-			, http_file_handler_(http_root_path) {}
+			, http_file_handler_(http_root_path)
+		{
+			auto success = websocket_handler_.register_service(
+				"controller", control_service_);
+
+			if(!success){
+				throw std::runtime_error("controller service already exist");
+			}
+		}
 
 		http_server_init_t init(std::string const& service_name){
 			auto [iter, success] = websocket_services_.try_emplace(

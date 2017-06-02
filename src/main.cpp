@@ -108,7 +108,7 @@ int main(int argc, char** argv){
 		disposer.load("plan.ini");
 
 		if(server_mode){
-			std::cout << "Hit Enter to exit!";
+			std::cout << "Hit Enter to exit!" << std::endl;
 			std::cin.get();
 		}else if(exec_all){
 			for(auto& chain_name: disposer.chains()){

@@ -10,6 +10,7 @@
 #define _disposer_module__thread_pool__hpp_INCLUDED_
 
 #include <thread>
+#include <vector>
 #include <atomic>
 #include <algorithm>
 

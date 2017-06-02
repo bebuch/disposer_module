@@ -98,6 +98,7 @@ namespace disposer_module::encode_png{
 					required),
 				"data"_out(hana::type_c< std::string >)
 			),
+			normal_id_increase(),
 			[](auto const& /*module*/){
 				return [](auto& module, std::size_t /*id*/){
 					auto values = module("image"_in).get_references();

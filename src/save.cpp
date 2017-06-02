@@ -228,6 +228,7 @@ namespace disposer_module::save{
 					)
 				)
 			),
+			normal_id_increase(),
 			[](auto const& /*module*/){
 				return [](auto& module, std::size_t /*id*/){
 					auto values = module("content"_in).get_references();

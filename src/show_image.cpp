@@ -99,6 +99,7 @@ namespace disposer_module::show_image{
 					required),
 				"window_title"_param(hana::type_c< std::string >)
 			),
+			normal_id_increase(),
 			[](auto const& module){
 				return [data_ = resources(module("window_title"_param).get())]
 					(auto& module, std::size_t /*id*/)mutable

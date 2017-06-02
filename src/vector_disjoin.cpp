@@ -47,6 +47,7 @@ namespace disposer_module::vector_disjoin{
 					})
 				)
 			),
+			normal_id_increase(),
 			[](auto const& /*module*/){
 				return [](auto& module, std::size_t /*id*/){
 					auto values = module("vector"_in).get_values();

@@ -626,6 +626,7 @@ namespace disposer_module::camera_ximea{
 					default_values(std::size_t(10000))
 				)
 			),
+			normal_id_increase(),
 			[](auto const& module){
 				return ximea_cam_init< std::decay_t< decltype(module) > >(
 					module

@@ -156,6 +156,7 @@ namespace disposer_module::demosaic{
 					})
 				)
 			),
+			normal_id_increase(),
 			[](auto const& /*module*/){
 				return [](auto& module, std::size_t /*id*/){
 					auto values = module("image"_in).get_references();

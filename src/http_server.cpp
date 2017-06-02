@@ -99,18 +99,56 @@ namespace disposer_module{
 					http::server::connection_ptr const& /*con*/
 				){
 					try{
-						auto chain = data.get< std::string >("command.chain");
-						auto on = data.get< bool >("command.live");
+						auto chain_name = data.get_optional< std::string >(
+							"command.chain");
+						if(!chain_name) return;
+
+						auto live = data.get_optional< bool >("command.live");
+						auto count = data.get_optional< std::size_t >(
+							"command.exec");
+						if(!live && !count) return;
+
 						std::lock_guard< std::mutex > lock(mutex_);
-						if(on){
-							active_chains_.try_emplace(chain, disposer_, chain);
-						}else{
-							active_chains_.erase(chain);
+						if(live){
+							if(*live){
+								active_chains_.try_emplace(
+									*chain_name, disposer_, *chain_name);
+							}else{
+								active_chains_.erase(*chain_name);
+							}
+							boost::property_tree::ptree answer;
+							answer.put("live.chain", *chain_name);
+							answer.put("live.is", *live);
+							send(answer);
 						}
-						boost::property_tree::ptree answer;
-						answer.put("live.chain", chain);
-						answer.put("live.is", on);
-						send(answer);
+
+						if(count){
+							if(active_chains_.find(*chain_name)
+								!= active_chains_.end()){
+								boost::property_tree::ptree answer;
+								answer.put("error.chain", *chain_name);
+								answer.put("error.message",
+									"can not exec while live is enabled");
+								send(answer);
+
+								throw std::runtime_error("can not exec chain '"
+									+ *chain_name
+									+ "' while it is in live mode");
+							}
+
+							auto& chain = disposer_.get_chain(*chain_name);
+							chain.enable();
+
+							boost::property_tree::ptree answer;
+							answer.put("exec.chain", *chain_name);
+							answer.put("exec.count", *count);
+							send(answer);
+
+							for(std::size_t i = 0; i < *count; ++i){
+								chain.exec();
+							}
+							chain.disable();
+						}
 					}catch(...){}
 				},
 				http::websocket::server::data_callback_fn(),
@@ -224,7 +262,7 @@ namespace disposer_module{
 				std::size_t port)
 			: disposer(disposer)
 			, handler(disposer, root)
-			, server(std::to_string(port), handler, 1) {}
+			, server(std::to_string(port), handler, 2) {}
 
 		::disposer::disposer const& disposer;
 		request_handler handler;

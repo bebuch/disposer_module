@@ -13,11 +13,16 @@ file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 	<title>live view</title>
 </head>
 <body style="text-align:center;">
+	<p>
+		<button id="enable">enable live</button>
+		<button id="snapshot">snapshot</button>
+	</p>
 	<canvas id="image"></canvas>
 	<h1>live view</h1>
-	<button id="enable">enable</button>
 	<script>
 		var image = document.getElementById("image");
+		var enable = document.getElementById("enable");
+		var live_connection = false;
 		var live_image = function(){
 			var socket = new WebSocket('ws://' + window.location.host + '/scheduler');
 			socket.binaryType = 'arraybuffer';
@@ -45,6 +50,8 @@ file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 				socket.send(JSON.stringify({'ready': true}));
 			};
 			socket.onerror = function(event){
+				live_connection = false;
+				enable.innerText = 'enable live';
 				console.log("onerror: " + JSON.stringify(event));
 			};
 			socket.onclose = function(event){
@@ -53,15 +60,23 @@ file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 			return socket;
 		};
 
-		var live_connection = live_image();
+		live_connection = live_image();
 		var command_socket = new WebSocket('ws://' + window.location.host + '/controller');
 		command_socket.onmessage = function(evt){
 			console.log("onmessage");
 			if(typeof(evt.data) === 'string'){
 				console.log("onmessage string: " + evt.data);
 				var data = JSON.parse(evt.data);
-				if(data.live.chain === 'live_image' && data.live.is === true){
-					live_connection = live_image();
+				if(data.live){
+					if(data.live.chain === 'live_image' && data.live.is === true){
+						live_connection = live_image();
+					}
+				}else if(data.exec){
+					if(data.exec.chain === 'live_image' && data.exec.count > 0){
+						live_connection = live_image();
+					}
+				}else if(data.error){
+					alert("Error in " + data.error.chain + ": " + data.error.message);
 				}
 			}
 		};
@@ -75,11 +90,17 @@ file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 			console.log("onclose: " + JSON.stringify(event));
 		};
 
-		var enable = document.getElementById("enable");
 		enable.onclick = function(event){
-			var set_enable = enable.innerText === 'enable';
-			enable.innerText = set_enable ? 'disable' : 'enable';
+			var set_enable = enable.innerText === 'enable live';
+			enable.innerText = set_enable ? 'disable live' : 'enable live';
 			var message = JSON.stringify({command: {chain: 'live_image', live: set_enable}});
+			console.log("send: " + message);
+			command_socket.send(message);
+		};
+
+		var snapshot = document.getElementById("snapshot");
+		snapshot.onclick = function(event){
+			var message = JSON.stringify({command: {chain: 'live_image', exec: 1}});
 			console.log("send: " + message);
 			command_socket.send(message);
 		};

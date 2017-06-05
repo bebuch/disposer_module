@@ -25,10 +25,14 @@ namespace disposer_module::save{
 	using namespace std::literals::string_literals;
 
 
+	using t1 = std::string;
+	using t2 = std::vector< std::string >;
+	using t3 = std::vector< std::vector< std::string > >;
+
 	constexpr auto types = hana::tuple_t<
-			std::string,
-			std::vector< std::string >,
-			std::vector< std::vector< std::string > >
+			t1,
+			t2,
+			t3
 		>;
 
 	using ng1 = name_generator< std::size_t >;
@@ -39,13 +43,6 @@ namespace disposer_module::save{
 
 	constexpr auto type_to_name_generator = hana::unpack(hana::zip_with(
 		hana::make_pair, types, name_generator_types), hana::make_map);
-
-
-	enum class data_type{
-		file,
-		list,
-		list_list
-	};
 
 
 	void save(
@@ -86,7 +83,7 @@ namespace disposer_module::save{
 
 
 	struct format{
-		std::size_t digits = 2;
+		std::size_t const digits;
 
 		std::string operator()(std::size_t value){
 			std::ostringstream os;
@@ -100,67 +97,6 @@ namespace disposer_module::save{
 		auto init = make_register_fn(
 			configure(
 				"content"_in(types, required),
-				"type"_param(hana::type_c< data_type >,
-					parser([](auto const& /*iop*/, std::string_view data,
-						hana::basic_type< data_type >
-					){
-						if(data == "file") return data_type::file;
-						if(data == "list") return data_type::list;
-						if(data == "list_list") return data_type::list_list;
-						throw std::runtime_error("unknown value '"
-							+ std::string(data) + "', allowed values are: "
-							"file, list & list_list");
-					}),
-					default_values(data_type::file),
-					type_as_text(
-						hana::make_pair(hana::type_c< data_type >, "type"_s)
-					),
-					value_verify([](auto const& iop, data_type type){
-						auto const& in = iop("content"_in);
-						auto file_on =
-							in.is_enabled(hana::type_c< std::string >);
-						auto list1_on =
-							in.is_enabled(hana::type_c<
-								std::vector< std::string > >);
-						auto list2_on =
-							in.is_enabled(hana::type_c<
-								std::vector< std::vector< std::string > > >);
-						auto message = [file_on, list1_on, list2_on]{
-							auto ed = [](bool enabled){
-								return enabled ? "enabled"s : "disabled"s;
-							};
-							return "; file:"s + ed(file_on) + ", list:"
-								+ ed(list1_on) + ", list_list:"
-								+ ed(list2_on) + "";
-						};
-						switch(type){
-							case data_type::file:
-								if(!file_on) throw std::runtime_error(
-									"parameter format is file, but input "
-									"content type std::string is not enabled"
-									+ message());
-								if(!list1_on && !list2_on) return;
-							break;
-							case data_type::list:
-								if(!list1_on) throw std::runtime_error(
-									"parameter format is list, but input "
-									"content type std::vector< std::string > "
-									"is not enabled" + message());
-								if(!file_on && !list2_on) return;
-							break;
-							case data_type::list_list:
-								if(!list2_on) throw std::runtime_error(
-									"parameter format is list_list, but "
-									"input content type "
-									"std::vector< std::vector< std::string > > "
-									"is not enabled" + message());
-								if(!file_on && !list1_on) return;
-							break;
-						}
-						throw std::runtime_error("more than one type of input "
-							"content is enabled");
-					})
-				),
 				"id_digits"_param(hana::type_c< std::size_t >,
 					default_values(std::size_t(4))),
 				"i_digits"_param(hana::type_c< std::size_t >,
@@ -170,13 +106,10 @@ namespace disposer_module::save{
 				"name"_param(name_generator_types,
 					enable(
 						[](auto const& iop, auto type){
-							auto ng1_parser = type == hana::type_c< ng1 >;
-							auto ng2_parser = type == hana::type_c< ng2 >;
-							(void)ng2_parser; // silence GCC
-							if constexpr(ng1_parser){
+							if constexpr(type == hana::type_c< ng1 >){
 								return iop("content"_in).is_enabled(
 									hana::type_c< std::string >);
-							}else if constexpr(ng2_parser){
+							}else if constexpr(type == hana::type_c< ng2 >){
 								return iop("content"_in).is_enabled(
 									hana::type_c< std::vector< std::string > >);
 							}else{
@@ -188,16 +121,13 @@ namespace disposer_module::save{
 						}),
 					parser(
 						[](auto const& iop, std::string_view data, auto type){
-							auto ng1_parser = type == hana::type_c< ng1 >;
-							auto ng2_parser = type == hana::type_c< ng2 >;
-							(void)ng2_parser; // silence GCC
-							if constexpr(ng1_parser){
+							if constexpr(type == hana::type_c< ng1 >){
 								return make_name_generator(
 									data,
 									std::make_pair("id",
 										format{iop("id_digits"_param).get()})
 								);
-							}else if constexpr(ng2_parser){
+							}else if constexpr(type == hana::type_c< ng2 >){
 								return make_name_generator(
 									data,
 									std::make_pair("id",
@@ -221,10 +151,10 @@ namespace disposer_module::save{
 						hana::make_pair(hana::type_c< name_generator<
 							std::size_t > >, "file"_s),
 						hana::make_pair(hana::type_c< name_generator<
-							std::size_t, std::size_t > >, "list"_s),
+							std::size_t, std::size_t > >, "file_list"_s),
 						hana::make_pair(hana::type_c< name_generator<
 							std::size_t, std::size_t, std::size_t > >,
-								"list_list"_s)
+								"file_list_list"_s)
 					)
 				)
 			),

@@ -23,8 +23,9 @@ file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 		var image = document.getElementById("image");
 		var enable = document.getElementById("enable");
 		var live_connection = false;
-		var live_image = function(){
-			var socket = new WebSocket('ws://' + window.location.host + '/scheduler');
+		var live_image = function(service_name){
+			var socket = new WebSocket('ws://' + window.location.host + '/'
+				+ service_name);
 			socket.binaryType = 'arraybuffer';
 			socket.onmessage = function(evt){
 				console.log("onmessage");
@@ -60,7 +61,7 @@ file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 			return socket;
 		};
 
-		live_connection = live_image();
+		live_connection = live_image('scheduler');
 		var command_socket = new WebSocket('ws://' + window.location.host + '/controller');
 		command_socket.onmessage = function(evt){
 			console.log("onmessage");
@@ -69,11 +70,11 @@ file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 				var data = JSON.parse(evt.data);
 				if(data.live){
 					if(data.live.chain === 'live_image' && data.live.is === true){
-						live_connection = live_image();
+						live_connection = live_image('scheduler');
 					}
 				}else if(data.exec){
 					if(data.exec.chain === 'live_image' && data.exec.count > 0){
-						live_connection = live_image();
+						live_connection = live_image('scheduler');
 					}
 				}else if(data.error){
 					alert("Error in " + data.error.chain + ": " + data.error.message);

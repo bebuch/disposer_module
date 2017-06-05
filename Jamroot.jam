@@ -95,18 +95,6 @@ lib vector_disjoin
 	<include>$(bitmap)/include
 	;
 
-# lib big_loader
-# 	:
-# 	big_loader.cpp
-# 	/logsys//logsys
-# 	/disposer//disposer
-# 	:
-# 	<include>$(io_tools)/include
-# 	<include>$(bitmap)/include
-# 	<include>$(tar)/include
-# 	<include>$(big)/cpp/include
-# 	;
-
 lib save
 	:
 	save.cpp
@@ -119,29 +107,17 @@ lib save
 	<include>$(big)/cpp/include
 	;
 
-# lib png_loader
-# 	:
-# 	png_loader.cpp
-# 	/logsys//logsys
-# 	/disposer//disposer
-# 	:
-# 	<include>$(io_tools)/include
-# 	<include>$(bitmap)/include
-# 	<include>$(tar)/include
-# 	<linkflags>-lpng
-# 	;
-#
-# lib png_saver
-# 	:
-# 	png_saver.cpp
-# 	/logsys//logsys
-# 	/disposer//disposer
-# 	:
-# 	<include>$(io_tools)/include
-# 	<include>$(bitmap)/include
-# 	<include>$(tar)/include
-# 	<linkflags>-lpng
-# 	;
+lib load
+	:
+	load.cpp
+	/logsys//logsys
+	/disposer//disposer
+	:
+	<include>$(io_tools)/include
+	<include>$(bitmap)/include
+	<include>$(tar)/include
+	<include>$(big)/cpp/include
+	;
 
 lib camera_ximea
 	:
@@ -174,15 +150,6 @@ lib raster
 	:
 	<include>$(bitmap)/include
 	;
-
-# lib add_to_log
-# 	:
-# 	add_to_log.cpp
-# 	/logsys//logsys
-# 	/disposer//disposer
-# 	:
-# 	<include>$(bitmap)/include
-# 	;
 
 lib demosaic
 	:
@@ -258,23 +225,6 @@ lib demosaic
 # 	/disposer//disposer
 # 	:
 # 	<include>$(bitmap)/include
-# 	;
-#
-# lib bitmap_bounding_rect
-# 	:
-# 	bitmap_bounding_rect.cpp
-# 	/logsys//logsys
-# 	/disposer//disposer
-# 	:
-# 	<include>$(bitmap)/include
-# 	;
-#
-# lib websocket_live_stream
-# 	:
-# 	websocket_live_stream.cpp
-# 	/logsys//logsys
-# 	/disposer//disposer
-# 	/http//http
 # 	;
 
 lib encode_png

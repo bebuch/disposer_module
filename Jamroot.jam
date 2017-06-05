@@ -37,7 +37,6 @@ project disposer_module
 
 	<define>BOOST_HANA_CONFIG_ENABLE_STRING_UDL
 	<define>BOOST_ASIO_HAS_STD_CHRONO
-	<define>BOOST_NO_AUTO_PTR
 
 	<toolset>gcc:<cxxflags>-std=gnu++1z
 	<toolset>gcc:<cxxflags>-fconstexpr-depth=1024
@@ -167,16 +166,15 @@ lib show_image
 	<linkflags>-lX11
 	;
 
-# lib raster
-# 	:
-# 	raster.cpp
-# 	/logsys//logsys
-# 	/disposer//disposer
-# 	:
-# 	<include>$(io_tools)/include
-# 	<include>$(bitmap)/include
-# 	;
-#
+lib raster
+	:
+	raster.cpp
+	/logsys//logsys
+	/disposer//disposer
+	:
+	<include>$(bitmap)/include
+	;
+
 # lib add_to_log
 # 	:
 # 	add_to_log.cpp

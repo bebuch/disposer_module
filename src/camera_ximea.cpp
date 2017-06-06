@@ -17,7 +17,7 @@
 #undef align
 
 
-// == note to  realtime priority ==
+// == note to realtime priority ==
 //
 // sudo setcap cap_sys_nice+ep ./executbale
 //

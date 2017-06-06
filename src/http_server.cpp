@@ -116,10 +116,7 @@ namespace disposer_module{
 							}else{
 								active_chains_.erase(*chain_name);
 							}
-							boost::property_tree::ptree answer;
-							answer.put("live.chain", *chain_name);
-							answer.put("live.is", *live);
-							send(answer);
+							send(live_answer(*chain_name, *live));
 						}
 
 						if(count){
@@ -155,6 +152,10 @@ namespace disposer_module{
 				[this](http::server::connection_ptr const& con){
 					std::lock_guard< std::mutex > lock(mutex_);
 					controller_.emplace(con);
+					for(auto const& [name, chain]: active_chains_){
+						(void)chain;
+						send_json(live_answer(name, true), con);
+					}
 				},
 				[this](http::server::connection_ptr const& con){
 					std::lock_guard< std::mutex > lock(mutex_);
@@ -168,6 +169,14 @@ namespace disposer_module{
 			for(auto& controller: controller_){
 				send_json(data, controller);
 			}
+		}
+
+		boost::property_tree::ptree
+		live_answer(std::string const& name, bool enabled){
+			boost::property_tree::ptree answer;
+			answer.put("live.chain", name);
+			answer.put("live.is", enabled);
+			return answer;
 		}
 
 		::disposer::disposer& disposer_;

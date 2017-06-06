@@ -52,7 +52,7 @@ file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 			};
 			socket.onerror = function(event){
 				live_connection = false;
-				enable.innerText = 'enable live';
+// 				enable.innerText = 'enable live';
 				console.log("onerror: " + JSON.stringify(event));
 			};
 			socket.onclose = function(event){
@@ -69,8 +69,9 @@ file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 				console.log("onmessage string: " + evt.data);
 				var data = JSON.parse(evt.data);
 				if(data.live){
-					if(data.live.chain === 'live_image' && data.live.is === true){
+					if(data.live.chain === 'live_image' && data.live.is === "true"){
 						live_connection = live_image('scheduler');
+						enable.innerText = 'disable live';
 					}
 				}else if(data.exec){
 					if(data.exec.chain === 'live_image' && data.exec.count > 0){

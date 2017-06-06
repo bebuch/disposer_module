@@ -128,14 +128,14 @@ namespace disposer_module::demosaic{
 				),
 				"x_offset"_param(hana::type_c< std::size_t >,
 					value_verify([](auto const& iop, auto const& value){
-						if(value >= iop("x_count"_param).get()) return;
-						throw std::logic_error("must be greater x_count");
+						if(value < iop("x_count"_param).get()) return;
+						throw std::logic_error("must be lesser x_count");
 					})
 				),
 				"y_offset"_param(hana::type_c< std::size_t >,
 					value_verify([](auto const& iop, auto const& value){
-						if(value >= iop("y_count"_param).get()) return;
-						throw std::logic_error("must be greater y_count");
+						if(value < iop("y_count"_param).get()) return;
+						throw std::logic_error("must be lesser y_count");
 					})
 				)
 			),

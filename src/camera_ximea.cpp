@@ -487,7 +487,7 @@ namespace disposer_module::camera_ximea{
 
 		auto const payload_size = static_cast< std::size_t >(
 			params.get_int(XI_PRM_IMAGE_PAYLOAD_SIZE));
-		auto const payload_pass = (width * height == payload_size);
+		auto const payload_pass = (cam_width * cam_height == payload_size);
 
 		params.set(XI_PRM_EXPOSURE,
 			static_cast< int >(module("exposure_time_ns"_param).get()));

@@ -102,7 +102,7 @@ file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 
 		var snapshot = document.getElementById("snapshot");
 		snapshot.onclick = function(event){
-			var message = JSON.stringify({command: {chain: 'live_image', exec: 1}});
+			var message = JSON.stringify({command: {chain: 'snapshot', exec: 1}});
 			console.log("send: " + message);
 			command_socket.send(message);
 		};

@@ -59,7 +59,7 @@ namespace disposer_module::save{
 		for(std::size_t i = 0; i < data.size(); ++i){
 			std::ofstream os(name(id, i).c_str(),
 				std::ios::out | std::ios::binary);
-			os.write(data[i].data(), data.size());
+			os.write(data[i].data(), data[i].size());
 		}
 	}
 
@@ -72,7 +72,7 @@ namespace disposer_module::save{
 			for(std::size_t j = 0; j < data.size(); ++j){
 				std::ofstream os(name(id, i, j).c_str(),
 					std::ios::out | std::ios::binary);
-				os.write(data[i][j].data(), data.size());
+				os.write(data[i][j].data(), data[i][j].size());
 			}
 		}
 	}

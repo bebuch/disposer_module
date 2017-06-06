@@ -13,7 +13,10 @@ namespace disposer_module::vector_join{
 	namespace hana = boost::hana;
 
 
-	constexpr auto types = hana::tuple_t<
+	template < typename T >
+	using vector = std::vector< T >;
+
+	constexpr auto base_types = hana::tuple_t<
 			std::int8_t,
 			std::int16_t,
 			std::int32_t,
@@ -26,24 +29,24 @@ namespace disposer_module::vector_join{
 			double
 		>;
 
-	constexpr auto to_bitmap_vector =
-		type_transform([](auto type)noexcept{
-			return hana::type_c< std::vector< bitmap::bitmap<
-				typename decltype(type)::type > > >;
-		});
+	constexpr auto types = hana::concat(
+			hana::tuple_t< std::string >,
+			hana::transform(base_types, hana::template_< ::bitmap::bitmap >)
+		);
+
 
 	struct exec{
 		using type = decltype(hana::unpack(
-			hana::transform(types, to_bitmap_vector),
+			hana::transform(types, hana::template_< std::vector >),
 			hana::template_< std::variant >))::type;
 
-		type vector;
+		type list;
 
-		template < typename Module, typename Image >
-		void add_image(Module& module, std::vector< Image >& out, Image&& in){
+		template < typename Module, typename Data >
+		void add_image(Module& module, std::vector< Data >& out, Data&& in){
 			out.push_back(std::move(in));
 			if(out.size() == module("count"_param).get()){
-				module("vector"_out).put(std::move(out));
+				module("list"_out).put(std::move(out));
 				out.clear();
 				return;
 			}
@@ -51,9 +54,9 @@ namespace disposer_module::vector_join{
 
 		template < typename Module >
 		void operator()(Module& module, std::size_t /*id*/){
-			auto values = module("image"_in).get_values();
+			auto values = module("data"_in).get_values();
 			for(auto&& pair: values){
-				auto&& image = std::move(pair.second);
+				auto&& data = std::move(pair.second);
 				std::visit([&](auto& out, auto&& in){
 					auto types_equal =
 						hana::typeid_(out.front()) == hana::typeid_(in);
@@ -67,11 +70,11 @@ namespace disposer_module::vector_join{
 
 						using new_type = std::vector<
 							typename decltype(hana::typeid_(in))::type >;
-						auto& new_out = vector.emplace< new_type >();
+						auto& new_out = list.emplace< new_type >();
 						new_out.reserve(module("count"_param).get());
 						add_image(module, new_out, std::move(in));
 					}
-				}, vector, std::move(image));
+				}, list, std::move(data));
 			}
 		}
 	};
@@ -80,12 +83,11 @@ namespace disposer_module::vector_join{
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = make_register_fn(
 			configure(
-				"image"_in(types,
-					template_transform_c< bitmap::bitmap >,
+				"data"_in(types,
 					required),
-				"vector"_out(types,
-					to_bitmap_vector,
-					enable_by_types_of("image"_in)
+				"list"_out(types,
+					template_transform_c< vector >,
+					enable_by_types_of("data"_in)
 				),
 				"count"_param(hana::type_c< std::size_t >,
 					value_verify([](auto const& /*iop*/, auto const& value){

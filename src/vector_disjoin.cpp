@@ -13,7 +13,10 @@ namespace disposer_module::vector_disjoin{
 	namespace hana = boost::hana;
 
 
-	constexpr auto types = hana::tuple_t<
+	template < typename T >
+	using vector = std::vector< T >;
+
+	constexpr auto base_types = hana::tuple_t<
 			std::int8_t,
 			std::int16_t,
 			std::int32_t,
@@ -26,19 +29,20 @@ namespace disposer_module::vector_disjoin{
 			double
 		>;
 
+	constexpr auto types = hana::concat(
+			hana::tuple_t< std::string >,
+			hana::transform(base_types, hana::template_< ::bitmap::bitmap >)
+		);
+
 
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = make_register_fn(
 			configure(
-				"vector"_in(types,
-					type_transform([](auto type)noexcept{
-						return hana::type_c< std::vector< bitmap::bitmap<
-							typename decltype(type)::type > > >;
-					}),
+				"list"_in(types,
+					template_transform_c< vector >,
 					required),
-				"image"_out(types,
-					template_transform_c< bitmap::bitmap >,
-					enable_by_types_of("vector"_in)
+				"data"_out(types,
+					enable_by_types_of("list"_in)
 				),
 				"count"_param(hana::type_c< std::size_t >,
 					value_verify([](auto const& /*iop*/, auto const& value){
@@ -52,19 +56,19 @@ namespace disposer_module::vector_disjoin{
 			},
 			[](auto const& /*module*/){
 				return [](auto& module, std::size_t /*id*/){
-					auto values = module("vector"_in).get_values();
+					auto values = module("list"_in).get_values();
 					for(auto&& pair: values){
-						std::visit([&module](auto&& vector){
+						std::visit([&module](auto&& list){
 							auto const count = module("count"_param).get();
-							if(vector.size() != count){
-								throw std::runtime_error("vector size is "
+							if(list.size() != count){
+								throw std::runtime_error("list size is "
 									"different from parameter count ("
-									+ std::to_string(vector.size()) + " != "
+									+ std::to_string(list.size()) + " != "
 									+ std::to_string(count) + ")");
 							}
 
-							for(auto&& image: std::move(vector)){
-								module("image"_out).put(std::move(image));
+							for(auto&& data: std::move(list)){
+								module("data"_out).put(std::move(data));
 							}
 						}, std::move(pair.second));
 					}

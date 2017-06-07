@@ -83,7 +83,7 @@ namespace disposer_module::encode_png{
 			for(std::size_t x = 0; x < img.width(); ++x){
 				auto& pixel = img(x, y);
 				png_image.set_pixel(x, y,
-					*reinterpret_cast< png_type const* >(&pixel));
+					reinterpret_cast< png_type const& >(pixel));
 			}
 		}
 
@@ -104,7 +104,8 @@ namespace disposer_module::encode_png{
 					auto values = module("image"_in).get_references();
 					for(auto const& pair: values){
 						std::visit([&module](auto const& img){
-							std::ostringstream os;
+							std::ostringstream os
+								(std::ios::out | std::ios::binary);
 							to_png_image(img.get()).write_stream(os);
 							module("data"_out).put(os.str());
 						}, pair.second);

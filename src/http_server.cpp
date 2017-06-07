@@ -10,6 +10,8 @@
 
 #include <boost/property_tree/ptree.hpp>
 
+#include <set>
+
 
 namespace disposer_module{
 

@@ -130,6 +130,7 @@ namespace disposer_module::load{
 						}
 					})),
 				"fixed_id"_param(type_c< std::optional< std::size_t > >),
+				"id_modulo"_param(type_c< std::optional< std::size_t > >),
 				"id_digits"_param(type_c< std::size_t >,
 					default_values(std::size_t(4))),
 				"i_digits"_param(type_c< std::size_t >,
@@ -199,6 +200,9 @@ namespace disposer_module::load{
 				return [](auto& module, std::size_t id){
 					auto fixed_id = module("fixed_id"_param).get();
 					if(fixed_id) id = *fixed_id;
+
+					auto const id_modulo = module("id_modulo"_param).get();
+					if(id_modulo) id %= *id_modulo;
 
 					auto& out = module("content"_out);
 					switch(module("type"_param).get()){

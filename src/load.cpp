@@ -129,6 +129,7 @@ namespace disposer_module::load{
 								return type == type_c< t3 >;
 						}
 					})),
+				"fixed_id"_param(type_c< std::optional< std::size_t > >),
 				"id_digits"_param(type_c< std::size_t >,
 					default_values(std::size_t(4))),
 				"i_digits"_param(type_c< std::size_t >,
@@ -196,6 +197,9 @@ namespace disposer_module::load{
 			normal_id_increase(),
 			[](auto const& /*module*/){
 				return [](auto& module, std::size_t id){
+					auto fixed_id = module("fixed_id"_param).get();
+					if(fixed_id) id = *fixed_id;
+
 					auto& out = module("content"_out);
 					switch(module("type"_param).get()){
 						case data_type::file:

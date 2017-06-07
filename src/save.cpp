@@ -93,6 +93,7 @@ namespace disposer_module::save{
 		auto init = make_register_fn(
 			configure(
 				"content"_in(types, required),
+				"fixed_id"_param(type_c< std::optional< std::size_t > >),
 				"id_digits"_param(type_c< std::size_t >,
 					default_values(std::size_t(4))),
 				"i_digits"_param(type_c< std::size_t >,
@@ -151,7 +152,8 @@ namespace disposer_module::save{
 				return [](auto& module, std::size_t /*id*/){
 					auto values = module("content"_in).get_references();
 					for(auto const& pair: values){
-						auto id = pair.first;
+						auto fixed_id = module("fixed_id"_param).get();
+						auto id = fixed_id ? *fixed_id : pair.first;
 						std::visit(
 							[&module, id](auto const& data_ref){
 								save(

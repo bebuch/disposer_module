@@ -68,20 +68,34 @@ namespace disposer_module{
 			, active_(true)
 			, thread_([this]{
 				while(active_){
-					auto& chain = disposer_.get_chain(chain_);
-					chain.enable();
-					while(active_){
-						chain.exec();
-					}
-					chain.disable();
+					logsys::exception_catching_log(
+						[this](logsys::stdlogb& os){
+							os << "chain(" << chain_ << ") server live exec";
+						}, [this]{
+							auto& chain = disposer_.get_chain(chain_);
+							disposer::chain_enable_guard enable(chain);
+							logsys::exception_catching_log(
+								[this](logsys::stdlogb& os){
+									os << "chain(" << chain_
+										<< ") server live exec loop";
+								}, [this, &chain]{
+									while(active_){
+										chain.exec();
+									}
+								});
+						});
 				}
 			}) {}
 
 		live_chain(live_chain const&) = delete;
 		live_chain(live_chain&&) = delete;
 
-		~live_chain(){
+		void shutdown_hint(){
 			active_ = false;
+		}
+
+		~live_chain(){
+			shutdown_hint();
 			thread_.join();
 		}
 
@@ -136,7 +150,7 @@ namespace disposer_module{
 							}
 
 							auto& chain = disposer_.get_chain(*chain_name);
-							chain.enable();
+							disposer::chain_enable_guard enable(chain);
 
 							boost::property_tree::ptree answer;
 							answer.put("exec.chain", *chain_name);
@@ -146,7 +160,6 @@ namespace disposer_module{
 							for(std::size_t i = 0; i < *count; ++i){
 								chain.exec();
 							}
-							chain.disable();
 						}
 					}catch(...){}
 				},
@@ -165,6 +178,14 @@ namespace disposer_module{
 				}
 			)
 			, disposer_(disposer) {}
+
+
+		~control_service(){
+			// tell all threads to get done (not necessary, only speed up)
+			for(auto& [name, chain]: active_chains_){
+				chain.shutdown_hint();
+			}
+		}
 
 	private:
 		void send(boost::property_tree::ptree const& data){

@@ -179,12 +179,19 @@ namespace disposer_module{
 			)
 			, disposer_(disposer) {}
 
-
 		~control_service(){
+			shutdown();
+		}
+
+		void shutdown()noexcept{
+			std::lock_guard< std::mutex > lock(mutex_);
+
 			// tell all threads to get done (not necessary, only speed up)
 			for(auto& [name, chain]: active_chains_){
 				chain.shutdown_hint();
 			}
+
+			active_chains_.clear();
 		}
 
 	private:
@@ -228,11 +235,12 @@ namespace disposer_module{
 						http_file_handler_.handle_request(con, req, rep);
 				},
 				[this]{
+					control_service_.shutdown();
 					websocket_handler_.shutdown();
 				}
 			)
-			, control_service_(disposer)
 			, http_file_handler_(http_root_path)
+			, control_service_(disposer)
 		{
 			auto success = websocket_handler_.register_service(
 				"controller", control_service_);
@@ -273,17 +281,17 @@ namespace disposer_module{
 
 
 	private:
-		/// \brief WebSocket service for disposer control messages
-		control_service control_service_;
-
-		/// \brief WebSocket live services
-		std::map< std::string, live_service > websocket_services_;
+		/// \brief Handler for normal HTTP-File-Requests
+		http::server::file_request_handler http_file_handler_;
 
 		/// \brief Handler for Websocket-Requests
 		http::websocket::server::request_handler websocket_handler_;
 
-		/// \brief Handler for normal HTTP-File-Requests
-		http::server::file_request_handler http_file_handler_;
+		/// \brief WebSocket live services
+		std::map< std::string, live_service > websocket_services_;
+
+		/// \brief WebSocket service for disposer control messages
+		control_service control_service_;
 	};
 
 
@@ -328,7 +336,9 @@ namespace disposer_module{
 		return impl_->handler.send(key, data);
 	}
 
-	http_server::~http_server() = default;
+	http_server::~http_server(){
+		if(impl_) impl_->handler.shutdown();
+	}
 
 
 

@@ -74,15 +74,17 @@ namespace disposer_module{
 						}, [this]{
 							auto& chain = disposer_.get_chain(chain_);
 							disposer::chain_enable_guard enable(chain);
-							logsys::exception_catching_log(
-								[this](logsys::stdlogb& os){
-									os << "chain(" << chain_
-										<< ") server live exec loop";
-								}, [this, &chain]{
-									while(active_){
-										chain.exec();
-									}
-								});
+							while(active_){
+								logsys::exception_catching_log(
+									[this](logsys::stdlogb& os){
+										os << "chain(" << chain_
+											<< ") server live exec loop";
+									}, [this, &chain]{
+										while(active_){
+											chain.exec();
+										}
+									});
+							}
 						});
 				}
 			}) {}

@@ -15,6 +15,8 @@
 
 #include <arv.h>
 
+#include <thread>
+
 
 namespace disposer_module::camera_gige_vision{
 
@@ -150,24 +152,25 @@ namespace disposer_module::camera_gige_vision{
 
 
 	struct gige_vision_cam{
-		template < typename T, typename Module >
-		bitmap< T > get_image(Module const& module, ArvCamera* handle)const;
+		template < typename T >
+		bitmap< T > get_image(ArvCamera* handle);
 	};
 
-	template < typename T, typename Module >
-	bitmap< T > gige_vision_cam::get_image(
-		Module const& /*module*/,
-		ArvCamera* handle
-	)const{
+	template < typename T >
+	bitmap< T > gige_vision_cam::get_image(ArvCamera* handle){
 		auto deleter = [](ArvBuffer* data){ g_clear_object(&data); };
-		std::unique_ptr< ArvBuffer, decltype(deleter) > buffer_handle(
-			arv_camera_acquisition(handle, 0),
-			deleter
-		);
+		std::unique_ptr< ArvBuffer, decltype(deleter) > buffer_guard(
+			arv_camera_acquisition(handle, 0), deleter);
 
-		auto buffer = buffer_handle.get();
+		auto buffer = buffer_guard.get();
+
 		if(!(ARV_IS_BUFFER(buffer))){
-			throw std::runtime_error("arv_camera_acquisition failed");
+			throw std::runtime_error("ARV_IS_BUFFER failed");
+		}
+
+		if(arv_buffer_get_status(buffer) != ARV_BUFFER_STATUS_SUCCESS){
+			throw std::runtime_error(
+				"arv_buffer_get_status is not ARV_BUFFER_STATUS_SUCCESS");
 		}
 
 		auto format = arv_buffer_get_image_pixel_format(buffer);
@@ -203,6 +206,7 @@ namespace disposer_module::camera_gige_vision{
 				result(x, y) = *data++;
 			}
 		}
+
 		return result;
 	}
 
@@ -224,21 +228,11 @@ namespace disposer_module::camera_gige_vision{
 	}
 
 	template < typename Module >
-	gige_vision_cam make_gige_vision_cam(
-		Module const& /*module*/,
-		ArvCamera* handle
-	){
-		arv_camera_start_acquisition(handle);
-		return gige_vision_cam{};
-	}
-
-	template < typename Module >
 	class gige_vision_cam_init{
 	public:
 		gige_vision_cam_init(Module const& module)
 			: module_(module)
-			, handle_(open_gige_vision_cam(module("cam_name"_param).get()))
-			, cam_(make_gige_vision_cam(module, handle_)) {}
+			, handle_(open_gige_vision_cam(module("cam_name"_param).get())){}
 
 		gige_vision_cam_init(gige_vision_cam_init const&) = delete;
 
@@ -250,30 +244,13 @@ namespace disposer_module::camera_gige_vision{
 			other.handle_ = nullptr;
 		}
 
-		~gige_vision_cam_init(){
-			if(handle_ == nullptr) return;
-
-			try{
-				arv_camera_stop_acquisition(handle_);
-				g_clear_object(&handle_);
-			}catch(std::exception const& e){
-				module_.log([&e](logsys::stdlogb& os){
-					os << e.what();
-				});
-			}catch(...){
-				module_.log([](logsys::stdlogb& os){
-					os << "unknown exception";
-				});
-			}
-		}
-
 		void operator()(to_exec_accessory_t< Module >& module, std::size_t){
 			switch(module("format"_param).get()){
 				case pixel_format::mono8:
-					module("image"_out).put(get_image< std::uint8_t >());
+					module("image"_out).put(get_image< std::uint8_t >(handle_));
 					break;
 				case pixel_format::mono16:
-					module("image"_out).put(get_image< std::uint16_t >());
+					module("image"_out).put(get_image< std::uint16_t >(handle_));
 					break;
 			}
 		}
@@ -281,11 +258,8 @@ namespace disposer_module::camera_gige_vision{
 
 	private:
 		template < typename T >
-		bitmap< T > get_image()const{
-			return cam_.get_image< T >(
-				static_cast< to_exec_accessory_t< Module > const& >(module_),
-				handle_
-			);
+		bitmap< T > get_image(ArvCamera* handle){
+			return cam_.get_image< T >(handle);
 		}
 
 		Module const& module_;

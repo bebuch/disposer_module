@@ -116,15 +116,20 @@ int main(int argc, char** argv){
 		}
 	})) return 1;
 
+	logsys::exception_catching_log(
+		[](logsys::stdlogb& os){ os << "load config file"; },
+		[&disposer]{ disposer.load("plan.ini"); });
+
+	if(server_mode){
+		std::cout << "Hit Enter to exit!" << std::endl;
+		std::cin.get();
+		return 0;
+	}
+
 	return !logsys::exception_catching_log(
 		[](logsys::stdlogb& os){ os << "exec chains"; },
-	[&disposer, server_mode, exec_all, &exec_chain, exec_count, multithreading]{
-		disposer.load("plan.ini");
-
-		if(server_mode){
-			std::cout << "Hit Enter to exit!" << std::endl;
-			std::cin.get();
-		}else if(exec_all){
+	[&disposer, exec_all, &exec_chain, exec_count, multithreading]{
+		if(exec_all){
 			for(auto& chain_name: disposer.chains()){
 				auto& chain = disposer.get_chain(chain_name);
 				::disposer::chain_enable_guard enable(chain);

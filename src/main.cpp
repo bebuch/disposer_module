@@ -14,6 +14,7 @@
 #include <disposer/disposer.hpp>
 #include <disposer/module_base.hpp>
 
+#include <boost/stacktrace.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/dll.hpp>
@@ -21,11 +22,24 @@
 #include <regex>
 #include <iostream>
 #include <future>
+#include <csignal>
+
+
+void signal_handler(int signum){
+	std::signal(signum, SIG_DFL);
+	std::cerr << boost::stacktrace::stacktrace();
+	std::raise(SIGABRT);
+}
 
 
 int main(int argc, char** argv){
 	using namespace std::literals::string_view_literals;
 	namespace fs = boost::filesystem;
+
+	// Set signal handler
+	std::signal(SIGSEGV, signal_handler);
+	std::signal(SIGABRT, signal_handler);
+
 
 	bool const server_mode = argc == 2 ? argv[1] == "--server"sv : false;
 	bool multithreading = argc > 1 ? argv[1] == "--multithreading"sv : false;

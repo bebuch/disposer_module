@@ -193,15 +193,15 @@ lib demosaic
 	<include>$(bitmap)/include
 	;
 
-# lib bitmap_vector_join
-# 	:
-# 	bitmap_vector_join.cpp
-# 	/logsys//logsys
-# 	/disposer//disposer
-# 	:
-# 	<include>$(bitmap)/include
-# 	;
-#
+lib bitmap_vector_join
+	:
+	bitmap_vector_join.cpp
+	/logsys//logsys
+	/disposer//disposer
+	:
+	<include>$(bitmap)/include
+	;
+
 # lib raw_phase
 # 	:
 # 	raw_phase.cpp

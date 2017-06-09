@@ -128,6 +128,14 @@ namespace disposer_module::load{
 							case data_type::file_list_list:
 								return type == type_c< t3 >;
 						}
+
+						static_assert(
+							type == type_c< t1 > ||
+							type == type_c< t2 > ||
+							type == type_c< t3 >
+						);
+
+						return false;
 					})),
 				"fixed_id"_param(type_c< std::optional< std::size_t > >),
 				"id_modulo"_param(type_c< std::optional< std::size_t > >),

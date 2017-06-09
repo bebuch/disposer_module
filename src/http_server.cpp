@@ -190,6 +190,7 @@ namespace disposer_module{
 
 			// tell all threads to get done (not necessary, only speed up)
 			for(auto& [name, chain]: active_chains_){
+				(void)name;
 				chain.shutdown_hint();
 			}
 

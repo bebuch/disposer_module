@@ -79,7 +79,7 @@ int main(int argc, char** argv){
 		logsys::stdlogb& os){ os << "loading modules"; },
 	[&disposer, &modules, &server]{
 		disposer_module::websocket::register_module(
-			"websocket", disposer.declarant(), server);
+			"websocket", disposer.module_declarant(), server);
 
 		auto program_dir = boost::dll::program_location().remove_filename();
 		std::cout << "Search for DLLs in '" << program_dir << "'" << std::endl;
@@ -105,7 +105,7 @@ int main(int argc, char** argv){
 								std::string const&,
 								::disposer::module_declarant&
 							)
-						>("init")(lib_name, disposer.declarant());
+						>("init")(lib_name, disposer.module_declarant());
 				}else{
 					logsys::log([&lib_name](logsys::stdlogb& os){
 						os << "shared library '" << lib_name

@@ -94,8 +94,8 @@ namespace disposer_module::decode_png{
 	}
 
 	void init(std::string const& name, module_declarant& disposer){
-		auto init = make_register_fn(
-			configure(
+		auto init = make_module_register_fn(
+			module_configure(
 				"data"_in(type_c< std::string >,
 					required),
 				"format"_param(type_c< format >,

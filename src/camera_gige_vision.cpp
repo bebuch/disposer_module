@@ -152,17 +152,42 @@ namespace disposer_module::camera_gige_vision{
 
 
 	struct gige_vision_cam{
+		gige_vision_cam(GMainLoop* main_loop, gint payload, ArvStream* stream)
+			: last_buffer(nullptr)
+			, main_loop(main_loop)
+			, payload(payload)
+			, stream(stream) {}
+
+		gige_vision_cam(gige_vision_cam&& other)
+			: last_buffer(nullptr)
+			, main_loop(other.main_loop)
+			, payload(other.payload)
+			, stream(other.stream) {}
+
 		template < typename T >
-		bitmap< T > get_image(ArvCamera* handle);
+		bitmap< T > get_image();
+
+		std::condition_variable cv;
+		std::mutex mutex;
+		ArvBuffer* last_buffer;
+
+		GMainLoop* main_loop;
+
+		unsigned const payload;
+		ArvStream* const stream;
 	};
 
 	template < typename T >
-	bitmap< T > gige_vision_cam::get_image(ArvCamera* handle){
-		auto deleter = [](ArvBuffer* data){ g_clear_object(&data); };
-		std::unique_ptr< ArvBuffer, decltype(deleter) > buffer_guard(
-			arv_camera_acquisition(handle, 0), deleter);
+	bitmap< T > gige_vision_cam::get_image(){
+		ArvBuffer* buffer = nullptr;
 
-		auto buffer = buffer_guard.get();
+		{
+			std::unique_lock< std::mutex > lock(mutex);
+			using namespace std::literals::chrono_literals;
+			cv.wait_for(lock, 2s);
+			buffer = last_buffer;
+			last_buffer = nullptr;
+		}
 
 		if(!(ARV_IS_BUFFER(buffer))){
 			throw std::runtime_error("ARV_IS_BUFFER failed");
@@ -227,12 +252,45 @@ namespace disposer_module::camera_gige_vision{
 		}
 	}
 
+	auto update_image(ArvStream* stream, gige_vision_cam* data){
+		auto buffer = arv_stream_try_pop_buffer(stream);
+
+		std::lock_guard< std::mutex > lock(data->mutex);
+		data->last_buffer = buffer;
+		data->cv.notify_all();
+	}
+
+	template < typename Module >
+	gige_vision_cam make_gige_vision_cam(
+		Module const& /*module*/,
+		ArvCamera* handle
+	){
+		arv_camera_start_acquisition(handle);
+
+		auto payload = arv_camera_get_payload(handle);
+		auto stream = arv_camera_create_stream(handle, nullptr, nullptr);
+		for(std::size_t i = 0; i < 50; ++i){
+			arv_stream_push_buffer(stream, arv_buffer_new(payload, nullptr));
+		}
+
+		auto main_loop = g_main_loop_new(nullptr, FALSE);
+
+		return gige_vision_cam(main_loop, payload, stream);
+	}
+
 	template < typename Module >
 	class gige_vision_cam_init{
 	public:
 		gige_vision_cam_init(Module const& module)
 			: module_(module)
-			, handle_(open_gige_vision_cam(module("cam_name"_param).get())){}
+			, handle_(open_gige_vision_cam(module("cam_name"_param).get()))
+			, cam_(make_gige_vision_cam(module, handle_)) {
+				g_signal_connect(cam_.stream, "new-buffer",
+					G_CALLBACK(update_image), &cam_);
+				g_main_loop_.emplace([this]{
+					g_main_loop_run(cam_.main_loop);
+				});
+			}
 
 		gige_vision_cam_init(gige_vision_cam_init const&) = delete;
 
@@ -244,13 +302,33 @@ namespace disposer_module::camera_gige_vision{
 			other.handle_ = nullptr;
 		}
 
+		~gige_vision_cam_init(){
+			if(handle_ == nullptr) return;
+
+			try{
+				g_main_loop_unref(cam_.main_loop);
+				g_main_loop_->join();
+				arv_camera_stop_acquisition(handle_);
+				g_object_unref(cam_.stream);
+				g_clear_object(&handle_);
+			}catch(std::exception const& e){
+				module_.log([&e](logsys::stdlogb& os){
+					os << e.what();
+				});
+			}catch(...){
+				module_.log([](logsys::stdlogb& os){
+					os << "unknown exception";
+				});
+			}
+		}
+
 		void operator()(to_exec_accessory_t< Module >& module, std::size_t){
 			switch(module("format"_param).get()){
 				case pixel_format::mono8:
-					module("image"_out).put(get_image< std::uint8_t >(handle_));
+					module("image"_out).put(get_image< std::uint8_t >());
 					break;
 				case pixel_format::mono16:
-					module("image"_out).put(get_image< std::uint16_t >(handle_));
+					module("image"_out).put(get_image< std::uint16_t >());
 					break;
 			}
 		}
@@ -258,19 +336,20 @@ namespace disposer_module::camera_gige_vision{
 
 	private:
 		template < typename T >
-		bitmap< T > get_image(ArvCamera* handle){
-			return cam_.get_image< T >(handle);
+		bitmap< T > get_image(){
+			return cam_.get_image< T >();
 		}
 
 		Module const& module_;
 		ArvCamera* handle_ = nullptr;
 		gige_vision_cam cam_;
+		std::optional< std::thread > g_main_loop_;
 	};
 
 
 	void init(std::string const& name, module_declarant& disposer){
-		auto init = make_register_fn(
-			configure(
+		auto init = make_module_register_fn(
+			module_configure(
 				"format"_param(type_c< pixel_format >,
 					parser([](
 						auto const& /*iop*/,

@@ -131,8 +131,8 @@ namespace disposer_module::demosaic{
 
 
 	void init(std::string const& name, module_declarant& disposer){
-		auto init = make_register_fn(
-			configure(
+		auto init = make_module_register_fn(
+			module_configure(
 				"image"_in(types,
 					template_transform_c< bitmap >,
 					required),

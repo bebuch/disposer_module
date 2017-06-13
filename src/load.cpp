@@ -94,8 +94,8 @@ namespace disposer_module::load{
 
 
 	void init(std::string const& name, module_declarant& disposer){
-		auto init = make_register_fn(
-			configure(
+		auto init = make_module_register_fn(
+			module_configure(
 				"type"_param(hana::type_c< data_type >,
 					parser([](auto const& /*iop*/, std::string_view data,
 						hana::basic_type< data_type >

@@ -286,8 +286,8 @@ namespace disposer_module::bitmap_vector_join{
 
 
 	void init(std::string const& name, module_declarant& disposer){
-		auto init = make_register_fn(
-			configure(
+		auto init = make_module_register_fn(
+			module_configure(
 				"images"_in(types,
 					type_transform([](auto type)noexcept{
 						return hana::type_c< std::vector< bitmap<

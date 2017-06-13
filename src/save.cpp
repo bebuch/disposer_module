@@ -90,8 +90,8 @@ namespace disposer_module::save{
 
 
 	void init(std::string const& name, module_declarant& disposer){
-		auto init = make_register_fn(
-			configure(
+		auto init = make_module_register_fn(
+			module_configure(
 				"content"_in(types, required),
 				"fixed_id"_param(type_c< std::optional< std::size_t > >),
 				"id_modulo"_param(type_c< std::optional< std::size_t > >),

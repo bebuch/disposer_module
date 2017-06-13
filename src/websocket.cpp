@@ -25,8 +25,8 @@ namespace disposer_module::websocket{
 		module_declarant& disposer,
 		disposer_module::http_server& server
 	){
-		auto init = make_register_fn(
-			configure(
+		auto init = make_module_register_fn(
+			module_configure(
 				"data"_in(hana::type_c< std::string >, required),
 				"service_name"_param(hana::type_c< std::string >)
 			),

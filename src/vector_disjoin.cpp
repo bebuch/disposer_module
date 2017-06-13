@@ -36,8 +36,8 @@ namespace disposer_module::vector_disjoin{
 
 
 	void init(std::string const& name, module_declarant& disposer){
-		auto init = make_register_fn(
-			configure(
+		auto init = make_module_register_fn(
+			module_configure(
 				"list"_in(types,
 					template_transform_c< vector >,
 					required),

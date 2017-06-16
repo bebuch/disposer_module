@@ -149,7 +149,7 @@ namespace disposer_module::save{
 				)
 			),
 			normal_id_increase(),
-			[](auto const& /*module*/){
+			module_enable([](auto const& /*module*/){
 				return [](auto& module, std::size_t /*id*/){
 					auto values = module("content"_in).get_references();
 					for(auto const& pair: values){
@@ -172,7 +172,7 @@ namespace disposer_module::save{
 							pair.second);
 					}
 				};
-			}
+			})
 		);
 
 		init(name, disposer);

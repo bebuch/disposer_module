@@ -600,10 +600,10 @@ namespace disposer_module::camera_ximea{
 					default_values(std::size_t(10000))
 				)
 			),
-			[](auto& component){
+			disposer::component_init([](auto& component){
 				return ximea_cam_init< std::decay_t< decltype(component) > >
 					(component);
-			},
+			}),
 			component_modules(
 				"capture"_module([](auto& component){
 					return module_register_fn(
@@ -626,7 +626,7 @@ namespace disposer_module::camera_ximea{
 							)
 						),
 						normal_id_increase(),
-						[&component](auto const& module){
+						module_enable([&component](auto const& module){
 							return [&component](auto& module, std::size_t){
 								auto& out = module("image"_out);
 								switch(component("format"_param).get()){
@@ -646,7 +646,7 @@ namespace disposer_module::camera_ximea{
 										break;
 								}
 							};
-						}
+						})
 					);
 				})
 			)

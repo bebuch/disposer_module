@@ -100,7 +100,7 @@ namespace disposer_module::show_image{
 				"window_title"_param(hana::type_c< std::string >)
 			),
 			normal_id_increase(),
-			[](auto const& module){
+			module_enable([](auto const& module){
 				return [data_ = resources(module("window_title"_param).get())]
 					(auto& module, std::size_t /*id*/)mutable
 				{
@@ -121,7 +121,7 @@ namespace disposer_module::show_image{
 						data_.display.show();
 					}
 				};
-			}
+			})
 		);
 
 		init(name, disposer);

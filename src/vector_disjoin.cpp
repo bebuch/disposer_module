@@ -54,7 +54,7 @@ namespace disposer_module::vector_disjoin{
 			[](auto const& module){
 				return id_increase_t{module("count"_param).get(), 1};
 			},
-			[](auto const& /*module*/){
+			module_enable([](auto const& /*module*/){
 				return [](auto& module, std::size_t /*id*/){
 					auto values = module("list"_in).get_values();
 					for(auto&& pair: values){
@@ -73,7 +73,7 @@ namespace disposer_module::vector_disjoin{
 						}, std::move(pair.second));
 					}
 				};
-			}
+			})
 		);
 
 		init(name, disposer);

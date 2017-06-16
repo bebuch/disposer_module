@@ -146,7 +146,7 @@ namespace disposer_module::decode_png{
 				)
 			),
 			normal_id_increase(),
-			[](auto const& /*module*/){
+			module_enable([](auto const& /*module*/){
 				return [](auto& module, std::size_t /*id*/){
 					auto& out = module("image"_out);
 					auto values = module("data"_in).get_references();
@@ -180,7 +180,7 @@ namespace disposer_module::decode_png{
 						}
 					}
 				};
-			}
+			})
 		);
 
 		init(name, disposer);

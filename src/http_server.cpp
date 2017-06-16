@@ -394,13 +394,13 @@ namespace disposer_module::http_server_component{
 						throw std::logic_error("must be greater or equal 1");
 					}))
 			),
-			[](auto& component){
+			disposer::component_init([](auto& component){
 				return http_server< decltype(component) >(
 					component,
 					component("root"_param).get(),
 					component("port"_param).get(),
 					component("thread_count"_param).get());
-			},
+			}),
 			component_modules(
 				"websocket"_module([](auto& component){
 					return module_register_fn(
@@ -409,7 +409,7 @@ namespace disposer_module::http_server_component{
 							"service_name"_param(hana::type_c< std::string >)
 						),
 						normal_id_increase(),
-						[&component](auto const& module){
+						module_enable([&component](auto const& module){
 							auto init = component.data()
 								.init(module("service_name"_param).get());
 							auto key = init.key;
@@ -423,7 +423,7 @@ namespace disposer_module::http_server_component{
 									component.data().send(key,
 										iter->second.get());
 								};
-						}
+						})
 					);
 				})
 			)

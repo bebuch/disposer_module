@@ -384,11 +384,11 @@ namespace disposer_module::camera_gige_vision{
 				)
 			),
 			normal_id_increase(),
-			[](auto const& module){
+			module_enable([](auto const& module){
 				return gige_vision_cam_init< std::decay_t< decltype(module) > >(
 					module
 				);
-			}
+			})
 		);
 
 		init(name, disposer);

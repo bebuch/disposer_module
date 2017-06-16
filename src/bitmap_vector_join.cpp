@@ -309,7 +309,7 @@ namespace disposer_module::bitmap_vector_join{
 					enable_by_types_of("images"_in))
 			),
 			normal_id_increase(),
-			[](auto const& /*module*/){
+			module_enable([](auto const& /*module*/){
 				return [](auto& module, std::size_t /*id*/){
 					auto values = module("images"_in).get_references();
 					for(auto const& pair: values){
@@ -319,7 +319,7 @@ namespace disposer_module::bitmap_vector_join{
 						}, pair.second);
 					}
 				};
-			}
+			})
 		);
 
 		init(name, disposer);

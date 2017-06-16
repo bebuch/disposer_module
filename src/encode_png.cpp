@@ -99,7 +99,7 @@ namespace disposer_module::encode_png{
 				"data"_out(hana::type_c< std::string >)
 			),
 			normal_id_increase(),
-			[](auto const& /*module*/){
+			module_enable([](auto const& /*module*/){
 				return [](auto& module, std::size_t /*id*/){
 					auto values = module("image"_in).get_references();
 					for(auto const& pair: values){
@@ -111,7 +111,7 @@ namespace disposer_module::encode_png{
 						}, pair.second);
 					}
 				};
-			}
+			})
 		);
 
 		init(name, disposer);

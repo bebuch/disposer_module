@@ -1,6 +1,13 @@
-#include "http_server.hpp"
-
-#include <disposer/disposer.hpp>
+//-----------------------------------------------------------------------------
+// Copyright (c) 2017 Benjamin Buch
+//
+// https://github.com/bebuch/disposer_module
+//
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
+//-----------------------------------------------------------------------------
+#include <disposer/component.hpp>
+#include <disposer/module.hpp>
 
 #include <http/server_server.hpp>
 #include <http/server_file_request_handler.hpp>
@@ -9,11 +16,14 @@
 #include <http/websocket_server_json_service.hpp>
 
 #include <boost/property_tree/ptree.hpp>
+#include <boost/dll.hpp>
 
-#include <set>
+
+namespace disposer_module::http_server_component{
 
 
-namespace disposer_module{
+	using namespace disposer::literals;
+	namespace hana = boost::hana;
 
 
 	class live_service: public http::websocket::server::json_service{
@@ -60,10 +70,11 @@ namespace disposer_module{
 	};
 
 
+	template < typename Component >
 	class live_chain{
 	public:
-		live_chain(::disposer::disposer& disposer, std::string const& chain)
-			: disposer_(disposer)
+		live_chain(Component& component, std::string const& chain)
+			: component_(component)
 			, chain_(chain)
 			, active_(true)
 			, thread_([this]{
@@ -72,7 +83,8 @@ namespace disposer_module{
 						[this](logsys::stdlogb& os){
 							os << "chain(" << chain_ << ") server live exec";
 						}, [this]{
-							auto& chain = disposer_.get_chain(chain_);
+							auto& chain =
+								component_.disposer().get_chain(chain_);
 							disposer::chain_enable_guard enable(chain);
 							while(active_){
 								logsys::exception_catching_log(
@@ -102,15 +114,16 @@ namespace disposer_module{
 		}
 
 	private:
-		::disposer::disposer& disposer_;
+		Component& component_;
 		std::string chain_;
 		std::atomic< bool > active_;
 		std::thread thread_;
 	};
 
+	template < typename Component >
 	class control_service: public http::websocket::server::json_service{
 	public:
-		control_service(::disposer::disposer& disposer)
+		control_service(Component& component)
 			: http::websocket::server::json_service(
 				[this](
 					boost::property_tree::ptree const& data,
@@ -130,7 +143,7 @@ namespace disposer_module{
 						if(live){
 							if(*live){
 								active_chains_.try_emplace(
-									*chain_name, disposer_, *chain_name);
+									*chain_name, component_, *chain_name);
 							}else{
 								active_chains_.erase(*chain_name);
 							}
@@ -151,7 +164,8 @@ namespace disposer_module{
 									+ "' while it is in live mode");
 							}
 
-							auto& chain = disposer_.get_chain(*chain_name);
+							auto& chain =
+								component_.disposer().get_chain(*chain_name);
 							disposer::chain_enable_guard enable(chain);
 
 							boost::property_tree::ptree answer;
@@ -178,8 +192,8 @@ namespace disposer_module{
 					std::lock_guard< std::mutex > lock(mutex_);
 					controller_.erase(con);
 				}
-			)
-			, disposer_(disposer) {}
+			),
+			component_(component) {}
 
 		~control_service(){
 			shutdown();
@@ -212,20 +226,38 @@ namespace disposer_module{
 			return answer;
 		}
 
-		::disposer::disposer& disposer_;
+		Component& component_;
 
 		std::mutex mutex_;
 
 		std::set< http::server::connection_ptr > controller_;
 
-		std::map< std::string, live_chain > active_chains_;
+		std::map< std::string, live_chain< Component > > active_chains_;
 	};
 
 
+	class websocket_identifier{
+	private:
+		websocket_identifier(std::string const& name)
+			: name(name) {}
+
+		std::string const& name;
+
+		template < typename Component >
+		friend class request_handler;
+	};
+
+	struct http_server_init_t{
+		websocket_identifier key;
+		bool success;
+	};
+
+
+	template < typename Component >
 	class request_handler: public http::server::lambda_request_handler{
 	public:
 		request_handler(
-				::disposer::disposer& disposer,
+				Component& component,
 				std::string const& http_root_path)
 			: http::server::lambda_request_handler(
 				[this](
@@ -243,7 +275,7 @@ namespace disposer_module{
 				}
 			)
 			, http_file_handler_(http_root_path)
-			, control_service_(disposer)
+			, control_service_(component)
 		{
 			auto success = websocket_handler_.register_service(
 				"controller", control_service_);
@@ -294,55 +326,105 @@ namespace disposer_module{
 		std::map< std::string, live_service > websocket_services_;
 
 		/// \brief WebSocket service for disposer control messages
-		control_service control_service_;
+		control_service< Component > control_service_;
 	};
 
 
-	struct http_server_impl{
-		http_server_impl(
-				::disposer::disposer& disposer,
-				std::string const& root,
-				std::size_t port)
-			: disposer(disposer)
-			, handler(disposer, root)
-			, server(std::to_string(port), handler, 2) {}
-
-		::disposer::disposer const& disposer;
-		request_handler handler;
-		http::server::server server;
-	};
-
-
-	http_server::http_server(
-			::disposer::disposer& disposer,
+	template < typename Component >
+	class http_server{
+	public:
+		http_server(
+			Component& component,
 			std::string const& root,
-			std::size_t port)
-		: impl_(std::make_unique< http_server_impl >(disposer, root, port)) {}
+			std::uint16_t port,
+			std::size_t thread_count
+		)
+			: handler_(component, root)
+			, server_(std::to_string(port), handler_, thread_count) {}
 
-	http_server::http_server(http_server&&) = default;
+		http_server(http_server&&) = default;
 
-	http_server_init_t http_server::init(std::string const& service_name){
-		return impl_->handler.init(service_name);
-	}
+		~http_server(){
+			handler_.shutdown();
+		}
 
-	websocket_identifier http_server::unique_init(
-		std::string const& service_name
+		http_server_init_t init(std::string const& service_name){
+			return handler_.init(service_name);
+		}
+
+		websocket_identifier unique_init(std::string const& service_name){
+			return handler_.unique_init(service_name);
+		}
+
+		void uninit(websocket_identifier key){
+			return handler_.uninit(key);
+		}
+
+		void send(websocket_identifier key, std::string const& data){
+			return handler_.send(key, data);
+		}
+
+
+	private:
+		request_handler< Component > handler_;
+		http::server::server server_;
+	};
+
+
+	void init_component(
+		std::string const& name,
+		disposer::component_declarant& declarant
 	){
-		return impl_->handler.unique_init(service_name);
+		using namespace std::literals::string_literals;
+		using namespace disposer;
+
+		auto init = make_component_register_fn(
+			component_configure(
+				"root"_param(hana::type_c< std::string >),
+				"port"_param(hana::type_c< std::uint16_t >,
+					default_values(std::uint16_t(8000))),
+				"thread_count"_param(hana::type_c< std::size_t >,
+					default_values(std::size_t(2)),
+					value_verify([](auto const& /*iop*/, std::size_t value){
+						if(value > 0) return;
+						throw std::logic_error("must be greater or equal 1");
+					}))
+			),
+			[](auto& component){
+				return http_server< decltype(component) >(
+					component,
+					component("root"_param).get(),
+					component("port"_param).get(),
+					component("thread_count"_param).get());
+			},
+			component_modules(
+				"websocket"_module(
+					module_configure(
+						"data"_in(hana::type_c< std::string >, required),
+						"service_name"_param(hana::type_c< std::string >)
+					),
+					normal_id_increase(),
+					[](auto& component, auto const& module){
+						auto init = component.data()
+							.init(module("service_name"_param).get());
+						auto key = init.key;
+						return [&component, key]
+							(auto& module, std::size_t /*id*/){
+								auto list = module("data"_in).get_references();
+								if(list.empty()) return;
+								auto iter = list.end();
+								--iter;
+								component.data().send(key, iter->second.get());
+							};
+					}
+				)
+			)
+		);
+
+		init(name, declarant);
 	}
 
-	void http_server::uninit(websocket_identifier key){
-		return impl_->handler.uninit(key);
-	}
-
-	void http_server::send(websocket_identifier key, std::string const& data){
-		return impl_->handler.send(key, data);
-	}
-
-	http_server::~http_server(){
-		if(impl_) impl_->handler.shutdown();
-	}
-
+	BOOST_DLL_AUTO_ALIAS(init_component)
 
 
 }

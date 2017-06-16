@@ -6,9 +6,6 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 //-----------------------------------------------------------------------------
-#include "http_server.hpp"
-#include "websocket.hpp"
-
 #include <logsys/stdlogb.hpp>
 
 #include <disposer/disposer.hpp>
@@ -66,21 +63,12 @@ int main(int argc, char** argv){
 	}
 
 	// modules must be deleted last, to access the destructors in shared libs
-	std::list< boost::dll::shared_library > modules;
+	std::list< boost::dll::shared_library > libraries;
 	::disposer::disposer disposer;
-
-	auto server = logsys::log(
-		[](logsys::stdlogb& os){ os << "create http server"; },
-		[&disposer]{ return disposer_module::http_server(disposer,
-			"/home/bebuch/media/projekte/disposer_module/test/html/", 8000);
-		});
 
 	if(!logsys::exception_catching_log([](
 		logsys::stdlogb& os){ os << "loading modules"; },
-	[&disposer, &modules, &server]{
-		disposer_module::websocket::register_module(
-			"websocket", disposer.module_declarant(), server);
-
+	[&disposer, &libraries]{
 		auto program_dir = boost::dll::program_location().remove_filename();
 		std::cout << "Search for DLLs in '" << program_dir << "'" << std::endl;
 
@@ -96,11 +84,19 @@ int main(int argc, char** argv){
 			logsys::log([&lib_name](logsys::stdlogb& os){
 				os << "load shared library '" << lib_name << "'";
 			}, [&]{
-				modules.emplace_back(file.path().string(),
+				auto& library = libraries.emplace_back(file.path().string(),
 					boost::dll::load_mode::rtld_deepbind);
 
-				if(modules.back().has("init")){
-					modules.back().get_alias<
+				if(library.has("init_component")){
+					library.get_alias<
+							void(
+								std::string const&,
+								::disposer::component_declarant&
+							)
+						>("init_component")(lib_name,
+							disposer.component_declarant());
+				}else if(library.has("init")){
+					library.get_alias<
 							void(
 								std::string const&,
 								::disposer::module_declarant&
@@ -109,7 +105,7 @@ int main(int argc, char** argv){
 				}else{
 					logsys::log([&lib_name](logsys::stdlogb& os){
 						os << "shared library '" << lib_name
-							<< "' is not a module";
+							<< "' is nighter a component nor a module";
 					});
 				}
 			});

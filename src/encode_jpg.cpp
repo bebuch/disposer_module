@@ -76,7 +76,7 @@ namespace disposer_module::encode_jpg{
 
 
 	void init(std::string const& name, module_declarant& disposer){
-		auto init = make_module_register_fn(
+		auto init = module_register_fn(
 			module_configure(
 				"image"_in(types,
 					template_transform_c< bitmap >,

@@ -286,7 +286,7 @@ namespace disposer_module::bitmap_vector_join{
 
 
 	void init(std::string const& name, module_declarant& disposer){
-		auto init = make_module_register_fn(
+		auto init = module_register_fn(
 			module_configure(
 				"images"_in(types,
 					type_transform([](auto type)noexcept{

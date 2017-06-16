@@ -560,7 +560,7 @@ namespace disposer_module::camera_ximea{
 
 
 	void init(std::string const& name, component_declarant& declarant){
-		auto init = make_component_register_fn(
+		auto init = component_register_fn(
 			component_configure(
 				"format"_param(type_c< pixel_format >,
 					parser([](
@@ -606,7 +606,7 @@ namespace disposer_module::camera_ximea{
 			},
 			component_modules(
 				"capture"_module([](auto& component){
-					return make_module_register_fn(
+					return module_register_fn(
 						module_configure(
 							"image"_out(types,
 								template_transform_c< bitmap >,

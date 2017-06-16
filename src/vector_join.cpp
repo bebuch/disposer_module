@@ -81,7 +81,7 @@ namespace disposer_module::vector_join{
 
 
 	void init(std::string const& name, module_declarant& disposer){
-		auto init = make_module_register_fn(
+		auto init = module_register_fn(
 			module_configure(
 				"data"_in(types,
 					required),

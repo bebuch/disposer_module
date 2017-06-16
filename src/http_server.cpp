@@ -382,7 +382,7 @@ namespace disposer_module::http_server_component{
 		using namespace std::literals::string_literals;
 		using namespace disposer;
 
-		auto init = make_component_register_fn(
+		auto init = component_register_fn(
 			component_configure(
 				"root"_param(hana::type_c< std::string >),
 				"port"_param(hana::type_c< std::uint16_t >,
@@ -403,7 +403,7 @@ namespace disposer_module::http_server_component{
 			},
 			component_modules(
 				"websocket"_module([](auto& component){
-					return make_module_register_fn(
+					return module_register_fn(
 						module_configure(
 							"data"_in(hana::type_c< std::string >, required),
 							"service_name"_param(hana::type_c< std::string >)

@@ -348,7 +348,7 @@ namespace disposer_module::camera_gige_vision{
 
 
 	void init(std::string const& name, module_declarant& disposer){
-		auto init = make_module_register_fn(
+		auto init = module_register_fn(
 			module_configure(
 				"format"_param(type_c< pixel_format >,
 					parser([](

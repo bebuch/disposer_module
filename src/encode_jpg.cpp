@@ -92,8 +92,8 @@ namespace disposer_module::encode_jpg{
 					default_values(std::size_t(90)))
 			),
 			normal_id_increase(),
-			module_enable([](auto const& /*module*/){
-				return [](auto& module, std::size_t /*id*/){
+			module_enable([]{
+				return [](auto& module){
 					auto values = module("image"_in).get_references();
 					for(auto const& pair: values){
 						std::visit([&module](auto const& img){

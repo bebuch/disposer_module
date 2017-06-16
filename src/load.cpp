@@ -204,7 +204,7 @@ namespace disposer_module::load{
 					}))
 			),
 			normal_id_increase(),
-			module_enable([](auto const& /*module*/){
+			module_enable([]{
 				return [](auto& module, std::size_t id){
 					auto fixed_id = module("fixed_id"_param).get();
 					if(fixed_id) id = *fixed_id;

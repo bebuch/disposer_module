@@ -309,8 +309,8 @@ namespace disposer_module::bitmap_vector_join{
 					enable_by_types_of("images"_in))
 			),
 			normal_id_increase(),
-			module_enable([](auto const& /*module*/){
-				return [](auto& module, std::size_t /*id*/){
+			module_enable([]{
+				return [](auto& module){
 					auto values = module("images"_in).get_references();
 					for(auto const& pair: values){
 						std::visit([&module](auto const& imgs_ref){

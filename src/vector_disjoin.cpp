@@ -54,8 +54,8 @@ namespace disposer_module::vector_disjoin{
 			[](auto const& module){
 				return id_increase_t{module("count"_param).get(), 1};
 			},
-			module_enable([](auto const& /*module*/){
-				return [](auto& module, std::size_t /*id*/){
+			module_enable([]{
+				return [](auto& module){
 					auto values = module("list"_in).get_values();
 					for(auto&& pair: values){
 						std::visit([&module](auto&& list){

@@ -146,8 +146,8 @@ namespace disposer_module::decode_png{
 				)
 			),
 			normal_id_increase(),
-			module_enable([](auto const& /*module*/){
-				return [](auto& module, std::size_t /*id*/){
+			module_enable([]{
+				return [](auto& module){
 					auto& out = module("image"_out);
 					auto values = module("data"_in).get_references();
 					for(auto const& pair: values){

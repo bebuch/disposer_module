@@ -99,7 +99,7 @@ namespace disposer_module::vector_join{
 			[](auto const& module){
 				return id_increase_t{1, module("count"_param).get()};
 			},
-			module_enable([](auto const& /*module*/){
+			module_enable([]{
 				return exec{};
 			})
 		);

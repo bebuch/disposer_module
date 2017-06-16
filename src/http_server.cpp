@@ -414,7 +414,7 @@ namespace disposer_module::http_server_component{
 								.init(module("service_name"_param).get());
 							auto key = init.key;
 							return [&component, key]
-								(auto& module, std::size_t /*id*/){
+								(auto& module){
 									auto list =
 										module("data"_in).get_references();
 									if(list.empty()) return;

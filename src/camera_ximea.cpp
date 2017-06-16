@@ -600,7 +600,7 @@ namespace disposer_module::camera_ximea{
 					default_values(std::size_t(10000))
 				)
 			),
-			disposer::component_init([](auto& component){
+			component_init([](auto& component){
 				return ximea_cam_init< std::decay_t< decltype(component) > >
 					(component);
 			}),

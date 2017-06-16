@@ -394,7 +394,7 @@ namespace disposer_module::http_server_component{
 						throw std::logic_error("must be greater or equal 1");
 					}))
 			),
-			disposer::component_init([](auto& component){
+			component_init([](auto& component){
 				return http_server< decltype(component) >(
 					component,
 					component("root"_param).get(),

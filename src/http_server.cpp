@@ -345,6 +345,10 @@ namespace disposer_module::http_server_component{
 		http_server(http_server&&) = default;
 
 		~http_server(){
+			shutdown();
+		}
+
+		void shutdown(){
 			handler_.shutdown();
 		}
 

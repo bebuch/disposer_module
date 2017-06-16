@@ -9,7 +9,7 @@
 #include <bitmap/bitmap.hpp>
 #include <bitmap/pixel.hpp>
 
-#include <disposer/module.hpp>
+#include <disposer/component.hpp>
 
 #include <boost/dll.hpp>
 
@@ -239,11 +239,11 @@ namespace disposer_module::camera_ximea{
 	}
 
 
-	template < typename Module >
+	template < typename Component >
 	class ximea_cam_params{
 	public:
-		constexpr ximea_cam_params(Module const& module, HANDLE handle)noexcept
-			: module_(module)
+		constexpr ximea_cam_params(Component const& component, HANDLE handle)noexcept
+			: component_(component)
 			, handle_(handle) {}
 
 		void set(std::string const& name, int value)const;
@@ -256,40 +256,40 @@ namespace disposer_module::camera_ximea{
 
 
 	private:
-		Module const& module_;
+		Component const& component_;
 		HANDLE handle_;
 	};
 
-	template < typename Module >
-	void ximea_cam_params< Module >::set(
+	template < typename Component >
+	void ximea_cam_params< Component >::set(
 		std::string const& name,
 		int value
 	)const{
-		module_.log([&](logsys::stdlogb& os){
+		component_.log([&](logsys::stdlogb& os){
 			os << "set param: " << name << " = " << value;
 		}, [&]{
 			verify(xiSetParamInt(handle_, name.c_str(), value));
 		});
 	}
 
-	template < typename Module >
-	void ximea_cam_params< Module >::set(
+	template < typename Component >
+	void ximea_cam_params< Component >::set(
 		std::string const& name,
 		float value
 	)const{
-		module_.log([&](logsys::stdlogb& os){
+		component_.log([&](logsys::stdlogb& os){
 			os << "set param: " << name << " = " << value;
 		}, [&]{
 			verify(xiSetParamFloat(handle_, name.c_str(), value));
 		});
 	}
 
-	template < typename Module >
-	void ximea_cam_params< Module >::set(
+	template < typename Component >
+	void ximea_cam_params< Component >::set(
 		std::string const& name,
 		std::string const& value
 	)const{
-		module_.log([&](logsys::stdlogb& os){
+		component_.log([&](logsys::stdlogb& os){
 			os << "set param: " << name << " = " << value;
 		}, [&]{
 			verify(xiSetParamString(handle_, name.c_str(),
@@ -297,12 +297,12 @@ namespace disposer_module::camera_ximea{
 		});
 	}
 
-	template < typename Module >
-	int ximea_cam_params< Module >::get_int(
+	template < typename Component >
+	int ximea_cam_params< Component >::get_int(
 		std::string const& name
 	)const{
 		std::optional< int > value;
-		module_.log([&](logsys::stdlogb& os){
+		component_.log([&](logsys::stdlogb& os){
 			os << "get param: " << name;
 			if(value) os << " = " << *value;
 		}, [&]{
@@ -313,12 +313,12 @@ namespace disposer_module::camera_ximea{
 		return *value;
 	}
 
-	template < typename Module >
-	float ximea_cam_params< Module >::get_float(
+	template < typename Component >
+	float ximea_cam_params< Component >::get_float(
 		std::string const& name
 	)const{
 		std::optional< float > value;
-		module_.log([&](logsys::stdlogb& os){
+		component_.log([&](logsys::stdlogb& os){
 			os << "get param: " << name;
 			if(value) os << " = " << *value;
 		}, [&]{
@@ -329,12 +329,12 @@ namespace disposer_module::camera_ximea{
 		return *value;
 	}
 
-	template < typename Module >
-	std::string ximea_cam_params< Module >::get_string(
+	template < typename Component >
+	std::string ximea_cam_params< Component >::get_string(
 		std::string const& name
 	)const{
 		std::optional< std::string > value;
-		module_.log([&](logsys::stdlogb& os){
+		component_.log([&](logsys::stdlogb& os){
 			os << "get param: " << name;
 			if(value) os << " = " << *value;
 		}, [&]{
@@ -350,8 +350,11 @@ namespace disposer_module::camera_ximea{
 
 
 	struct ximea_cam{
-		template < typename T, typename Module >
-		bitmap< T > get_image(Module const& module, HANDLE handle)const;
+		template < typename T, typename Component >
+		bitmap< T > get_image(
+			Component const& component,
+			HANDLE handle
+		)const;
 
 		std::size_t const width = 0;
 		std::size_t const height = 0;
@@ -363,8 +366,11 @@ namespace disposer_module::camera_ximea{
 		bool const payload_pass = false;
 	};
 
-	template < typename T, typename Module >
-	bitmap< T > ximea_cam::get_image(Module const& module, HANDLE handle)const{
+	template < typename T, typename Component >
+	bitmap< T > ximea_cam::get_image(
+		Component const& component,
+		HANDLE handle
+	)const{
 		bitmap< T > mosaic(width, height);
 		if(payload_pass){
 			XI_IMG image{}; // {} makes the 0-initialization
@@ -398,16 +404,16 @@ namespace disposer_module::camera_ximea{
 			}
 		}
 
-		if(module("use_camera_region"_param).get()) return mosaic;
+		if(component("use_camera_region"_param).get()) return mosaic;
 
 		auto rect = ::bitmap::make_rect(
 			::bitmap::make_point(
-				module("x_offset"_param).get(),
-				module("y_offset"_param).get()
+				component("x_offset"_param).get(),
+				component("y_offset"_param).get()
 			),
 			::bitmap::make_size(
-				module("width"_param).get(),
-				module("height"_param).get()
+				component("width"_param).get(),
+				component("height"_param).get()
 			)
 		);
 
@@ -430,12 +436,12 @@ namespace disposer_module::camera_ximea{
 		return handle;
 	}
 
-	template < typename Module >
-	ximea_cam make_ximea_cam(Module const& module, HANDLE handle){
-		ximea_cam_params< Module > params(module, handle);
+	template < typename Component >
+	ximea_cam make_ximea_cam(Component const& component, HANDLE handle){
+		ximea_cam_params< Component > params(component, handle);
 		params.set(XI_PRM_BUFFER_POLICY, XI_BP_SAFE);
 
-		switch(module("format"_param).get()){
+		switch(component("format"_param).get()){
 			case pixel_format::mono8:
 				params.set(XI_PRM_IMAGE_DATA_FORMAT, XI_MONO8);
 				break;
@@ -460,10 +466,10 @@ namespace disposer_module::camera_ximea{
 		auto cam_width = cam_full_width;
 		auto cam_height = cam_full_height;
 
-		auto const x = module("x_offset"_param).get();
-		auto const y = module("y_offset"_param).get();
-		auto const width = module("width"_param).get();
-		auto const height = module("height"_param).get();
+		auto const x = component("x_offset"_param).get();
+		auto const y = component("y_offset"_param).get();
+		auto const width = component("width"_param).get();
+		auto const height = component("height"_param).get();
 		if(x + width > cam_full_width || y + height > cam_full_height){
 			std::ostringstream os;
 			os << "parameter region is out of range (x: " << x << ", y: "
@@ -473,7 +479,7 @@ namespace disposer_module::camera_ximea{
 			throw std::logic_error(os.str());
 		}
 
-		if(module("use_camera_region"_param).get()){
+		if(component("use_camera_region"_param).get()){
 			params.set(XI_PRM_REGION_SELECTOR, 0);
 			params.set(XI_PRM_HEIGHT, static_cast< int >(height));
 			params.set(XI_PRM_WIDTH, static_cast< int >(width));
@@ -490,7 +496,7 @@ namespace disposer_module::camera_ximea{
 		auto const payload_pass = (cam_width * cam_height == payload_size);
 
 		params.set(XI_PRM_EXPOSURE,
-			static_cast< int >(module("exposure_time_ns"_param).get()));
+			static_cast< int >(component("exposure_time_ns"_param).get()));
 		verify(xiStartAcquisition(handle));
 
 		return ximea_cam{
@@ -503,18 +509,18 @@ namespace disposer_module::camera_ximea{
 		};
 	}
 
-	template < typename Module >
+	template < typename Component >
 	class ximea_cam_init{
 	public:
-		ximea_cam_init(Module const& module)
-			: module_(module)
-			, handle_(open_ximea_cam(module("cam_id"_param).get()))
-			, cam_(make_ximea_cam(module, handle_)) {}
+		ximea_cam_init(Component const& component)
+			: component_(component)
+			, handle_(open_ximea_cam(component("cam_id"_param).get()))
+			, cam_(make_ximea_cam(component, handle_)) {}
 
 		ximea_cam_init(ximea_cam_init const&) = delete;
 
 		ximea_cam_init(ximea_cam_init&& other):
-			module_(other.module_),
+			component_(other.component_),
 			handle_(other.handle_),
 			cam_(std::move(other.cam_))
 		{
@@ -528,51 +534,34 @@ namespace disposer_module::camera_ximea{
 				verify(xiStopAcquisition(handle_));
 				verify(xiCloseDevice(handle_));
 			}catch(std::exception const& e){
-				module_.log([&e](logsys::stdlogb& os){
+				component_.log([&e](logsys::stdlogb& os){
 					os << e.what();
 				});
 			}catch(...){
-				module_.log([](logsys::stdlogb& os){
+				component_.log([](logsys::stdlogb& os){
 					os << "unknown exception";
 				});
 			}
 		}
 
-		void operator()(to_exec_accessory_t< Module >& module, std::size_t){
-			switch(module("format"_param).get()){
-				case pixel_format::mono8:
-				case pixel_format::raw8:
-					module("image"_out).put(get_image< std::uint8_t >());
-					break;
-				case pixel_format::mono16:
-				case pixel_format::raw16:
-					module("image"_out).put(get_image< std::uint16_t >());
-					break;
-				case pixel_format::rgb8:
-					module("image"_out).put(get_image< pixel::rgb8u >());
-					break;
-			}
+		template < typename T >
+		bitmap< T > get_image(){
+			std::lock_guard lock(mutex);
+			return cam_.get_image< T >(component_, handle_);
 		}
 
 
 	private:
-		template < typename T >
-		bitmap< T > get_image()const{
-			return cam_.get_image< T >(
-				static_cast< to_exec_accessory_t< Module > const& >(module_),
-				handle_
-			);
-		}
-
-		Module const& module_;
+		Component const& component_;
 		HANDLE handle_ = nullptr;
 		ximea_cam cam_;
+		std::mutex mutex;
 	};
 
 
-	void init(std::string const& name, module_declarant& disposer){
-		auto init = make_module_register_fn(
-			module_configure(
+	void init(std::string const& name, component_declarant& declarant){
+		auto init = make_component_register_fn(
+			component_configure(
 				"format"_param(type_c< pixel_format >,
 					parser([](
 						auto const& /*iop*/,
@@ -593,21 +582,6 @@ namespace disposer_module::camera_ximea{
 						hana::make_pair(type_c< pixel_format >, "format"_s)
 					)
 				),
-				"image"_out(types,
-					template_transform_c< bitmap >,
-					enable([](auto const& iop, auto type){
-						auto const format = iop("format"_param).get();
-						return
-							(type == type_c< std::uint8_t > && (
-								format == pixel_format::mono8 ||
-								format == pixel_format::raw8)) ||
-							(type == type_c< std::uint16_t > && (
-								format == pixel_format::mono16 ||
-								format == pixel_format::raw16)) ||
-							(type == type_c< pixel::rgb8u > && (
-								format == pixel_format::rgb8));
-					})
-				),
 				"cam_id"_param(type_c< std::uint32_t >,
 					default_values(std::uint32_t(0))
 				),
@@ -626,15 +600,59 @@ namespace disposer_module::camera_ximea{
 					default_values(std::size_t(10000))
 				)
 			),
-			normal_id_increase(),
-			[](auto const& module){
-				return ximea_cam_init< std::decay_t< decltype(module) > >(
-					module
-				);
-			}
+			[](auto& component){
+				return ximea_cam_init< std::decay_t< decltype(component) > >
+					(component);
+			},
+			component_modules(
+				"capture"_module([](auto& component){
+					return make_module_register_fn(
+						module_configure(
+							"image"_out(types,
+								template_transform_c< bitmap >,
+								enable([&component](auto const& iop, auto type){
+									auto const format =
+										component("format"_param).get();
+									return
+										(type == type_c< std::uint8_t > && (
+											format == pixel_format::mono8 ||
+											format == pixel_format::raw8)) ||
+										(type == type_c< std::uint16_t > && (
+											format == pixel_format::mono16 ||
+											format == pixel_format::raw16)) ||
+										(type == type_c< pixel::rgb8u > && (
+											format == pixel_format::rgb8));
+								})
+							)
+						),
+						normal_id_increase(),
+						[&component](auto const& module){
+							return [&component](auto& module, std::size_t){
+								auto& out = module("image"_out);
+								switch(component("format"_param).get()){
+									case pixel_format::mono8:
+									case pixel_format::raw8:
+										out.put(component.data().template
+											get_image< std::uint8_t >());
+										break;
+									case pixel_format::mono16:
+									case pixel_format::raw16:
+										out.put(component.data().template
+											get_image< std::uint16_t >());
+										break;
+									case pixel_format::rgb8:
+										out.put(component.data().template
+											get_image< pixel::rgb8u >());
+										break;
+								}
+							};
+						}
+					);
+				})
+			)
 		);
 
-		init(name, disposer);
+		init(name, declarant);
 	}
 
 	BOOST_DLL_AUTO_ALIAS(init)

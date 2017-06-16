@@ -112,9 +112,9 @@ int main(int argc, char** argv){
 		}
 	})) return 1;
 
-	logsys::exception_catching_log(
+	if(!logsys::exception_catching_log(
 		[](logsys::stdlogb& os){ os << "load config file"; },
-		[&disposer]{ disposer.load("plan.ini"); });
+		[&disposer]{ disposer.load("plan.ini"); })) return -1;
 
 	if(server_mode){
 		std::cout << "Hit Enter to exit!" << std::endl;

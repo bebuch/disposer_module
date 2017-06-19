@@ -134,37 +134,37 @@ lib camera_ximea
 	<linkflags>-lm3api
 	;
 
-lib camera_gige_vision
-	:
-	camera_gige_vision.cpp
-	/logsys//logsys
-	/disposer//disposer
-	:
-	<cxxflags>-Wno-c99-extensions
-	<include>$(bitmap)/include
-	<include>$(aravis)/src
-	<include>/usr/include/glib-2.0
-	<include>/usr/lib/x86_64-linux-gnu/glib-2.0/include
-	<linkflags>-lm
-	<linkflags>-lgstapp-1.0
-	<linkflags>-lgstvideo-1.0
-	<linkflags>-lgstbase-1.0
-	<linkflags>-lgstreamer-1.0
-	<linkflags>-lgtk-3
-	<linkflags>-lgdk-3
-	<linkflags>-lpangocairo-1.0
-	<linkflags>-lpango-1.0
-	<linkflags>-latk-1.0
-	<linkflags>-lcairo-gobject
-	<linkflags>-lcairo
-	<linkflags>-lnotify
-	<linkflags>-lgdk_pixbuf-2.0
-	<linkflags>-lgio-2.0
-	<linkflags>-lgobject-2.0
-	<linkflags>-lglib-2.0
-	<linkflags>-L$(aravis)/src/.libs/
-	<linkflags>-laravis-0.6
-	;
+# lib camera_gige_vision
+# 	:
+# 	camera_gige_vision.cpp
+# 	/logsys//logsys
+# 	/disposer//disposer
+# 	:
+# 	<cxxflags>-Wno-c99-extensions
+# 	<include>$(bitmap)/include
+# 	<include>$(aravis)/src
+# 	<include>/usr/include/glib-2.0
+# 	<include>/usr/lib/x86_64-linux-gnu/glib-2.0/include
+# 	<linkflags>-lm
+# 	<linkflags>-lgstapp-1.0
+# 	<linkflags>-lgstvideo-1.0
+# 	<linkflags>-lgstbase-1.0
+# 	<linkflags>-lgstreamer-1.0
+# 	<linkflags>-lgtk-3
+# 	<linkflags>-lgdk-3
+# 	<linkflags>-lpangocairo-1.0
+# 	<linkflags>-lpango-1.0
+# 	<linkflags>-latk-1.0
+# 	<linkflags>-lcairo-gobject
+# 	<linkflags>-lcairo
+# 	<linkflags>-lnotify
+# 	<linkflags>-lgdk_pixbuf-2.0
+# 	<linkflags>-lgio-2.0
+# 	<linkflags>-lgobject-2.0
+# 	<linkflags>-lglib-2.0
+# 	<linkflags>-L$(aravis)/src/.libs/
+# 	<linkflags>-laravis-0.6
+# 	;
 
 lib show_image
 	:

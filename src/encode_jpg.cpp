@@ -91,16 +91,15 @@ namespace disposer_module::encode_jpg{
 					}),
 					default_values(std::size_t(90)))
 			),
-			normal_id_increase(),
 			module_enable([]{
 				return [](auto& module){
 					auto values = module("image"_in).get_references();
-					for(auto const& pair: values){
+					for(auto const& value: values){
 						std::visit([&module](auto const& img){
 							auto const quality = module("quality"_param).get();
 							module("data"_out).put(to_jpg_image(
 								img.get(), static_cast< int >(quality)));
-						}, pair.second);
+						}, value);
 					}
 				};
 			})

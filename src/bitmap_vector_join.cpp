@@ -308,15 +308,14 @@ namespace disposer_module::bitmap_vector_join{
 					parser(value_parser()),
 					enable_by_types_of("images"_in))
 			),
-			normal_id_increase(),
 			module_enable([]{
 				return [](auto& module){
 					auto values = module("images"_in).get_references();
-					for(auto const& pair: values){
+					for(auto const& value: values){
 						std::visit([&module](auto const& imgs_ref){
 							module("image"_out).put(
 								bitmap_vector_join(module, imgs_ref.get()));
-						}, pair.second);
+						}, value);
 					}
 				};
 			})

@@ -156,15 +156,14 @@ namespace disposer_module::demosaic{
 					})
 				)
 			),
-			normal_id_increase(),
 			module_enable([]{
 				return [](auto& module){
 					auto values = module("image"_in).get_references();
-					for(auto const& pair: values){
+					for(auto const& value: values){
 						std::visit([&module](auto const& img_ref){
 							module("images"_out).put(
 								demosaic(module, img_ref.get()));
-						}, pair.second);
+						}, value);
 					}
 				};
 			})

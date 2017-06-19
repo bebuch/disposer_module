@@ -55,8 +55,8 @@ namespace disposer_module::vector_join{
 		template < typename Module >
 		void operator()(Module& module, std::size_t /*id*/){
 			auto values = module("data"_in).get_values();
-			for(auto&& pair: values){
-				auto&& data = std::move(pair.second);
+			for(auto&& value: values){
+				auto&& data = std::move(value);
 				std::visit([&](auto& out, auto&& in){
 					auto types_equal =
 						hana::typeid_(out.front()) == hana::typeid_(in);
@@ -96,9 +96,6 @@ namespace disposer_module::vector_join{
 					})
 				)
 			),
-			[](auto const& module){
-				return id_increase_t{1, module("count"_param).get()};
-			},
 			module_enable([]{
 				return exec{};
 			})

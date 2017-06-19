@@ -625,7 +625,6 @@ namespace disposer_module::camera_ximea{
 								})
 							)
 						),
-						normal_id_increase(),
 						module_enable([&component](auto const& module){
 							return [&component](auto& module, std::size_t){
 								auto& out = module("image"_out);

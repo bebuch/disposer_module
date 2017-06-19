@@ -203,7 +203,6 @@ namespace disposer_module::load{
 						return out.is_enabled(type_c< t3 >);
 					}))
 			),
-			normal_id_increase(),
 			module_enable([]{
 				return [](auto& module, std::size_t id){
 					auto fixed_id = module("fixed_id"_param).get();

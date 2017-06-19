@@ -148,13 +148,12 @@ namespace disposer_module::save{
 					)
 				)
 			),
-			normal_id_increase(),
 			module_enable([]{
-				return [](auto& module){
+				return [](auto& module, std::size_t exec_id){
 					auto values = module("content"_in).get_references();
-					for(auto const& pair: values){
+					for(auto const& value: values){
 						auto const fixed_id = module("fixed_id"_param).get();
-						auto id = fixed_id ? *fixed_id : pair.first;
+						auto id = fixed_id ? *fixed_id : exec_id;
 
 						auto const id_modulo = module("id_modulo"_param).get();
 						if(id_modulo) id %= *id_modulo;
@@ -169,7 +168,7 @@ namespace disposer_module::save{
 									data_ref.get()
 								);
 							},
-							pair.second);
+							value);
 					}
 				};
 			})

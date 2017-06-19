@@ -145,13 +145,12 @@ namespace disposer_module::decode_png{
 					})
 				)
 			),
-			normal_id_increase(),
 			module_enable([]{
 				return [](auto& module){
 					auto& out = module("image"_out);
 					auto values = module("data"_in).get_references();
-					for(auto const& pair: values){
-						auto const& data = pair.second;
+					for(auto const& value: values){
+						auto const& data = value;
 						switch(module("format"_param).get()){
 						case format::g8:
 							out.put(decode_png< std::uint8_t >(data));

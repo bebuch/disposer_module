@@ -408,7 +408,6 @@ namespace disposer_module::http_server_component{
 							"data"_in(hana::type_c< std::string >, required),
 							"service_name"_param(hana::type_c< std::string >)
 						),
-						normal_id_increase(),
 						module_enable([&component](auto const& module){
 							auto init = component.data()
 								.init(module("service_name"_param).get());
@@ -421,7 +420,7 @@ namespace disposer_module::http_server_component{
 									auto iter = list.end();
 									--iter;
 									component.data().send(key,
-										iter->second.get());
+										iter->get());
 								};
 						})
 					);

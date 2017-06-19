@@ -51,13 +51,10 @@ namespace disposer_module::vector_disjoin{
 					})
 				)
 			),
-			[](auto const& module){
-				return id_increase_t{module("count"_param).get(), 1};
-			},
 			module_enable([]{
 				return [](auto& module){
 					auto values = module("list"_in).get_values();
-					for(auto&& pair: values){
+					for(auto&& value: values){
 						std::visit([&module](auto&& list){
 							auto const count = module("count"_param).get();
 							if(list.size() != count){
@@ -70,7 +67,7 @@ namespace disposer_module::vector_disjoin{
 							for(auto&& data: std::move(list)){
 								module("data"_out).put(std::move(data));
 							}
-						}, std::move(pair.second));
+						}, std::move(value));
 					}
 				};
 			})

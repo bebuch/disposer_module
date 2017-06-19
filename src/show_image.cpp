@@ -99,14 +99,12 @@ namespace disposer_module::show_image{
 					required),
 				"window_title"_param(hana::type_c< std::string >)
 			),
-			normal_id_increase(),
 			module_enable([](auto const& module){
 				return [data_ = resources(module("window_title"_param).get())]
-					(auto& module, std::size_t /*id*/)mutable
+					(auto& module)mutable
 				{
-					for(auto const& pair: module("image"_in).get_references()){
-						auto const& img_data = pair.second;
-
+					auto values = module("image"_in).get_references();
+					for(auto const& img_data: values){
 						std::visit(assign_visitor(data_.img), img_data);
 						std::visit([&data_](auto const& img){
 							if(

@@ -18,6 +18,8 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/dll.hpp>
 
+#include <shared_mutex>
+
 
 namespace disposer_module::http_server_component{
 
@@ -36,24 +38,24 @@ namespace disposer_module::http_server_component{
 				){
 					try{
 						if(!data.get< bool >(ready_signal_)) return;
-						std::lock_guard< std::mutex > lock(mutex_);
+						std::shared_lock lock(mutex_);
 						ready_.at(con) = true;
 					}catch(...){}
 				},
 				http::websocket::server::data_callback_fn(),
 				[this](http::server::connection_ptr const& con){
-					std::lock_guard< std::mutex > lock(mutex_);
+					std::unique_lock lock(mutex_);
 					ready_.emplace(con, false);
 				},
 				[this](http::server::connection_ptr const& con){
-					std::lock_guard< std::mutex > lock(mutex_);
+					std::unique_lock lock(mutex_);
 					ready_.erase(con);
 				}
 			),
 			ready_signal_(ready_signal) {}
 
 		void send(std::string const& data){
-			std::lock_guard< std::mutex > lock(mutex_);
+			std::shared_lock lock(mutex_);
 			for(auto& pair: ready_){
 				if(!pair.second) continue;
 				pair.second = false;
@@ -65,7 +67,7 @@ namespace disposer_module::http_server_component{
 	private:
 		std::string const ready_signal_;
 
-		std::mutex mutex_;
+		std::shared_mutex mutex_;
 		std::map< http::server::connection_ptr, bool > ready_;
 	};
 

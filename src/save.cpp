@@ -31,9 +31,12 @@ namespace disposer_module::save{
 
 	constexpr auto types = hana::tuple_t< t1, t2, t3 >;
 
-	using ng1 = name_generator< std::size_t >;
-	using ng2 = name_generator< std::size_t, std::size_t >;
-	using ng3 = name_generator< std::size_t, std::size_t, std::size_t >;
+	using ng1 =
+		name_generator< std::size_t, std::size_t >;
+	using ng2 =
+		name_generator< std::size_t, std::size_t, std::size_t >;
+	using ng3 =
+		name_generator< std::size_t, std::size_t, std::size_t, std::size_t >;
 
 	constexpr auto name_generator_types = hana::tuple_t< ng1, ng2, ng3 >;
 
@@ -41,38 +44,61 @@ namespace disposer_module::save{
 		hana::make_pair, types, name_generator_types), hana::make_map);
 
 
-	void save(
-		std::size_t id,
-		ng1 const& name,
-		std::string const& data
-	){
-		std::ofstream os(name(id).c_str(),
-			std::ios::out | std::ios::binary);
-		os.write(data.data(), data.size());
+	void verify_open(std::ofstream& os, std::string const& filename){
+		if(os) return;
+		throw std::runtime_error("Can not open file '" + filename
+			+ "' for write");
+	}
+
+	void verify_write(std::ofstream& os, std::string const& filename){
+		if(os) return;
+		throw std::runtime_error("Can not write to file '" + filename + "'");
 	}
 
 	void save(
 		std::size_t id,
+		std::size_t subid,
+		ng1 const& name,
+		std::string const& data
+	){
+		auto const filename = name(id, subid);
+		std::ofstream os(filename.c_str(),
+			std::ios::out | std::ios::binary);
+		verify_open(os, filename);
+		os.write(data.data(), data.size());
+		verify_write(os, filename);
+	}
+
+	void save(
+		std::size_t id,
+		std::size_t subid,
 		ng2 const& name,
 		std::vector< std::string > const& data
 	){
 		for(std::size_t i = 0; i < data.size(); ++i){
-			std::ofstream os(name(id, i).c_str(),
+			auto const filename = name(id, subid, i);
+			std::ofstream os(filename.c_str(),
 				std::ios::out | std::ios::binary);
+			verify_open(os, filename);
 			os.write(data[i].data(), data[i].size());
+			verify_write(os, filename);
 		}
 	}
 
 	void save(
 		std::size_t id,
+		std::size_t subid,
 		ng3 const& name,
 		std::vector< std::vector< std::string > > const& data
 	){
 		for(std::size_t i = 0; i < data.size(); ++i){
 			for(std::size_t j = 0; j < data.size(); ++j){
-				std::ofstream os(name(id, i, j).c_str(),
+				auto const filename = name(id, subid, i, j);
+				std::ofstream os(filename.c_str(),
 					std::ios::out | std::ios::binary);
+				verify_open(os, filename);
 				os.write(data[i][j].data(), data[i][j].size());
+				verify_write(os, filename);
 			}
 		}
 	}
@@ -97,6 +123,8 @@ namespace disposer_module::save{
 				"id_modulo"_param(type_c< std::optional< std::size_t > >),
 				"id_digits"_param(type_c< std::size_t >,
 					default_values(std::size_t(4))),
+				"subid_digits"_param(type_c< std::size_t >,
+					default_values(std::size_t(1))),
 				"i_digits"_param(type_c< std::size_t >,
 					default_values(std::size_t(2))),
 				"j_digits"_param(type_c< std::size_t >,
@@ -119,13 +147,17 @@ namespace disposer_module::save{
 							return make_name_generator(
 								data,
 								std::make_pair("id",
-									format{iop("id_digits"_param).get()})
+									format{iop("id_digits"_param).get()}),
+								std::make_pair("subid",
+									format{iop("subid_digits"_param).get()})
 							);
 						}else if constexpr(type == type_c< ng2 >){
 							return make_name_generator(
 								data,
 								std::make_pair("id",
 									format{iop("id_digits"_param).get()}),
+								std::make_pair("subid",
+									format{iop("subid_digits"_param).get()}),
 								std::make_pair("i",
 									format{iop("i_digits"_param).get()})
 							);
@@ -134,6 +166,8 @@ namespace disposer_module::save{
 								data,
 								std::make_pair("id",
 									format{iop("id_digits"_param).get()}),
+								std::make_pair("subid",
+									format{iop("subid_digits"_param).get()}),
 								std::make_pair("i",
 									format{iop("i_digits"_param).get()}),
 								std::make_pair("j",
@@ -151,6 +185,7 @@ namespace disposer_module::save{
 			module_enable([]{
 				return [](auto& module, std::size_t exec_id){
 					auto values = module("content"_in).get_references();
+					std::size_t subid = 0;
 					for(auto const& value: values){
 						auto const fixed_id = module("fixed_id"_param).get();
 						auto id = fixed_id ? *fixed_id : exec_id;
@@ -159,9 +194,9 @@ namespace disposer_module::save{
 						if(id_modulo) id %= *id_modulo;
 
 						std::visit(
-							[&module, id](auto const& data_ref){
+							[&module, id, subid](auto const& data_ref){
 								save(
-									id,
+									id, subid,
 									module("name"_param).get(
 										type_to_name_generator[
 											hana::typeid_(data_ref.get())]),
@@ -169,6 +204,8 @@ namespace disposer_module::save{
 								);
 							},
 							value);
+
+						++subid;
 					}
 				};
 			})

@@ -31,27 +31,47 @@ namespace disposer_module::load{
 
 	constexpr auto types = hana::tuple_t< t1, t2, t3 >;
 
-	using ng1 = name_generator< std::size_t >;
-	using ng2 = name_generator< std::size_t, std::size_t >;
-	using ng3 = name_generator< std::size_t, std::size_t, std::size_t >;
+	using ng1 =
+		name_generator< std::size_t, std::size_t >;
+	using ng2 =
+		name_generator< std::size_t, std::size_t, std::size_t >;
+	using ng3 =
+		name_generator< std::size_t, std::size_t, std::size_t, std::size_t >;
 
 	constexpr auto name_generator_types = hana::tuple_t< ng1, ng2, ng3 >;
 
+	void verify_stream(std::ifstream& is, std::string const& filename){
+		if(is) return;
+		throw std::runtime_error("Can not read file '" + filename + "'");
+	}
 
-	t1 load(ng1 const& name, std::size_t id){
-		std::ifstream is(name(id).c_str(),
+	t1 load(
+		ng1 const& name,
+		std::size_t id,
+		std::size_t subid
+	){
+		auto const filename = name(id, subid);
+		std::ifstream is(filename.c_str(),
 			std::ios::in | std::ios::binary);
+		verify_stream(is, filename);
 		return std::string(
 			std::istreambuf_iterator<char>(is),
 			std::istreambuf_iterator<char>());
 	}
 
-	t2 load(ng2 const& name, std::size_t id, std::size_t ic){
+	t2 load(
+		ng2 const& name,
+		std::size_t id,
+		std::size_t subid,
+		std::size_t ic
+	){
 		std::vector< std::string > result;
 		result.reserve(ic);
 		for(std::size_t i = 0; i < ic; ++i){
-			std::ifstream is(name(id, i).c_str(),
+			auto const filename = name(id, subid, i);
+			std::ifstream is(filename.c_str(),
 				std::ios::in | std::ios::binary);
+			verify_stream(is, filename);
 			result.emplace_back(
 				std::istreambuf_iterator<char>(is),
 				std::istreambuf_iterator<char>());
@@ -59,14 +79,22 @@ namespace disposer_module::load{
 		return result;
 	}
 
-	t3 load(ng3 const& name, std::size_t id, std::size_t ic, std::size_t jc){
+	t3 load(
+		ng3 const& name,
+		std::size_t id,
+		std::size_t subid,
+		std::size_t ic,
+		std::size_t jc
+	){
 		std::vector< std::vector< std::string > > result;
 		result.reserve(ic);
 		for(std::size_t i = 0; i < ic; ++i){
 			result.emplace_back().reserve(ic);
 			for(std::size_t j = 0; j < jc; ++j){
-				std::ifstream is(name(id, i, j).c_str(),
+				auto const filename = name(id, subid, i, j);
+				std::ifstream is(filename.c_str(),
 					std::ios::in | std::ios::binary);
+				verify_stream(is, filename);
 				result.back().emplace_back(
 					std::istreambuf_iterator<char>(is),
 					std::istreambuf_iterator<char>());
@@ -94,6 +122,13 @@ namespace disposer_module::load{
 
 
 	void init(std::string const& name, module_declarant& disposer){
+		auto expect_greater_0 =
+			value_verify([](auto const& /*iop*/, std::size_t value){
+				if(value == 0){
+					throw std::logic_error("must be greater 0");
+				}
+			});
+
 		auto init = module_register_fn(
 			module_configure(
 				"type"_param(hana::type_c< data_type >,
@@ -141,6 +176,8 @@ namespace disposer_module::load{
 				"id_modulo"_param(type_c< std::optional< std::size_t > >),
 				"id_digits"_param(type_c< std::size_t >,
 					default_values(std::size_t(4))),
+				"subid_digits"_param(type_c< std::size_t >,
+					default_values(std::size_t(1))),
 				"i_digits"_param(type_c< std::size_t >,
 					default_values(std::size_t(2))),
 				"j_digits"_param(type_c< std::size_t >,
@@ -163,13 +200,17 @@ namespace disposer_module::load{
 							return make_name_generator(
 								data,
 								std::make_pair("id",
-									format{iop("id_digits"_param).get()})
+									format{iop("id_digits"_param).get()}),
+								std::make_pair("subid",
+									format{iop("subid_digits"_param).get()})
 							);
 						}else if constexpr(type == type_c< ng2 >){
 							return make_name_generator(
 								data,
 								std::make_pair("id",
 									format{iop("id_digits"_param).get()}),
+								std::make_pair("subid",
+									format{iop("subid_digits"_param).get()}),
 								std::make_pair("i",
 									format{iop("i_digits"_param).get()})
 							);
@@ -178,6 +219,8 @@ namespace disposer_module::load{
 								data,
 								std::make_pair("id",
 									format{iop("id_digits"_param).get()}),
+								std::make_pair("subid",
+									format{iop("subid_digits"_param).get()}),
 								std::make_pair("i",
 									format{iop("i_digits"_param).get()}),
 								std::make_pair("j",
@@ -191,17 +234,22 @@ namespace disposer_module::load{
 						hana::make_pair(type_c< ng3 >, "file_list_list"_s)
 					)
 				),
+				"subid_count"_param(type_c< std::size_t >,
+					default_values(std::size_t(1)),
+					expect_greater_0),
 				"i_count"_param(type_c< std::size_t >,
 					enable([](auto const& iop, auto /*type*/){
 						auto const& out = iop("content"_out);
 						return out.is_enabled(type_c< t2 >)
 							|| out.is_enabled(type_c< t3 >);
-					})),
+					}),
+					expect_greater_0),
 				"j_count"_param(type_c< std::size_t >,
 					enable([](auto const& iop, auto /*type*/){
 						auto const& out = iop("content"_out);
 						return out.is_enabled(type_c< t3 >);
-					}))
+					}),
+					expect_greater_0)
 			),
 			module_enable([]{
 				return [](auto& module, std::size_t id){
@@ -211,23 +259,27 @@ namespace disposer_module::load{
 					auto const id_modulo = module("id_modulo"_param).get();
 					if(id_modulo) id %= *id_modulo;
 
+					auto const subid_count = module("subid_count"_param).get();
+
 					auto& out = module("content"_out);
-					switch(module("type"_param).get()){
-						case data_type::file:
-							out.put(load(module("name"_param)
-								.get(type_c< ng1 >), id));
-							break;
-						case data_type::file_list:
-							out.put(load(module("name"_param)
-								.get(type_c< ng2 >), id,
-									module("i_count"_param).get()));
-							break;
-						case data_type::file_list_list:
-							out.put(load(module("name"_param)
-								.get(type_c< ng3 >), id,
-									module("i_count"_param).get(),
-									module("j_count"_param).get()));
-							break;
+					for(std::size_t subid = 0; subid < subid_count; ++subid){
+						switch(module("type"_param).get()){
+							case data_type::file:
+								out.put(load(module("name"_param)
+									.get(type_c< ng1 >), id, subid));
+								break;
+							case data_type::file_list:
+								out.put(load(module("name"_param)
+									.get(type_c< ng2 >), id, subid,
+										module("i_count"_param).get()));
+								break;
+							case data_type::file_list_list:
+								out.put(load(module("name"_param)
+									.get(type_c< ng3 >), id, subid,
+										module("i_count"_param).get(),
+										module("j_count"_param).get()));
+								break;
+						}
 					}
 				};
 			})

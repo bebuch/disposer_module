@@ -106,10 +106,11 @@ namespace disposer_module::load{
 
 	struct format{
 		std::size_t const digits;
+		std::size_t const add;
 
 		std::string operator()(std::size_t value){
 			std::ostringstream os;
-			os << std::setw(digits) << std::setfill('0') << value;
+			os << std::setw(digits) << std::setfill('0') << add + value;
 			return os.str();
 		}
 	};
@@ -182,6 +183,14 @@ namespace disposer_module::load{
 					default_values(std::size_t(2))),
 				"j_digits"_param(type_c< std::size_t >,
 					default_values(std::size_t(2))),
+				"id_add"_param(type_c< std::size_t >,
+					default_values(std::size_t(0))),
+				"subid_add"_param(type_c< std::size_t >,
+					default_values(std::size_t(0))),
+				"i_add"_param(type_c< std::size_t >,
+					default_values(std::size_t(0))),
+				"j_add"_param(type_c< std::size_t >,
+					default_values(std::size_t(0))),
 				"name"_param(name_generator_types,
 					enable([](auto const& iop, auto type){
 						auto const& out = iop("content"_out);
@@ -200,31 +209,40 @@ namespace disposer_module::load{
 							return make_name_generator(
 								data,
 								std::make_pair("id",
-									format{iop("id_digits"_param).get()}),
+									format{iop("id_digits"_param).get(),
+										iop("id_add"_param).get()}),
 								std::make_pair("subid",
-									format{iop("subid_digits"_param).get()})
+									format{iop("subid_digits"_param).get(),
+										iop("subid_add"_param).get()})
 							);
 						}else if constexpr(type == type_c< ng2 >){
 							return make_name_generator(
 								data,
 								std::make_pair("id",
-									format{iop("id_digits"_param).get()}),
+									format{iop("id_digits"_param).get(),
+										iop("id_add"_param).get()}),
 								std::make_pair("subid",
-									format{iop("subid_digits"_param).get()}),
+									format{iop("subid_digits"_param).get(),
+										iop("subid_add"_param).get()}),
 								std::make_pair("i",
-									format{iop("i_digits"_param).get()})
+									format{iop("i_digits"_param).get(),
+										iop("i_add"_param).get()})
 							);
 						}else{
 							return make_name_generator(
 								data,
 								std::make_pair("id",
-									format{iop("id_digits"_param).get()}),
+									format{iop("id_digits"_param).get(),
+										iop("id_add"_param).get()}),
 								std::make_pair("subid",
-									format{iop("subid_digits"_param).get()}),
+									format{iop("subid_digits"_param).get(),
+										iop("subid_add"_param).get()}),
 								std::make_pair("i",
-									format{iop("i_digits"_param).get()}),
+									format{iop("i_digits"_param).get(),
+										iop("i_add"_param).get()}),
 								std::make_pair("j",
-									format{iop("j_digits"_param).get()})
+									format{iop("j_digits"_param).get(),
+										iop("j_add"_param).get()})
 							);
 						}
 					}),

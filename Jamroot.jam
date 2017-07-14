@@ -188,6 +188,15 @@ lib raster
 	<include>$(bitmap)/include
 	;
 
+lib subbitmap
+	:
+	subbitmap.cpp
+	/logsys//logsys
+	/disposer//disposer
+	:
+	<include>$(bitmap)/include
+	;
+
 lib demosaic
 	:
 	demosaic.cpp

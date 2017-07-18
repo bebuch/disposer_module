@@ -28,9 +28,6 @@ namespace disposer_module::subbitmap{
 	template < typename T >
 	using bitmap = ::bitmap::bitmap< T >;
 
-	template < typename T >
-	using bitmap_vector = std::vector< bitmap< T > >;
-
 
 	constexpr auto types = hana::tuple_t<
 			std::int8_t,
@@ -76,18 +73,14 @@ namespace disposer_module::subbitmap{
 		>;
 
 
-	struct apply_subbitmap_t{
-		template < typename Module, typename T >
-		auto operator()(Module const& module, bitmap< T > const& image)const{
-			auto const x = module("x"_param).get();
-			auto const y = module("y"_param).get();
-			auto const w = module("width"_param).get();
-			auto const h = module("height"_param).get();
-			return image.subbitmap({x, y, w, h});
-		}
-	};
-
-	constexpr auto apply_subbitmap = apply_subbitmap_t();
+	template < typename Module, typename T >
+	auto apply(Module const& module, bitmap< T > const& image){
+		auto const x = module("x"_param).get();
+		auto const y = module("y"_param).get();
+		auto const w = module("width"_param).get();
+		auto const h = module("height"_param).get();
+		return image.subbitmap({x, y, w, h});
+	}
 
 
 	void init(std::string const& name, module_declarant& disposer){
@@ -111,7 +104,7 @@ namespace disposer_module::subbitmap{
 					for(auto const& value: values){
 						std::visit([&module](auto const& img_ref){
 							module("image"_out).put(
-								apply_subbitmap(module, img_ref.get()));
+								apply(module, img_ref.get()));
 						}, value);
 					}
 				};

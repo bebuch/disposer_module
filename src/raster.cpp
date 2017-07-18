@@ -28,9 +28,6 @@ namespace disposer_module::demosaic{
 	template < typename T >
 	using bitmap = ::bitmap::bitmap< T >;
 
-	template < typename T >
-	using bitmap_vector = std::vector< bitmap< T > >;
-
 
 	constexpr auto types = hana::tuple_t<
 			std::int8_t,
@@ -76,32 +73,28 @@ namespace disposer_module::demosaic{
 		>;
 
 
-	struct apply_raster_t{
-		template < typename Module, typename T >
-		auto operator()(Module const& module, bitmap< T > const& image)const{
-			auto const xo = module("x_offset"_param).get();
-			auto const yo = module("y_offset"_param).get();
-			auto const xc = module("x_count"_param).get();
-			auto const yc = module("y_count"_param).get();
+	template < typename Module, typename T >
+	auto apply(Module const& module, bitmap< T > const& image){
+		auto const xo = module("x_offset"_param).get();
+		auto const yo = module("y_offset"_param).get();
+		auto const xc = module("x_count"_param).get();
+		auto const yc = module("y_count"_param).get();
 
-			bitmap< T > result(
-				(image.width() - xo - 1) / xc + 1,
-				(image.height() - yo - 1) / yc + 1
-			);
+		bitmap< T > result(
+			(image.width() - xo - 1) / xc + 1,
+			(image.height() - yo - 1) / yc + 1
+		);
 
-			thread_pool pool;
-			pool(0, result.height(),
-				[&result, &image, xc, yc, xo, yo](std::size_t y){
-					for(std::size_t x = 0; x < result.width(); ++x){
-						result(x, y) = image(xo + x * xc, yo + y * yc);
-					}
-				});
+		thread_pool pool;
+		pool(0, result.height(),
+			[&result, &image, xc, yc, xo, yo](std::size_t y){
+				for(std::size_t x = 0; x < result.width(); ++x){
+					result(x, y) = image(xo + x * xc, yo + y * yc);
+				}
+			});
 
-			return result;
-		}
-	};
-
-	constexpr auto apply_raster = apply_raster_t();
+		return result;
+	}
 
 
 	void init(std::string const& name, module_declarant& disposer){
@@ -145,7 +138,7 @@ namespace disposer_module::demosaic{
 					for(auto const& value: values){
 						std::visit([&module](auto const& img_ref){
 							module("image"_out).put(
-								apply_raster(module, img_ref.get()));
+								apply(module, img_ref.get()));
 						}, value);
 					}
 				};

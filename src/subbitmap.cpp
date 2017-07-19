@@ -10,8 +10,7 @@
 
 #include <disposer/module.hpp>
 
-#include <bitmap/bitmap.hpp>
-#include <bitmap/pixel.hpp>
+#include <bitmap/subbitmap.hpp>
 
 #include <boost/dll.hpp>
 
@@ -74,12 +73,12 @@ namespace disposer_module::subbitmap{
 
 
 	template < typename Module, typename T >
-	auto apply(Module const& module, bitmap< T > const& image){
+	bitmap< T > apply(Module const& module, bitmap< T > const& image){
 		auto const x = module("x"_param).get();
 		auto const y = module("y"_param).get();
 		auto const w = module("width"_param).get();
 		auto const h = module("height"_param).get();
-		return image.subbitmap({x, y, w, h});
+		return ::bitmap::subbitmap(image, ::bitmap::rect{x, y, w, h});
 	}
 
 

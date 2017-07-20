@@ -405,12 +405,12 @@ namespace disposer_module::camera_ximea{
 
 		if(component("use_camera_region"_param).get()) return mosaic;
 
-		auto rect = ::bitmap::make_rect(
-			::bitmap::make_point(
+		auto rect = ::bitmap::rect(
+			::bitmap::point(
 				component("x_offset"_param).get(),
 				component("y_offset"_param).get()
 			),
-			::bitmap::make_size(
+			::bitmap::size(
 				component("width"_param).get(),
 				component("height"_param).get()
 			)

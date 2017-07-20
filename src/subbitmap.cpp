@@ -92,8 +92,8 @@ namespace disposer_module::subbitmap{
 					template_transform_c< bitmap >,
 					enable_by_types_of("image"_in)
 				),
-				"x"_param(hana::type_c< std::size_t >),
-				"y"_param(hana::type_c< std::size_t >),
+				"x"_param(hana::type_c< float >),
+				"y"_param(hana::type_c< float >),
 				"width"_param(hana::type_c< std::size_t >),
 				"height"_param(hana::type_c< std::size_t >)
 			),

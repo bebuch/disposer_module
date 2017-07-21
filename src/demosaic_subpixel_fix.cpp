@@ -73,6 +73,43 @@ namespace disposer_module::demosaic_subpixel_fix{
 		>;
 
 
+	template < typename Module, typename Bitmaps >
+	auto exec(Module const& module, Bitmaps const& images){
+		auto const xc = module("x_count"_param).get();
+		auto const yc = module("y_count"_param).get();
+
+		if(xc * yc != images.size()){
+			throw std::logic_error("wrong image count");
+		}
+
+		using type = std::decay_t< decltype(images) >;
+		type result(images.size());
+		for(std::size_t y = 0; y < yc; ++y){
+			for(std::size_t x = 0; x < xc; ++x){
+				auto sub_x = static_cast< float >(x) / xc;
+				auto sub_y = static_cast< float >(y) / yc;
+				module.log([sub_x, sub_y]
+					(logsys::stdlogb& os){
+						os << "x = " << sub_x << ", y = "
+							<< sub_y;
+					},
+				[&]{
+					auto const pos = x * yc + y;
+					auto const& image = images[pos];
+					result[pos] = ::bitmap::subbitmap(image,
+						::bitmap::rect{
+							sub_x, sub_y,
+							image.width() - 1,
+							image.height() - 1
+						});
+				});
+			}
+		}
+
+		return result;
+	}
+
+
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = module_register_fn(
 			module_configure(
@@ -101,38 +138,8 @@ namespace disposer_module::demosaic_subpixel_fix{
 					auto values = module("images"_in).get_references();
 					for(auto const& value: values){
 						std::visit([&module](auto const& imgs_ref){
-							auto const& images = imgs_ref.get();
-							auto const xc = module("x_count"_param).get();
-							auto const yc = module("y_count"_param).get();
-
-							if(xc * yc != images.size()){
-								throw std::logic_error("wrong image count");
-							}
-
-							using type = std::decay_t< decltype(images) >;
-							type result(images.size());
-							for(std::size_t y = 0; y < yc; ++y){
-								for(std::size_t x = 0; x < xc; ++x){
-									auto sub_x = static_cast< float >(x) / xc;
-									auto sub_y = static_cast< float >(y) / yc;
-									module.log([sub_x, sub_y]
-										(logsys::stdlogb& os){
-											os << "x = " << sub_x << ", y = "
-												<< sub_y;
-										},
-									[&]{
-										auto const pos = x * yc + y;
-										auto const& image = images[pos];
-										result[pos] = ::bitmap::subbitmap(image,
-											::bitmap::rect{
-												sub_x, sub_y,
-												image.width() - 1,
-												image.height() - 1
-											});
-									});
-								}
-							}
-							module("images"_out).put(std::move(result));
+							module("images"_out)
+								.put(exec(module, imgs_ref.get()));
 						}, value);
 					}
 				};

@@ -73,7 +73,7 @@ namespace disposer_module::subbitmap{
 
 
 	template < typename Module, typename T >
-	bitmap< T > apply(Module const& module, bitmap< T > const& image){
+	bitmap< T > exec(Module const& module, bitmap< T > const& image){
 		auto const x = module("x"_param).get();
 		auto const y = module("y"_param).get();
 		auto const w = module("width"_param).get();
@@ -103,7 +103,7 @@ namespace disposer_module::subbitmap{
 					for(auto const& value: values){
 						std::visit([&module](auto const& img_ref){
 							module("image"_out).put(
-								apply(module, img_ref.get()));
+								exec(module, img_ref.get()));
 						}, value);
 					}
 				};

@@ -74,7 +74,7 @@ namespace disposer_module::demosaic{
 
 
 	template < typename Module, typename T >
-	auto apply(Module const& module, bitmap< T > const& image){
+	auto exec(Module const& module, bitmap< T > const& image){
 		auto const xo = module("x_offset"_param).get();
 		auto const yo = module("y_offset"_param).get();
 		auto const xc = module("x_count"_param).get();
@@ -138,7 +138,7 @@ namespace disposer_module::demosaic{
 					for(auto const& value: values){
 						std::visit([&module](auto const& img_ref){
 							module("image"_out).put(
-								apply(module, img_ref.get()));
+								exec(module, img_ref.get()));
 						}, value);
 					}
 				};

@@ -4,6 +4,7 @@ local disposer = ../disposer ;
 local gray_code = ../gray_code ;
 local io_tools = ../io_tools ;
 local bitmap = ../bitmap ;
+local range-v3 = ../range-v3 ;
 local tar = ../tar ;
 local big = ../big ;
 local http = ../http ;
@@ -206,13 +207,14 @@ lib demosaic
 	<include>$(bitmap)/include
 	;
 
-lib demosaic_subpixel_fix
+lib multi_subbitmap
 	:
-	demosaic_subpixel_fix.cpp
+	multi_subbitmap.cpp
 	/logsys//logsys
 	/disposer//disposer
 	:
 	<include>$(bitmap)/include
+	<include>$(range-v3)/include
 	;
 
 lib bitmap_vector_join

@@ -10,15 +10,20 @@
 
 #include <bitmap/subbitmap.hpp>
 
+#include <range/v3/view.hpp>
+
 #include <boost/dll.hpp>
 
+#include <boost/spirit/home/x3.hpp>
 
-namespace disposer_module::demosaic_subpixel_fix{
+
+namespace disposer_module::multi_subbitmap{
 
 
 	using namespace disposer;
 	using namespace disposer::literals;
 	namespace hana = boost::hana;
+	using namespace hana::literals;
 
 	namespace pixel = ::bitmap::pixel;
 
@@ -73,41 +78,64 @@ namespace disposer_module::demosaic_subpixel_fix{
 		>;
 
 
+	struct list_parser{
+		template < typename IOP_List >
+		std::vector< float > operator()(
+			IOP_List const& /*iop*/,
+			std::string_view value,
+			hana::basic_type< std::vector< float > >
+		)const{
+			namespace x3 = boost::spirit::x3;
+			using x3::float_;
+			using x3::phrase_parse;
+			using x3::_attr;
+			using x3::ascii::space;
+
+			std::vector< float > list;
+			auto push_back = [&list](auto& ctx){ list.push_back(_attr(ctx)); };
+
+			auto first = value.begin();
+			auto const last = value.end();
+			bool const match =
+				phrase_parse(first, last, float_[push_back] % ',', space);
+
+			if(!match || first != last){
+				throw std::logic_error("expected comma separated float list");
+			}
+
+			return list;
+		}
+	};
+
+
 	template < typename Module, typename Bitmaps >
 	auto exec(Module const& module, Bitmaps const& images){
-		auto const xc = module("x_count"_param).get();
-		auto const yc = module("y_count"_param).get();
+		auto const& xos = module("x_offsets"_param).get();
+		auto const& yos = module("y_offsets"_param).get();
+		auto const w = module("width"_param).get();
+		auto const h = module("height"_param).get();
 
-		if(xc * yc != images.size()){
+		if(xos.size() != images.size()){
 			throw std::logic_error("wrong image count");
 		}
 
-		using type = std::decay_t< decltype(images) >;
-		type result(images.size());
-		for(std::size_t y = 0; y < yc; ++y){
-			for(std::size_t x = 0; x < xc; ++x){
-				auto sub_x = static_cast< float >(x) / xc;
-				auto sub_y = static_cast< float >(y) / yc;
-				module.log([sub_x, sub_y]
-					(logsys::stdlogb& os){
-						os << "x = " << sub_x << ", y = "
-							<< sub_y;
-					},
-				[&]{
-					auto const pos = x * yc + y;
-					auto const& image = images[pos];
-					result[pos] = ::bitmap::subbitmap(image,
-						::bitmap::rect{
-							sub_x, sub_y,
-							image.width() - 1,
-							image.height() - 1
-						});
-				});
-			}
+		Bitmaps result;
+		result.reserve(images.size());
+		for(auto const& [image, xo, yo]: ranges::view::zip(images, xos, yos)){
+			module.log([xo, yo](logsys::stdlogb& os){
+				os << "x = " << xo << ", y = " << yo;
+			}, [&]{
+				result.push_back(
+					subbitmap(image, ::bitmap::rect{xo, yo, w, h}));
+			});
 		}
 
 		return result;
 	}
+
+	constexpr auto as_text = type_as_text
+		(hana::make_pair(hana::type_c< std::vector< float > >,
+			"float32_list"_s));
 
 
 	void init(std::string const& name, module_declarant& disposer){
@@ -120,18 +148,26 @@ namespace disposer_module::demosaic_subpixel_fix{
 					template_transform_c< bitmap_vector >,
 					enable_by_types_of("images"_in)
 				),
-				"x_count"_param(hana::type_c< std::size_t >,
-					value_verify([](auto const& /*iop*/, auto const& value){
-						if(value > 0) return;
-						throw std::logic_error("must be greater 0");
-					})
+				"x_offsets"_param(hana::type_c< std::vector< float > >,
+					parser_fn< list_parser >(),
+					value_verify([](auto const& /*iop*/, auto const& values){
+						if(!values.empty()) return;
+						throw std::logic_error("Need at least one x value");
+					}),
+					as_text
 				),
-				"y_count"_param(hana::type_c< std::size_t >,
-					value_verify([](auto const& /*iop*/, auto const& value){
-						if(value > 0) return;
-						throw std::logic_error("must be greater 0");
-					})
-				)
+				"y_offsets"_param(hana::type_c< std::vector< float > >,
+					parser_fn< list_parser >(),
+					value_verify([](auto const& iop, auto const& values){
+						auto const& x_offsets = iop("x_offsets"_param).get();
+						if(values.size() == x_offsets.size()) return;
+						throw std::logic_error(
+							"different element count as in x_offsets");
+					}),
+					as_text
+				),
+				"width"_param(hana::type_c< std::size_t >),
+				"height"_param(hana::type_c< std::size_t >)
 			),
 			module_enable([]{
 				return [](auto& module){

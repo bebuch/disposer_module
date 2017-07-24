@@ -198,6 +198,15 @@ lib subbitmap
 	<include>$(bitmap)/include
 	;
 
+# lib vignetting_correction
+# 	:
+# 	vignetting_correction.cpp
+# 	/logsys//logsys
+# 	/disposer//disposer
+# 	:
+# 	<include>$(bitmap)/include
+# 	;
+
 lib demosaic
 	:
 	demosaic.cpp
@@ -292,6 +301,24 @@ lib decode_png
 	:
 	<include>$(bitmap)/include
 	<linkflags>-lpng
+	;
+
+lib decode_bbf
+	:
+	decode_bbf.cpp
+	/logsys//logsys
+	/disposer//disposer
+	:
+	<include>$(bitmap)/include
+	;
+
+lib encode_bbf
+	:
+	encode_bbf.cpp
+	/logsys//logsys
+	/disposer//disposer
+	:
+	<include>$(bitmap)/include
 	;
 
 lib encode_png

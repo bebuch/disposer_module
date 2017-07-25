@@ -21,8 +21,8 @@ namespace disposer_module::encode_bbf{
 	namespace hana = boost::hana;
 	using namespace hana::literals;
 
-	namespace pixel = ::bitmap::pixel;
-	using ::bitmap::bitmap;
+	namespace pixel = ::bmp::pixel;
+	using ::bmp::bitmap;
 
 
 	constexpr auto types = hana::tuple_t<
@@ -106,7 +106,7 @@ namespace disposer_module::encode_bbf{
 						std::visit([&module](auto const& img){
 							std::ostringstream os
 								(std::ios::out | std::ios::binary);
-							::bitmap::binary_write(img.get(), os,
+							::bmp::binary_write(img.get(), os,
 								module("endian"_param).get());
 							module("data"_out).put(os.str());
 						}, value);

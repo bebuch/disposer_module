@@ -25,10 +25,10 @@ namespace disposer_module::bitmap_vector_join{
 	using namespace disposer::literals;
 	namespace hana = boost::hana;
 
-	namespace pixel = ::bitmap::pixel;
+	namespace pixel = ::bmp::pixel;
 
 	template < typename T >
-	using bitmap = ::bitmap::bitmap< T >;
+	using bitmap = ::bmp::bitmap< T >;
 
 	template < typename T >
 	using bitmap_vector = std::vector< bitmap< T > >;

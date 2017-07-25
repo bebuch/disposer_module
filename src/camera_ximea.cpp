@@ -30,8 +30,8 @@ namespace disposer_module::camera_ximea{
 	using namespace hana::literals;
 	using hana::type_c;
 
-	namespace pixel = ::bitmap::pixel;
-	using ::bitmap::bitmap;
+	namespace pixel = ::bmp::pixel;
+	using ::bmp::bitmap;
 
 
 	constexpr auto types = hana::tuple_t<
@@ -405,12 +405,12 @@ namespace disposer_module::camera_ximea{
 
 		if(component("use_camera_region"_param).get()) return mosaic;
 
-		auto rect = ::bitmap::rect(
-			::bitmap::point(
+		auto rect = ::bmp::rect(
+			::bmp::point(
 				component("x_offset"_param).get(),
 				component("y_offset"_param).get()
 			),
-			::bitmap::size(
+			::bmp::size(
 				component("width"_param).get(),
 				component("height"_param).get()
 			)

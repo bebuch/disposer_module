@@ -31,7 +31,7 @@ namespace disposer_module::vector_join{
 
 	constexpr auto types = hana::concat(
 			hana::tuple_t< std::string >,
-			hana::transform(base_types, hana::template_< ::bitmap::bitmap >)
+			hana::transform(base_types, hana::template_< ::bmp::bitmap >)
 		);
 
 

@@ -25,8 +25,8 @@ namespace disposer_module::decode_png{
 	using namespace hana::literals;
 	using hana::type_c;
 
-	namespace pixel = ::bitmap::pixel;
-	using ::bitmap::bitmap;
+	namespace pixel = ::bmp::pixel;
+	using ::bmp::bitmap;
 
 
 	constexpr auto types = hana::tuple_t<

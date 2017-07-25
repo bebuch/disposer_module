@@ -23,10 +23,10 @@ namespace disposer_module::demosaic{
 	using namespace disposer::literals;
 	namespace hana = boost::hana;
 
-	namespace pixel = ::bitmap::pixel;
+	namespace pixel = ::bmp::pixel;
 
 	template < typename T >
-	using bitmap = ::bitmap::bitmap< T >;
+	using bitmap = ::bmp::bitmap< T >;
 
 
 	constexpr auto types = hana::tuple_t<

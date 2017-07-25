@@ -23,8 +23,8 @@ namespace disposer_module::encode_jpg{
 	using namespace disposer::literals;
 	namespace hana = boost::hana;
 
-	namespace pixel = ::bitmap::pixel;
-	using ::bitmap::bitmap;
+	namespace pixel = ::bmp::pixel;
+	using ::bmp::bitmap;
 
 
 	constexpr auto types = hana::tuple_t<

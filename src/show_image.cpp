@@ -25,8 +25,8 @@ namespace disposer_module::show_image{
 	namespace hana = boost::hana;
 	using hana::type_c;
 
-	namespace pixel = ::bitmap::pixel;
-	using ::bitmap::bitmap;
+	namespace pixel = ::bmp::pixel;
+	using ::bmp::bitmap;
 
 
 	constexpr auto types = hana::tuple_t<

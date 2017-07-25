@@ -25,13 +25,13 @@ namespace disposer_module::multi_subbitmap{
 	namespace hana = boost::hana;
 	using namespace hana::literals;
 
-	namespace pixel = ::bitmap::pixel;
+	namespace pixel = ::bmp::pixel;
 
 	template < typename T >
-	using bitmap = ::bitmap::bitmap< T >;
+	using bitmap = ::bmp::bitmap< T >;
 
 	template < typename T >
-	using bitmap_vector = ::bitmap::bitmap_vector< T >;
+	using bitmap_vector = ::bmp::bitmap_vector< T >;
 
 
 	constexpr auto types = hana::tuple_t<
@@ -126,7 +126,7 @@ namespace disposer_module::multi_subbitmap{
 				os << "x = " << xo << ", y = " << yo;
 			}, [&]{
 				result.push_back(
-					subbitmap(image, ::bitmap::rect{xo, yo, w, h}));
+					subbitmap(image, ::bmp::rect{xo, yo, w, h}));
 			});
 		}
 

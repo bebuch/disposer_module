@@ -20,10 +20,10 @@ namespace disposer_module::subbitmap{
 	using namespace disposer::literals;
 	namespace hana = boost::hana;
 
-	namespace pixel = ::bitmap::pixel;
+	namespace pixel = ::bmp::pixel;
 
 	template < typename T >
-	using bitmap = ::bitmap::bitmap< T >;
+	using bitmap = ::bmp::bitmap< T >;
 
 
 	constexpr auto types = hana::tuple_t<
@@ -76,7 +76,7 @@ namespace disposer_module::subbitmap{
 		auto const y = module("y"_param).get();
 		auto const w = module("width"_param).get();
 		auto const h = module("height"_param).get();
-		return ::bitmap::subbitmap(image, ::bitmap::rect{x, y, w, h});
+		return ::bmp::subbitmap(image, ::bmp::rect{x, y, w, h});
 	}
 
 

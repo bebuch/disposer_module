@@ -100,37 +100,29 @@ namespace disposer_module::demosaic{
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = module_register_fn(
 			module_configure(
-				"image"_in(types,
-					template_transform_c< bitmap >,
-					required),
-				"image"_out(types,
-					template_transform_c< bitmap >,
-					enable_by_types_of("image"_in)
-				),
+				"image"_in(types, template_transform_c< bitmap >),
+				"image"_out(types, template_transform_c< bitmap >,
+					enable_by_types_of("image"_in)),
 				"x_count"_param(hana::type_c< std::size_t >,
 					value_verify([](auto const& /*iop*/, auto const& value){
 						if(value > 0) return;
 						throw std::logic_error("must be greater 0");
-					})
-				),
+					})),
 				"y_count"_param(hana::type_c< std::size_t >,
 					value_verify([](auto const& /*iop*/, auto const& value){
 						if(value > 0) return;
 						throw std::logic_error("must be greater 0");
-					})
-				),
+					})),
 				"x_offset"_param(hana::type_c< std::size_t >,
 					value_verify([](auto const& iop, auto const& value){
 						if(value < iop("x_count"_param).get()) return;
 						throw std::logic_error("must be lesser x_count");
-					})
-				),
+					})),
 				"y_offset"_param(hana::type_c< std::size_t >,
 					value_verify([](auto const& iop, auto const& value){
 						if(value < iop("y_count"_param).get()) return;
 						throw std::logic_error("must be lesser y_count");
-					})
-				)
+					}))
 			),
 			module_enable([]{
 				return [](auto& module){

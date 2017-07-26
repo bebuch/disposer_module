@@ -141,21 +141,16 @@ namespace disposer_module::multi_subbitmap{
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = module_register_fn(
 			module_configure(
-				"images"_in(types,
-					template_transform_c< bitmap_vector >,
-					required),
-				"images"_out(types,
-					template_transform_c< bitmap_vector >,
-					enable_by_types_of("images"_in)
-				),
+				"images"_in(types, template_transform_c< bitmap_vector >),
+				"images"_out(types, template_transform_c< bitmap_vector >,
+					enable_by_types_of("images"_in)),
 				"x_offsets"_param(hana::type_c< std::vector< float > >,
 					parser_fn< list_parser >(),
 					value_verify([](auto const& /*iop*/, auto const& values){
 						if(!values.empty()) return;
 						throw std::logic_error("Need at least one x value");
 					}),
-					as_text
-				),
+					as_text),
 				"y_offsets"_param(hana::type_c< std::vector< float > >,
 					parser_fn< list_parser >(),
 					value_verify([](auto const& iop, auto const& values){
@@ -164,8 +159,7 @@ namespace disposer_module::multi_subbitmap{
 						throw std::logic_error(
 							"different element count as in x_offsets");
 					}),
-					as_text
-				),
+					as_text),
 				"width"_param(hana::type_c< std::size_t >),
 				"height"_param(hana::type_c< std::size_t >)
 			),

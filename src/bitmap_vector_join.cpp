@@ -292,8 +292,7 @@ namespace disposer_module::bitmap_vector_join{
 					type_transform([](auto type)noexcept{
 						return hana::type_c< std::vector< bitmap<
 							typename decltype(type)::type > > >;
-					}),
-					required),
+					})),
 				"image"_out(types,
 					template_transform_c< bitmap >,
 					enable_by_types_of("images"_in)

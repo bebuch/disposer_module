@@ -407,7 +407,7 @@ namespace disposer_module::http_server_component{
 				"websocket"_module([](auto& component){
 					return module_register_fn(
 						module_configure(
-							"data"_in(hana::type_c< std::string >, required),
+							"data"_in(hana::type_c< std::string >),
 							"service_name"_param(hana::type_c< std::string >)
 						),
 						module_enable([&component](auto const& module){

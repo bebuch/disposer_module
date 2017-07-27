@@ -57,7 +57,8 @@ namespace disposer_module::histogram{
 			module_configure(
 				"image"_in(types, template_transform_c< bitmap >),
 				"histogram"_out(hana::type_c< std::vector< std::size_t > >),
-				"cumulative"_param(hana::type_c< bool >, default_values(false)),
+				"cumulative"_param(hana::type_c< bool >,
+					default_value([](auto const&, auto){ return false; })),
 				"min"_param(types, enable_by_types_of("image"_in)
 					// TODO: Default for 8 and 16 bit types
 				),

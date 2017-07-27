@@ -87,7 +87,7 @@ namespace disposer_module::encode_jpg{
 								"expected a percent value (0% - 100%)");
 						}
 					}),
-					default_values(std::size_t(90)))
+					default_value([](auto const&, auto){ return 90; }))
 			),
 			module_enable([]{
 				return [](auto& module){

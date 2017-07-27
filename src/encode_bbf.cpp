@@ -90,7 +90,9 @@ namespace disposer_module::encode_bbf{
 							"little, big & native");
 
 					}),
-					default_values(boost::endian::order::native),
+					default_value([](auto const&, auto){
+						return boost::endian::order::native;
+					}),
 					type_as_text(
 						hana::make_pair(hana::type_c< boost::endian::order >,
 						"endian"_s)

@@ -575,28 +575,27 @@ namespace disposer_module::camera_ximea{
 						throw std::runtime_error("unknown value '"
 							+ std::string(data) + "', allowed values are: "
 							"mono8, mono16, raw8, raw16 & rgb8");
-
 					}),
 					type_as_text(
 						hana::make_pair(type_c< pixel_format >, "format"_s)
 					)
 				),
 				"cam_id"_param(type_c< std::uint32_t >,
-					default_values(std::uint32_t(0))
+					default_value([](auto const&, auto){ return 0; })
 				),
 				"use_camera_region"_param(type_c< bool >,
-					default_values(false)
+					default_value([](auto const&, auto){ return false; })
 				),
 				"x_offset"_param(type_c< std::size_t >,
-					default_values(std::size_t(0))
+					default_value([](auto const&, auto){ return 0; })
 				),
 				"y_offset"_param(type_c< std::size_t >,
-					default_values(std::size_t(0))
+					default_value([](auto const&, auto){ return 0; })
 				),
 				"width"_param(type_c< std::size_t >),
 				"height"_param(type_c< std::size_t >),
 				"exposure_time_ns"_param(type_c< std::size_t >,
-					default_values(std::size_t(10000))
+					default_value([](auto const&, auto){ return 10000; })
 				)
 			),
 			component_init([](auto& component){

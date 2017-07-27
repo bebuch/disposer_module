@@ -149,7 +149,9 @@ namespace disposer_module::load{
 							+ std::string(data) + "', allowed values are: "
 							"file, file_list & file_list_list");
 					}),
-					default_values(data_type::file),
+					default_value([](auto const&, auto){
+						return data_type::file;
+					}),
 					type_as_text(
 						hana::make_pair(hana::type_c< data_type >, "type"_s)
 					)
@@ -176,21 +178,21 @@ namespace disposer_module::load{
 				"fixed_id"_param(type_c< std::optional< std::size_t > >),
 				"id_modulo"_param(type_c< std::optional< std::size_t > >),
 				"id_digits"_param(type_c< std::size_t >,
-					default_values(std::size_t(4))),
+					default_value([](auto const&, auto){ return 4; })),
 				"subid_digits"_param(type_c< std::size_t >,
-					default_values(std::size_t(1))),
+					default_value([](auto const&, auto){ return 1; })),
 				"i_digits"_param(type_c< std::size_t >,
-					default_values(std::size_t(2))),
+					default_value([](auto const&, auto){ return 2; })),
 				"j_digits"_param(type_c< std::size_t >,
-					default_values(std::size_t(2))),
+					default_value([](auto const&, auto){ return 2; })),
 				"id_add"_param(type_c< std::size_t >,
-					default_values(std::size_t(0))),
+					default_value([](auto const&, auto){ return 0; })),
 				"subid_add"_param(type_c< std::size_t >,
-					default_values(std::size_t(0))),
+					default_value([](auto const&, auto){ return 0; })),
 				"i_add"_param(type_c< std::size_t >,
-					default_values(std::size_t(0))),
+					default_value([](auto const&, auto){ return 0; })),
 				"j_add"_param(type_c< std::size_t >,
-					default_values(std::size_t(0))),
+					default_value([](auto const&, auto){ return 0; })),
 				"name"_param(name_generator_types,
 					enable([](auto const& iop, auto type){
 						auto const& out = iop("content"_out);
@@ -253,7 +255,7 @@ namespace disposer_module::load{
 					)
 				),
 				"subid_count"_param(type_c< std::size_t >,
-					default_values(std::size_t(1)),
+					default_value([](auto const&, auto){ return 1; }),
 					expect_greater_0),
 				"i_count"_param(type_c< std::size_t >,
 					enable([](auto const& iop, auto /*type*/){

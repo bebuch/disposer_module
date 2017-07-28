@@ -578,25 +578,15 @@ namespace disposer_module::camera_ximea{
 					}),
 					type_as_text(
 						hana::make_pair(type_c< pixel_format >, "format"_s)
-					)
-				),
-				"cam_id"_param(type_c< std::uint32_t >,
-					default_value_fn([](auto const&, auto){ return 0; })
-				),
-				"use_camera_region"_param(type_c< bool >,
-					default_value_fn([](auto const&, auto){ return false; })
-				),
-				"x_offset"_param(type_c< std::size_t >,
-					default_value_fn([](auto const&, auto){ return 0; })
-				),
-				"y_offset"_param(type_c< std::size_t >,
-					default_value_fn([](auto const&, auto){ return 0; })
-				),
+					)),
+				"cam_id"_param(type_c< std::uint32_t >, default_value(0)),
+				"use_camera_region"_param(type_c< bool >, default_value(false)),
+				"x_offset"_param(type_c< std::size_t >, default_value(0)),
+				"y_offset"_param(type_c< std::size_t >, default_value(0)),
 				"width"_param(type_c< std::size_t >),
 				"height"_param(type_c< std::size_t >),
 				"exposure_time_ns"_param(type_c< std::size_t >,
-					default_value_fn([](auto const&, auto){ return 10000; })
-				)
+					default_value(10000))
 			),
 			component_init([](auto& component){
 				return ximea_cam_init< std::decay_t< decltype(component) > >

@@ -8,7 +8,7 @@
 //-----------------------------------------------------------------------------
 #include <disposer/module.hpp>
 
-#include <bitmap/bitmap.hpp>
+#include <bitmap/histogram.hpp>
 #include <bitmap/pixel_algorithm.hpp>
 
 #include <boost/dll.hpp>
@@ -48,19 +48,29 @@ namespace disposer_module::vignetting_correction_creator{
 	template < typename Module, typename T >
 	bitmap< float > exec(Module const& module, bitmap< T > const& image){
 		bitmap< float > result(image.size());
-		T const org_max = max_value(image);
+		T const max = max_value(image);
 
-		auto const max_value = module("max_value"_param).get(hana::type_c< T >);
-		if(org_max >= max_value){
+		auto const max_v = module("max_value"_param).get(hana::type_c< T >);
+		if(max >= max_v){
 			throw std::runtime_error("image is overexposed");
 		}
 
-		auto const max = static_cast< float >(org_max);
+		auto const reference = module("reference"_param).get();
+		auto const reference_value = [&]{
+				if(reference == 100) return static_cast< float >(max);
+				auto const h = bmp::histogram(image, T(0), max_v, max_v, true);
+				auto const pc = static_cast< float >(image.point_count());
+				auto const iter = std::find_if(h.rbegin(), h.rend(),
+					[pc, reference](auto const& count){
+						return count / pc < reference / 100;
+					});
+				return static_cast< float >(max_v - (iter - h.rbegin()));
+			}();
 
 		std::transform(image.begin(), image.end(), result.begin(),
-			[max](auto const& v){
+			[reference_value](auto const& v){
 				if(v == 0) throw std::runtime_error("image is underexposed");
-				return max / v;
+				return reference_value / v;
 			});
 
 		return result;
@@ -81,7 +91,15 @@ namespace disposer_module::vignetting_correction_creator{
 						){
 							return std::numeric_limits< type >::max();
 						}
-					}))
+					})),
+				"reference"_param(hana::type_c< float >,
+					verify_value_fn([](auto const& /*iop*/, std::size_t value){
+						if(value > 100 || value < 1){
+							throw std::logic_error(
+								"expected a percent value (1% - 100%)");
+						}
+					}),
+					default_value(99))
 			),
 			module_enable([]{
 				return [](auto& module){

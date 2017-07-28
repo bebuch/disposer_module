@@ -32,17 +32,18 @@ namespace disposer_module::vignetting_correction{
 		>;
 
 
-	template < typename T >
+	template < typename Module, typename T >
 	bitmap< T > exec(
+		Module const& module,
 		bitmap< T >&& image,
 		bitmap< float > const& factor_image
 	){
+		auto const max_value = static_cast< float >(
+			module("max_value"_param).get(hana::type_c< T >));
 		std::transform(image.begin(), image.end(), factor_image.begin(),
 			image.begin(),
-			[](T const v, float const r){
-				constexpr auto m = static_cast< float >(
-					std::numeric_limits< T >::max());
-				return static_cast< T >(std::min(v * r, m));
+			[max_value](T const v, float const r){
+				return static_cast< T >(std::min(v * r, max_value));
 			});
 		return std::move(image);
 	}
@@ -55,7 +56,17 @@ namespace disposer_module::vignetting_correction{
 				"image"_out(types, wrap_in< bitmap >,
 					enable_by_types_of("image"_in)
 				),
-				"factor_image_filename"_param(hana::type_c< std::string >)
+				"factor_image_filename"_param(hana::type_c< std::string >),
+				"max_value"_param(types,
+					enable_by_types_of("image"_in),
+					default_value_fn([](auto const& iop, auto t){
+						using type = typename decltype(t)::type;
+						if constexpr(
+							std::is_integral_v< type > && sizeof(type) == 1
+						){
+							return std::numeric_limits< type >::max();
+						}
+					}))
 			),
 			module_enable([](auto const& module){
 				auto const path = module("factor_image_filename"_param).get();
@@ -65,7 +76,7 @@ namespace disposer_module::vignetting_correction{
 						for(auto&& value: std::move(values)){
 							std::visit([&module, &factor_image](auto&& img){
 								module("image"_out).put(
-									exec(std::move(img), factor_image));
+									exec(module, std::move(img), factor_image));
 							}, std::move(value));
 						}
 					};

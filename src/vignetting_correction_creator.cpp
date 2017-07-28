@@ -33,19 +33,7 @@ namespace disposer_module::vignetting_correction_creator{
 			std::uint8_t,
 			std::uint16_t,
 			std::uint32_t,
-			std::uint64_t /*,
-			pixel::ga8u,
-			pixel::ga16u,
-			pixel::ga32u,
-			pixel::ga64u,
-			pixel::rgb8u,
-			pixel::rgb16u,
-			pixel::rgb32u,
-			pixel::rgb64u,
-			pixel::rgba8u,
-			pixel::rgba16u,
-			pixel::rgba32u,
-			pixel::rgba64u*/
+			std::uint64_t
 		>;
 
 	template < typename T >
@@ -58,12 +46,12 @@ namespace disposer_module::vignetting_correction_creator{
 	}
 
 	template < typename Module, typename T >
-	bitmap< float > exec(Module const& /*module*/, bitmap< T > const& image){
+	bitmap< float > exec(Module const& module, bitmap< T > const& image){
 		bitmap< float > result(image.size());
 		T const org_max = max_value(image);
 
-		// TODO: Support for 10/12/14 bit images (and so on)
-		if(org_max == std::numeric_limits< T >::max()){
+		auto const max_value = module("max_value"_param).get(hana::type_c< T >);
+		if(org_max >= max_value){
 			throw std::runtime_error("image is overexposed");
 		}
 
@@ -83,8 +71,17 @@ namespace disposer_module::vignetting_correction_creator{
 		auto init = module_register_fn(
 			module_configure(
 				"image"_in(types, wrap_in< bitmap >),
-				"image"_out(hana::type_c< bitmap< float > >)/*,
-				"max_value"_param(types)*/ // Support for 10/12/14 bit images
+				"image"_out(hana::type_c< bitmap< float > >),
+				"max_value"_param(types,
+					enable_by_types_of("image"_in),
+					default_value_fn([](auto const& iop, auto t){
+						using type = typename decltype(t)::type;
+						if constexpr(
+							std::is_integral_v< type > && sizeof(type) == 1
+						){
+							return std::numeric_limits< type >::max();
+						}
+					}))
 			),
 			module_enable([]{
 				return [](auto& module){

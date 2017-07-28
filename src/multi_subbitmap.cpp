@@ -146,14 +146,14 @@ namespace disposer_module::multi_subbitmap{
 					enable_by_types_of("images"_in)),
 				"x_offsets"_param(hana::type_c< std::vector< float > >,
 					parser_fn< list_parser >(),
-					value_verify_fn([](auto const& /*iop*/, auto const& values){
+					verify_value_fn([](auto const& /*iop*/, auto const& values){
 						if(!values.empty()) return;
 						throw std::logic_error("Need at least one x value");
 					}),
 					as_text),
 				"y_offsets"_param(hana::type_c< std::vector< float > >,
 					parser_fn< list_parser >(),
-					value_verify_fn([](auto const& iop, auto const& values){
+					verify_value_fn([](auto const& iop, auto const& values){
 						auto const& x_offsets = iop("x_offsets"_param).get();
 						if(values.size() == x_offsets.size()) return;
 						throw std::logic_error(

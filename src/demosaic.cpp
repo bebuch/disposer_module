@@ -139,13 +139,13 @@ namespace disposer_module::demosaic{
 					enable_by_types_of("image"_in)
 				),
 				"x_count"_param(hana::type_c< std::size_t >,
-					value_verify_fn([](auto const& /*iop*/, auto const& value){
+					verify_value_fn([](auto const& /*iop*/, auto const& value){
 						if(value > 0) return;
 						throw std::logic_error("must be greater 0");
 					})
 				),
 				"y_count"_param(hana::type_c< std::size_t >,
-					value_verify_fn([](auto const& /*iop*/, auto const& value){
+					verify_value_fn([](auto const& /*iop*/, auto const& value){
 						if(value > 0) return;
 						throw std::logic_error("must be greater 0");
 					})

@@ -124,7 +124,7 @@ namespace disposer_module::load{
 
 	void init(std::string const& name, module_declarant& disposer){
 		auto expect_greater_0 =
-			value_verify_fn([](auto const& /*iop*/, std::size_t value){
+			verify_value_fn([](auto const& /*iop*/, std::size_t value){
 				if(value == 0){
 					throw std::logic_error("must be greater 0");
 				}

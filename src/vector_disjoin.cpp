@@ -41,7 +41,7 @@ namespace disposer_module::vector_disjoin{
 				"list"_in(types, wrap_in< vector >),
 				"data"_out(types, enable_by_types_of("list"_in)),
 				"count"_param(hana::type_c< std::size_t >,
-					value_verify_fn([](auto const& /*iop*/, auto const& value){
+					verify_value_fn([](auto const& /*iop*/, auto const& value){
 						if(value > 0) return;
 						throw std::logic_error("must be greater 0");
 					})

@@ -63,7 +63,7 @@ namespace disposer_module::histogram{
 					// TODO: Default for 8 and 16 bit types
 				),
 				"max"_param(types, enable_by_types_of("image"_in),
-					value_verify_fn([](auto const& iop, auto const& max){
+					verify_value_fn([](auto const& iop, auto const& max){
 						auto const min =
 							iop("min"_param).get(hana::typeid_(max));
 						if(min < max) return;

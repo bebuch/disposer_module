@@ -81,7 +81,7 @@ namespace disposer_module::encode_jpg{
 				"image"_in(types, wrap_in< bitmap >),
 				"data"_out(hana::type_c< std::string >),
 				"quality"_param(hana::type_c< std::size_t >,
-					value_verify_fn([](auto const& /*iop*/, std::size_t value){
+					verify_value_fn([](auto const& /*iop*/, std::size_t value){
 						if(value > 100){
 							throw std::logic_error(
 								"expected a percent value (0% - 100%)");

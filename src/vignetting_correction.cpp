@@ -51,8 +51,8 @@ namespace disposer_module::vignetting_correction{
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = module_register_fn(
 			module_configure(
-				"image"_in(types, template_transform_c< bitmap >),
-				"image"_out(types, template_transform_c< bitmap >,
+				"image"_in(types, wrap_in< bitmap >),
+				"image"_out(types, wrap_in< bitmap >,
 					enable_by_types_of("image"_in)
 				),
 				"factor_image_filename"_param(hana::type_c< std::string >)

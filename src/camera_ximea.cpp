@@ -562,7 +562,7 @@ namespace disposer_module::camera_ximea{
 		auto init = component_register_fn(
 			component_configure(
 				"format"_param(type_c< pixel_format >,
-					parser([](
+					parser_fn([](
 						auto const& /*iop*/,
 						std::string_view data,
 						hana::basic_type< pixel_format >
@@ -581,21 +581,21 @@ namespace disposer_module::camera_ximea{
 					)
 				),
 				"cam_id"_param(type_c< std::uint32_t >,
-					default_value([](auto const&, auto){ return 0; })
+					default_value_fn([](auto const&, auto){ return 0; })
 				),
 				"use_camera_region"_param(type_c< bool >,
-					default_value([](auto const&, auto){ return false; })
+					default_value_fn([](auto const&, auto){ return false; })
 				),
 				"x_offset"_param(type_c< std::size_t >,
-					default_value([](auto const&, auto){ return 0; })
+					default_value_fn([](auto const&, auto){ return 0; })
 				),
 				"y_offset"_param(type_c< std::size_t >,
-					default_value([](auto const&, auto){ return 0; })
+					default_value_fn([](auto const&, auto){ return 0; })
 				),
 				"width"_param(type_c< std::size_t >),
 				"height"_param(type_c< std::size_t >),
 				"exposure_time_ns"_param(type_c< std::size_t >,
-					default_value([](auto const&, auto){ return 10000; })
+					default_value_fn([](auto const&, auto){ return 10000; })
 				)
 			),
 			component_init([](auto& component){
@@ -607,8 +607,8 @@ namespace disposer_module::camera_ximea{
 					return module_register_fn(
 						module_configure(
 							"image"_out(types,
-								template_transform_c< bitmap >,
-								enable([&component](auto const& iop, auto type){
+								wrap_in< bitmap >,
+								enable_fn([&component](auto const& iop, auto type){
 									auto const format =
 										component("format"_param).get();
 									return

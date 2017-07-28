@@ -38,10 +38,10 @@ namespace disposer_module::vector_disjoin{
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = module_register_fn(
 			module_configure(
-				"list"_in(types, template_transform_c< vector >),
+				"list"_in(types, wrap_in< vector >),
 				"data"_out(types, enable_by_types_of("list"_in)),
 				"count"_param(hana::type_c< std::size_t >,
-					value_verify([](auto const& /*iop*/, auto const& value){
+					value_verify_fn([](auto const& /*iop*/, auto const& value){
 						if(value > 0) return;
 						throw std::logic_error("must be greater 0");
 					})

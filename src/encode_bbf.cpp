@@ -73,10 +73,10 @@ namespace disposer_module::encode_bbf{
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = module_register_fn(
 			module_configure(
-				"image"_in(types, template_transform_c< bitmap >),
+				"image"_in(types, wrap_in< bitmap >),
 				"data"_out(hana::type_c< std::string >),
 				"endian"_param(hana::type_c< boost::endian::order >,
-					parser([](
+					parser_fn([](
 						auto const& /*iop*/,
 						std::string_view data,
 						hana::basic_type< boost::endian::order >
@@ -90,7 +90,7 @@ namespace disposer_module::encode_bbf{
 							"little, big & native");
 
 					}),
-					default_value([](auto const&, auto){
+					default_value_fn([](auto const&, auto){
 						return boost::endian::order::native;
 					}),
 					type_as_text(

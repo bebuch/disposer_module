@@ -82,7 +82,7 @@ namespace disposer_module::vignetting_correction_creator{
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = module_register_fn(
 			module_configure(
-				"image"_in(types, template_transform_c< bitmap >),
+				"image"_in(types, wrap_in< bitmap >),
 				"image"_out(hana::type_c< bitmap< float > >)/*,
 				"max_value"_param(types)*/ // Support for 10/12/14 bit images
 			),

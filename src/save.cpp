@@ -123,23 +123,23 @@ namespace disposer_module::save{
 				"fixed_id"_param(type_c< std::optional< std::size_t > >),
 				"id_modulo"_param(type_c< std::optional< std::size_t > >),
 				"id_digits"_param(type_c< std::size_t >,
-					default_value([](auto const&, auto){ return 4; })),
+					default_value_fn([](auto const&, auto){ return 4; })),
 				"subid_digits"_param(type_c< std::size_t >,
-					default_value([](auto const&, auto){ return 1; })),
+					default_value_fn([](auto const&, auto){ return 1; })),
 				"i_digits"_param(type_c< std::size_t >,
-					default_value([](auto const&, auto){ return 2; })),
+					default_value_fn([](auto const&, auto){ return 2; })),
 				"j_digits"_param(type_c< std::size_t >,
-					default_value([](auto const&, auto){ return 2; })),
+					default_value_fn([](auto const&, auto){ return 2; })),
 				"id_add"_param(type_c< std::size_t >,
-					default_value([](auto const&, auto){ return 0; })),
+					default_value_fn([](auto const&, auto){ return 0; })),
 				"subid_add"_param(type_c< std::size_t >,
-					default_value([](auto const&, auto){ return 0; })),
+					default_value_fn([](auto const&, auto){ return 0; })),
 				"i_add"_param(type_c< std::size_t >,
-					default_value([](auto const&, auto){ return 0; })),
+					default_value_fn([](auto const&, auto){ return 0; })),
 				"j_add"_param(type_c< std::size_t >,
-					default_value([](auto const&, auto){ return 0; })),
+					default_value_fn([](auto const&, auto){ return 0; })),
 				"name"_param(name_generator_types,
-					enable([](auto const& iop, auto type){
+					enable_fn([](auto const& iop, auto type){
 						auto const& out = iop("content"_in);
 						if constexpr(type == type_c< ng1 >){
 							return out.is_enabled(type_c< t1 >);
@@ -149,7 +149,7 @@ namespace disposer_module::save{
 							return out.is_enabled(type_c< t3 >);
 						}
 					}),
-					parser([](
+					parser_fn([](
 						auto const& iop, std::string_view data, auto type
 					){
 						if constexpr(type == type_c< ng1 >){

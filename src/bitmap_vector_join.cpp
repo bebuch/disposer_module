@@ -128,7 +128,7 @@ namespace disposer_module::bitmap_vector_join{
 				std::string_view value,
 				hana::basic_type< T > type
 			)const{
-				return stream_parser{}(iop, value, type);
+				return stream_parser(iop, value, type);
 			}
 
 			template < typename IOP_List, typename T >
@@ -289,22 +289,19 @@ namespace disposer_module::bitmap_vector_join{
 		auto init = module_register_fn(
 			module_configure(
 				"images"_in(types,
-					type_transform([](auto type)noexcept{
-						return hana::type_c< std::vector< bitmap<
-							typename decltype(type)::type > > >;
-					})),
+					wrap_in< bitmap_vector >),
 				"image"_out(types,
-					template_transform_c< bitmap >,
+					wrap_in< bitmap >,
 					enable_by_types_of("images"_in)
 				),
 				"images_per_line"_param(hana::type_c< std::size_t >,
-					value_verify([](auto const& /*iop*/, auto const& value){
+					value_verify_fn([](auto const& /*iop*/, auto const& value){
 						if(value > 0) return;
 						throw std::logic_error("must be greater 0");
 					})
 				),
 				"default_value"_param(types,
-					parser(value_parser()),
+					parser_fn(value_parser{}),
 					enable_by_types_of("images"_in))
 			),
 			module_enable([]{

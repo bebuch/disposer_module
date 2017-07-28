@@ -124,7 +124,7 @@ namespace disposer_module::load{
 
 	void init(std::string const& name, module_declarant& disposer){
 		auto expect_greater_0 =
-			value_verify([](auto const& /*iop*/, std::size_t value){
+			value_verify_fn([](auto const& /*iop*/, std::size_t value){
 				if(value == 0){
 					throw std::logic_error("must be greater 0");
 				}
@@ -133,7 +133,7 @@ namespace disposer_module::load{
 		auto init = module_register_fn(
 			module_configure(
 				"type"_param(hana::type_c< data_type >,
-					parser([](auto const& /*iop*/, std::string_view data,
+					parser_fn([](auto const& /*iop*/, std::string_view data,
 						hana::basic_type< data_type >
 					){
 						if(data == "file"){
@@ -149,7 +149,7 @@ namespace disposer_module::load{
 							+ std::string(data) + "', allowed values are: "
 							"file, file_list & file_list_list");
 					}),
-					default_value([](auto const&, auto){
+					default_value_fn([](auto const&, auto){
 						return data_type::file;
 					}),
 					type_as_text(
@@ -157,7 +157,7 @@ namespace disposer_module::load{
 					)
 				),
 				"content"_out(types,
-					enable([](auto const& iop, auto type)->bool{
+					enable_fn([](auto const& iop, auto type)->bool{
 						switch(iop("type"_param).get()){
 							case data_type::file:
 								return type == type_c< t1 >;
@@ -178,23 +178,23 @@ namespace disposer_module::load{
 				"fixed_id"_param(type_c< std::optional< std::size_t > >),
 				"id_modulo"_param(type_c< std::optional< std::size_t > >),
 				"id_digits"_param(type_c< std::size_t >,
-					default_value([](auto const&, auto){ return 4; })),
+					default_value_fn([](auto const&, auto){ return 4; })),
 				"subid_digits"_param(type_c< std::size_t >,
-					default_value([](auto const&, auto){ return 1; })),
+					default_value_fn([](auto const&, auto){ return 1; })),
 				"i_digits"_param(type_c< std::size_t >,
-					default_value([](auto const&, auto){ return 2; })),
+					default_value_fn([](auto const&, auto){ return 2; })),
 				"j_digits"_param(type_c< std::size_t >,
-					default_value([](auto const&, auto){ return 2; })),
+					default_value_fn([](auto const&, auto){ return 2; })),
 				"id_add"_param(type_c< std::size_t >,
-					default_value([](auto const&, auto){ return 0; })),
+					default_value_fn([](auto const&, auto){ return 0; })),
 				"subid_add"_param(type_c< std::size_t >,
-					default_value([](auto const&, auto){ return 0; })),
+					default_value_fn([](auto const&, auto){ return 0; })),
 				"i_add"_param(type_c< std::size_t >,
-					default_value([](auto const&, auto){ return 0; })),
+					default_value_fn([](auto const&, auto){ return 0; })),
 				"j_add"_param(type_c< std::size_t >,
-					default_value([](auto const&, auto){ return 0; })),
+					default_value_fn([](auto const&, auto){ return 0; })),
 				"name"_param(name_generator_types,
-					enable([](auto const& iop, auto type){
+					enable_fn([](auto const& iop, auto type){
 						auto const& out = iop("content"_out);
 						if constexpr(type == type_c< ng1 >){
 							return out.is_enabled(type_c< t1 >);
@@ -204,7 +204,7 @@ namespace disposer_module::load{
 							return out.is_enabled(type_c< t3 >);
 						}
 					}),
-					parser([](
+					parser_fn([](
 						auto const& iop, std::string_view data, auto type
 					){
 						if constexpr(type == type_c< ng1 >){
@@ -255,17 +255,17 @@ namespace disposer_module::load{
 					)
 				),
 				"subid_count"_param(type_c< std::size_t >,
-					default_value([](auto const&, auto){ return 1; }),
+					default_value_fn([](auto const&, auto){ return 1; }),
 					expect_greater_0),
 				"i_count"_param(type_c< std::size_t >,
-					enable([](auto const& iop, auto /*type*/){
+					enable_fn([](auto const& iop, auto /*type*/){
 						auto const& out = iop("content"_out);
 						return out.is_enabled(type_c< t2 >)
 							|| out.is_enabled(type_c< t3 >);
 					}),
 					expect_greater_0),
 				"j_count"_param(type_c< std::size_t >,
-					enable([](auto const& iop, auto /*type*/){
+					enable_fn([](auto const& iop, auto /*type*/){
 						auto const& out = iop("content"_out);
 						return out.is_enabled(type_c< t3 >);
 					}),

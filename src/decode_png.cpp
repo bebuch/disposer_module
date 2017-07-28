@@ -98,7 +98,7 @@ namespace disposer_module::decode_png{
 			module_configure(
 				"data"_in(type_c< std::string >),
 				"format"_param(type_c< format >,
-					parser([](
+					parser_fn([](
 						auto const& /*iop*/,
 						std::string_view data,
 						hana::basic_type< format >
@@ -121,8 +121,8 @@ namespace disposer_module::decode_png{
 					)
 				),
 				"image"_out(types,
-					template_transform_c< bitmap >,
-					enable([](auto const& iop, auto type){
+					wrap_in< bitmap >,
+					enable_fn([](auto const& iop, auto type){
 						auto const format = iop("format"_param).get();
 						return
 							(type == type_c< std::uint8_t > &&

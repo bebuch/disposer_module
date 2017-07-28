@@ -78,16 +78,16 @@ namespace disposer_module::encode_jpg{
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = module_register_fn(
 			module_configure(
-				"image"_in(types, template_transform_c< bitmap >),
+				"image"_in(types, wrap_in< bitmap >),
 				"data"_out(hana::type_c< std::string >),
 				"quality"_param(hana::type_c< std::size_t >,
-					value_verify([](auto const& /*iop*/, std::size_t value){
+					value_verify_fn([](auto const& /*iop*/, std::size_t value){
 						if(value > 100){
 							throw std::logic_error(
 								"expected a percent value (0% - 100%)");
 						}
 					}),
-					default_value([](auto const&, auto){ return 90; }))
+					default_value_fn([](auto const&, auto){ return 90; }))
 			),
 			module_enable([]{
 				return [](auto& module){

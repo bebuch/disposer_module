@@ -388,10 +388,10 @@ namespace disposer_module::http_server_component{
 			component_configure(
 				"root"_param(hana::type_c< std::string >),
 				"port"_param(hana::type_c< std::uint16_t >,
-					default_value([](auto const&, auto){ return 8000; })),
+					default_value_fn([](auto const&, auto){ return 8000; })),
 				"thread_count"_param(hana::type_c< std::size_t >,
-					default_value([](auto const&, auto){ return 2; }),
-					value_verify([](auto const& /*iop*/, std::size_t value){
+					default_value_fn([](auto const&, auto){ return 2; }),
+					value_verify_fn([](auto const& /*iop*/, std::size_t value){
 						if(value > 0) return;
 						throw std::logic_error("must be greater or equal 1");
 					}))

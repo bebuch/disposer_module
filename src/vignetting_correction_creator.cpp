@@ -47,30 +47,51 @@ namespace disposer_module::vignetting_correction_creator{
 
 	template < typename Module, typename T >
 	bitmap< float > exec(Module const& module, bitmap< T > const& image){
-		bitmap< float > result(image.size());
-		T const max = max_value(image);
-
 		auto const max_v = module("max_value"_param).get(hana::type_c< T >);
+
+		T max = 0;
+		module.log([&max](logsys::stdlogb& os){
+				os << "find max image value: " << max;
+			}, [&]{
+				max = max_value(image);
+			});
+
 		if(max >= max_v){
 			throw std::runtime_error("image is overexposed");
 		}
 
 		auto const reference = module("reference"_param).get();
-		auto const reference_value = [&]{
-				if(reference == 100) return static_cast< float >(max);
+		float reference_value = 0;
+
+		module.log([&reference_value](logsys::stdlogb& os){
+				os << "reference value: " << reference_value;
+			}, [&]{
+				if(reference == 100){
+					reference_value = static_cast< float >(max);
+					return;
+				}
+
 				auto const h = bmp::histogram(image, T(0), max_v, max_v, true);
 				auto const pc = static_cast< float >(image.point_count());
 				auto const iter = std::find_if(h.rbegin(), h.rend(),
 					[pc, reference](auto const& count){
 						return count / pc < reference / 100;
 					});
-				return static_cast< float >(max_v - (iter - h.rbegin()));
-			}();
+				reference_value =
+					static_cast< float >(max_v - (iter - h.rbegin()));
+			});
 
-		std::transform(image.begin(), image.end(), result.begin(),
-			[reference_value](auto const& v){
-				if(v == 0) throw std::runtime_error("image is underexposed");
-				return reference_value / v;
+		bitmap< float > result(image.size());
+		module.log([](logsys::stdlogb& os){
+				os << "calculation";
+			}, [&]{
+				std::transform(image.begin(), image.end(), result.begin(),
+					[reference_value](auto const& v){
+						if(v == 0){
+							throw std::runtime_error("image is underexposed");
+						}
+						return reference_value / v;
+					});
 			});
 
 		return result;

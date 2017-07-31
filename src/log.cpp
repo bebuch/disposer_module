@@ -23,6 +23,9 @@ namespace disposer_module{
 			replace_all(line, "(ERROR)", "\033[1;31m(ERROR)\033[0m");
 			replace_all(line, "EXCEPTION CATCHED:",
 				"\033[41;1mEXCEPTION CATCHED:\033[0m");
+			replace_all(line, "EXCEPTION WHILE LOGGING:",
+				"\033[1;31mEXCEPTION WHILE LOGGING:\033[0m");
+
 			std::clog << line;
 		}catch(std::exception const& e){
 			std::cerr << "terminate with exception in stdlog.exec(): "

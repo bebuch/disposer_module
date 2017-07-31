@@ -49,11 +49,11 @@ namespace disposer_module::vignetting_correction_creator{
 	bitmap< float > exec(Module const& module, bitmap< T > const& image){
 		auto const max_v = module("max_value"_param).get(hana::type_c< T >);
 
-		T max = 0;
-		module.log([&max](logsys::stdlogb& os){
-				os << "find max image value: " << max;
+		T const max = module.log([](logsys::stdlogb& os, T const* max){
+				os << "find max image value";
+				if(max) os << ": " << *max;
 			}, [&]{
-				max = max_value(image);
+				return max_value(image);
 			});
 
 		if(max >= max_v){
@@ -61,15 +61,12 @@ namespace disposer_module::vignetting_correction_creator{
 		}
 
 		auto const reference = module("reference"_param).get();
-		float reference_value = 0;
-
-		module.log([&reference_value](logsys::stdlogb& os){
-				os << "reference value: " << reference_value;
+		float const reference_value = module.log(
+			[](logsys::stdlogb& os, float const* ref_v){
+				os << "reference value";
+				if(ref_v) os << ": " << *ref_v;
 			}, [&]{
-				if(reference == 100){
-					reference_value = static_cast< float >(max);
-					return;
-				}
+				if(reference == 100) return static_cast< float >(max);
 
 				auto const h = bmp::histogram(image, T(0), max_v, max_v, true);
 				auto const pc = static_cast< float >(image.point_count());
@@ -77,14 +74,12 @@ namespace disposer_module::vignetting_correction_creator{
 					[pc, reference](auto const& count){
 						return count / pc < reference / 100;
 					});
-				reference_value =
-					static_cast< float >(max_v - (iter - h.rbegin()));
+				return static_cast< float >(max_v - (iter - h.rbegin()));
 			});
 
-		bitmap< float > result(image.size());
-		module.log([](logsys::stdlogb& os){
-				os << "calculation";
-			}, [&]{
+		return module.log([](logsys::stdlogb& os){ os << "calculation"; },
+			[&]{
+				bitmap< float > result(image.size());
 				std::transform(image.begin(), image.end(), result.begin(),
 					[reference_value](auto const& v){
 						if(v == 0){
@@ -92,9 +87,8 @@ namespace disposer_module::vignetting_correction_creator{
 						}
 						return reference_value / v;
 					});
+				return result;
 			});
-
-		return result;
 	}
 
 

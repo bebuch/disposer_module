@@ -9,7 +9,6 @@ local tar = ../tar ;
 local big = ../big ;
 local http = ../http ;
 local logsys = ../logsys ;
-local aravis = ../aravis ;
 
 use-project /boost
 	: $(boost)

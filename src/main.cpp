@@ -10,7 +10,6 @@
 #include <logsys/stdlogb.hpp>
 
 #include <disposer/disposer.hpp>
-#include <disposer/module_base.hpp>
 
 #include <boost/stacktrace.hpp>
 #include <boost/lexical_cast.hpp>

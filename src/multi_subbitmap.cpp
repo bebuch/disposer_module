@@ -141,17 +141,17 @@ namespace disposer_module::multi_subbitmap{
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = module_register_fn(
 			module_configure(
-				"images"_in(types, wrap_in< bitmap_vector >),
-				"images"_out(types, wrap_in< bitmap_vector >,
+				make("images"_in, types, wrap_in< bitmap_vector >),
+				make("images"_out, types, wrap_in< bitmap_vector >,
 					enable_by_types_of("images"_in)),
-				"x_offsets"_param(hana::type_c< std::vector< float > >,
+				make("x_offsets"_param, hana::type_c< std::vector< float > >,
 					parser_fn< list_parser >(),
 					verify_value_fn([](auto const& /*iop*/, auto const& values){
 						if(!values.empty()) return;
 						throw std::logic_error("Need at least one x value");
 					}),
 					as_text),
-				"y_offsets"_param(hana::type_c< std::vector< float > >,
+				make("y_offsets"_param, hana::type_c< std::vector< float > >,
 					parser_fn< list_parser >(),
 					verify_value_fn([](auto const& iop, auto const& values){
 						auto const& x_offsets = iop("x_offsets"_param).get();
@@ -160,8 +160,8 @@ namespace disposer_module::multi_subbitmap{
 							"different element count as in x_offsets");
 					}),
 					as_text),
-				"width"_param(hana::type_c< std::size_t >),
-				"height"_param(hana::type_c< std::size_t >)
+				make("width"_param, hana::type_c< std::size_t >),
+				make("height"_param, hana::type_c< std::size_t >)
 			),
 			module_enable([]{
 				return [](auto& module){

@@ -83,16 +83,14 @@ namespace disposer_module::vector_join{
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = module_register_fn(
 			module_configure(
-				"data"_in(types),
-				"list"_out(types, wrap_in< vector >,
-					enable_by_types_of("data"_in)
-				),
-				"count"_param(hana::type_c< std::size_t >,
+				make("data"_in, types),
+				make("list"_out, types, wrap_in< vector >,
+					enable_by_types_of("data"_in)),
+				make("count"_param, hana::type_c< std::size_t >,
 					verify_value_fn([](auto const& /*iop*/, auto const& value){
 						if(value > 0) return;
 						throw std::logic_error("must be greater 0");
-					})
-				)
+					}))
 			),
 			module_enable([]{
 				return exec{};

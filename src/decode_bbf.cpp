@@ -230,8 +230,8 @@ namespace disposer_module::decode_bbf{
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = module_register_fn(
 			module_configure(
-				"data"_in(type_c< std::string >),
-				"format"_param(type_c< format >,
+				make("data"_in, type_c< std::string >),
+				make("format"_param, type_c< format >,
 					parser_fn([](
 						auto const& /*iop*/,
 						std::string_view data,
@@ -241,15 +241,13 @@ namespace disposer_module::decode_bbf{
 					}),
 					type_as_text(
 						hana::make_pair(type_c< format >, "format"_s)
-					)
-				),
-				"image"_out(types,
+					)),
+				make("image"_out, types,
 					wrap_in< bitmap >,
 					enable_fn([](auto const& iop, auto type){
 						auto const format = iop("format"_param).get();
 						return type_as_format[type] == format;
-					})
-				)
+					}))
 			),
 			module_enable([]{
 				return [](auto& module){

@@ -83,13 +83,13 @@ namespace disposer_module::subbitmap{
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = module_register_fn(
 			module_configure(
-				"image"_in(types, wrap_in< bitmap >),
-				"image"_out(types, wrap_in< bitmap >,
+				make("image"_in, types, wrap_in< bitmap >),
+				make("image"_out, types, wrap_in< bitmap >,
 					enable_by_types_of("image"_in)),
-				"x"_param(hana::type_c< float >),
-				"y"_param(hana::type_c< float >),
-				"width"_param(hana::type_c< std::size_t >),
-				"height"_param(hana::type_c< std::size_t >)
+				make("x"_param, hana::type_c< float >),
+				make("y"_param, hana::type_c< float >),
+				make("width"_param, hana::type_c< std::size_t >),
+				make("height"_param, hana::type_c< std::size_t >)
 			),
 			module_enable([]{
 				return [](auto& module){

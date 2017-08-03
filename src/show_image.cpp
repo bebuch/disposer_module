@@ -94,8 +94,8 @@ namespace disposer_module::show_image{
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = module_register_fn(
 			module_configure(
-				"image"_in(types, wrap_in< bitmap >),
-				"window_title"_param(hana::type_c< std::string >)
+				make("image"_in, types, wrap_in< bitmap >),
+				make("window_title"_param, hana::type_c< std::string >)
 			),
 			module_enable([](auto const& module){
 				return [data_ = resources(module("window_title"_param).get())]

@@ -73,9 +73,9 @@ namespace disposer_module::encode_bbf{
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = module_register_fn(
 			module_configure(
-				"image"_in(types, wrap_in< bitmap >),
-				"data"_out(hana::type_c< std::string >),
-				"endian"_param(hana::type_c< boost::endian::order >,
+				make("image"_in, types, wrap_in< bitmap >),
+				make("data"_out, hana::type_c< std::string >),
+				make("endian"_param, hana::type_c< boost::endian::order >,
 					parser_fn([](
 						auto const& /*iop*/,
 						std::string_view data,

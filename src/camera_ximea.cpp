@@ -561,7 +561,7 @@ namespace disposer_module::camera_ximea{
 	void init(std::string const& name, component_declarant& declarant){
 		auto init = component_register_fn(
 			component_configure(
-				"format"_param(type_c< pixel_format >,
+				make("format"_param, type_c< pixel_format >,
 					parser_fn([](
 						auto const& /*iop*/,
 						std::string_view data,
@@ -579,13 +579,17 @@ namespace disposer_module::camera_ximea{
 					type_as_text(
 						hana::make_pair(type_c< pixel_format >, "format"_s)
 					)),
-				"cam_id"_param(type_c< std::uint32_t >, default_value(0)),
-				"use_camera_region"_param(type_c< bool >, default_value(false)),
-				"x_offset"_param(type_c< std::size_t >, default_value(0)),
-				"y_offset"_param(type_c< std::size_t >, default_value(0)),
-				"width"_param(type_c< std::size_t >),
-				"height"_param(type_c< std::size_t >),
-				"exposure_time_ns"_param(type_c< std::size_t >,
+				make("cam_id"_param, type_c< std::uint32_t >,
+					default_value(0)),
+				make("use_camera_region"_param, type_c< bool >,
+					default_value(false)),
+				make("x_offset"_param, type_c< std::size_t >,
+					default_value(0)),
+				make("y_offset"_param, type_c< std::size_t >,
+					default_value(0)),
+				make("width"_param, type_c< std::size_t >),
+				make("height"_param, type_c< std::size_t >),
+				make("exposure_time_ns"_param, type_c< std::size_t >,
 					default_value(10000))
 			),
 			component_init([](auto& component){
@@ -596,7 +600,7 @@ namespace disposer_module::camera_ximea{
 				"capture"_module([](auto& component){
 					return module_register_fn(
 						module_configure(
-							"image"_out(types,
+							make("image"_out, types,
 								wrap_in< bitmap >,
 								enable_fn([&component](auto const& iop, auto type){
 									auto const format =

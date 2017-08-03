@@ -55,13 +55,13 @@ namespace disposer_module::histogram{
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = module_register_fn(
 			module_configure(
-				"image"_in(types, wrap_in< bitmap >),
-				"histogram"_out(hana::type_c< std::vector< std::size_t > >),
-				"cumulative"_param(hana::type_c< bool >, default_value(false)),
-				"min"_param(types, enable_by_types_of("image"_in)
+				make("image"_in, types, wrap_in< bitmap >),
+				make("histogram"_out, hana::type_c< std::vector< std::size_t > >),
+				make("cumulative"_param, hana::type_c< bool >, default_value(false)),
+				make("min"_param, types, enable_by_types_of("image"_in)
 					// TODO: Default for 8 and 16 bit types
 				),
-				"max"_param(types, enable_by_types_of("image"_in),
+				make("max"_param, types, enable_by_types_of("image"_in),
 					verify_value_fn([](auto const& iop, auto const& max){
 						auto const min =
 							iop("min"_param).get(hana::typeid_(max));
@@ -70,7 +70,7 @@ namespace disposer_module::histogram{
 					})
 					// TODO: Default for 8 and 16 bit types
 				),
-				"bin_count"_param(hana::type_c< std::size_t >
+				make("bin_count"_param, hana::type_c< std::size_t >
 					// TODO: Default for 8 and 16 bit types
 				)
 			),

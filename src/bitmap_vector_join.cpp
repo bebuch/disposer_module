@@ -288,19 +288,17 @@ namespace disposer_module::bitmap_vector_join{
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = module_register_fn(
 			module_configure(
-				"images"_in(types,
+				make("images"_in, types,
 					wrap_in< bitmap_vector >),
-				"image"_out(types,
+				make("image"_out, types,
 					wrap_in< bitmap >,
-					enable_by_types_of("images"_in)
-				),
-				"images_per_line"_param(hana::type_c< std::size_t >,
+					enable_by_types_of("images"_in)),
+				make("images_per_line"_param, hana::type_c< std::size_t >,
 					verify_value_fn([](auto const& /*iop*/, auto const& value){
 						if(value > 0) return;
 						throw std::logic_error("must be greater 0");
-					})
-				),
-				"default_value"_param(types,
+					})),
+				make("default_value"_param, types,
 					parser_fn(value_parser{}),
 					enable_by_types_of("images"_in))
 			),

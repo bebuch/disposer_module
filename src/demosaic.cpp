@@ -133,23 +133,20 @@ namespace disposer_module::demosaic{
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = module_register_fn(
 			module_configure(
-				"image"_in(types, wrap_in< bitmap >),
-				"images"_out(types,
+				make("image"_in, types, wrap_in< bitmap >),
+				make("images"_out, types,
 					wrap_in< bitmap_vector >,
-					enable_by_types_of("image"_in)
-				),
-				"x_count"_param(hana::type_c< std::size_t >,
+					enable_by_types_of("image"_in)),
+				make("x_count"_param, hana::type_c< std::size_t >,
 					verify_value_fn([](auto const& /*iop*/, auto const& value){
 						if(value > 0) return;
 						throw std::logic_error("must be greater 0");
-					})
-				),
-				"y_count"_param(hana::type_c< std::size_t >,
+					})),
+				make("y_count"_param, hana::type_c< std::size_t >,
 					verify_value_fn([](auto const& /*iop*/, auto const& value){
 						if(value > 0) return;
 						throw std::logic_error("must be greater 0");
-					})
-				)
+					}))
 			),
 			module_enable([]{
 				return [](auto& module){

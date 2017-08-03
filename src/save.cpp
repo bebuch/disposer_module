@@ -119,18 +119,26 @@ namespace disposer_module::save{
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = module_register_fn(
 			module_configure(
-				"content"_in(types),
-				"fixed_id"_param(type_c< std::optional< std::size_t > >),
-				"id_modulo"_param(type_c< std::optional< std::size_t > >),
-				"id_digits"_param(type_c< std::size_t >, default_value(4)),
-				"subid_digits"_param(type_c< std::size_t >, default_value(1)),
-				"i_digits"_param(type_c< std::size_t >, default_value(2)),
-				"j_digits"_param(type_c< std::size_t >, default_value(2)),
-				"id_add"_param(type_c< std::size_t >, default_value(0)),
-				"subid_add"_param(type_c< std::size_t >, default_value(0)),
-				"i_add"_param(type_c< std::size_t >, default_value(0)),
-				"j_add"_param(type_c< std::size_t >, default_value(0)),
-				"name"_param(name_generator_types,
+				make("content"_in, types),
+				make("fixed_id"_param, type_c< std::optional< std::size_t > >),
+				make("id_modulo"_param, type_c< std::optional< std::size_t > >),
+				make("id_digits"_param, type_c< std::size_t >,
+					default_value(4)),
+				make("subid_digits"_param, type_c< std::size_t >,
+					default_value(1)),
+				make("i_digits"_param, type_c< std::size_t >,
+					default_value(2)),
+				make("j_digits"_param, type_c< std::size_t >,
+					default_value(2)),
+				make("id_add"_param, type_c< std::size_t >,
+					default_value(0)),
+				make("subid_add"_param, type_c< std::size_t >,
+					default_value(0)),
+				make("i_add"_param, type_c< std::size_t >,
+					default_value(0)),
+				make("j_add"_param, type_c< std::size_t >,
+					default_value(0)),
+				make("name"_param, name_generator_types,
 					enable_fn([](auto const& iop, auto type){
 						auto const& out = iop("content"_in);
 						if constexpr(type == type_c< ng1 >){

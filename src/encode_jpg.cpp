@@ -78,9 +78,9 @@ namespace disposer_module::encode_jpg{
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = module_register_fn(
 			module_configure(
-				"image"_in(types, wrap_in< bitmap >),
-				"data"_out(hana::type_c< std::string >),
-				"quality"_param(hana::type_c< std::size_t >,
+				make("image"_in, types, wrap_in< bitmap >),
+				make("data"_out, hana::type_c< std::string >),
+				make("quality"_param, hana::type_c< std::size_t >,
 					verify_value_fn([](auto const& /*iop*/, std::size_t value){
 						if(value > 100){
 							throw std::logic_error(

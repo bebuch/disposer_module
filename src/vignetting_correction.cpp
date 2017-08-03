@@ -52,12 +52,12 @@ namespace disposer_module::vignetting_correction{
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = module_register_fn(
 			module_configure(
-				"image"_in(types, wrap_in< bitmap >),
-				"image"_out(types, wrap_in< bitmap >,
-					enable_by_types_of("image"_in)
-				),
-				"factor_image_filename"_param(hana::type_c< std::string >),
-				"max_value"_param(types,
+				make("image"_in, types, wrap_in< bitmap >),
+				make("image"_out, types, wrap_in< bitmap >,
+					enable_by_types_of("image"_in)),
+				make("factor_image_filename"_param,
+					hana::type_c< std::string >),
+				make("max_value"_param, types,
 					enable_by_types_of("image"_in),
 					default_value_fn([](auto const& iop, auto t){
 						using type = typename decltype(t)::type;

@@ -386,10 +386,10 @@ namespace disposer_module::http_server_component{
 
 		auto init = component_register_fn(
 			component_configure(
-				"root"_param(hana::type_c< std::string >),
-				"port"_param(hana::type_c< std::uint16_t >,
+				make("root"_param, hana::type_c< std::string >),
+				make("port"_param, hana::type_c< std::uint16_t >,
 					default_value(8000)),
-				"thread_count"_param(hana::type_c< std::size_t >,
+				make("thread_count"_param, hana::type_c< std::size_t >,
 					default_value(2),
 					verify_value_fn([](auto const& /*iop*/, std::size_t value){
 						if(value > 0) return;
@@ -407,8 +407,9 @@ namespace disposer_module::http_server_component{
 				"websocket"_module([](auto& component){
 					return module_register_fn(
 						module_configure(
-							"data"_in(hana::type_c< std::string >),
-							"service_name"_param(hana::type_c< std::string >)
+							make("data"_in, hana::type_c< std::string >),
+							make("service_name"_param,
+								hana::type_c< std::string >)
 						),
 						module_enable([&component](auto const& module){
 							auto init = component.data()

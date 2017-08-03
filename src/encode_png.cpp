@@ -93,8 +93,8 @@ namespace disposer_module::encode_png{
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = module_register_fn(
 			module_configure(
-				"image"_in(types, wrap_in< bitmap >),
-				"data"_out(hana::type_c< std::string >)
+				make("image"_in, types, wrap_in< bitmap >),
+				make("data"_out, hana::type_c< std::string >)
 			),
 			module_enable([]{
 				return [](auto& module){

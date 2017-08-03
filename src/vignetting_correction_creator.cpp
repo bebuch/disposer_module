@@ -95,9 +95,9 @@ namespace disposer_module::vignetting_correction_creator{
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = module_register_fn(
 			module_configure(
-				"image"_in(types, wrap_in< bitmap >),
-				"image"_out(hana::type_c< bitmap< float > >),
-				"max_value"_param(types,
+				make("image"_in, types, wrap_in< bitmap >),
+				make("image"_out, hana::type_c< bitmap< float > >),
+				make("max_value"_param, types,
 					enable_by_types_of("image"_in),
 					default_value_fn([](auto const& iop, auto t){
 						using type = typename decltype(t)::type;
@@ -107,7 +107,7 @@ namespace disposer_module::vignetting_correction_creator{
 							return std::numeric_limits< type >::max();
 						}
 					})),
-				"reference"_param(hana::type_c< float >,
+				make("reference"_param, hana::type_c< float >,
 					verify_value_fn([](auto const& /*iop*/, std::size_t value){
 						if(value > 100 || value < 1){
 							throw std::logic_error(

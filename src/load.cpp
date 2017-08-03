@@ -132,7 +132,7 @@ namespace disposer_module::load{
 
 		auto init = module_register_fn(
 			module_configure(
-				"type"_param(hana::type_c< data_type >,
+				make("type"_param, hana::type_c< data_type >,
 					parser_fn([](auto const& /*iop*/, std::string_view data,
 						hana::basic_type< data_type >
 					){
@@ -153,7 +153,7 @@ namespace disposer_module::load{
 					type_as_text(
 						hana::make_pair(hana::type_c< data_type >, "type"_s)
 					)),
-				"content"_out(types,
+				make("content"_out, types,
 					enable_fn([](auto const& iop, auto type)->bool{
 						switch(iop("type"_param).get()){
 							case data_type::file:
@@ -172,17 +172,25 @@ namespace disposer_module::load{
 
 						return false;
 					})),
-				"fixed_id"_param(type_c< std::optional< std::size_t > >),
-				"id_modulo"_param(type_c< std::optional< std::size_t > >),
-				"id_digits"_param(type_c< std::size_t >, default_value(4)),
-				"subid_digits"_param(type_c< std::size_t >, default_value(1)),
-				"i_digits"_param(type_c< std::size_t >, default_value(2)),
-				"j_digits"_param(type_c< std::size_t >, default_value(2)),
-				"id_add"_param(type_c< std::size_t >, default_value(0)),
-				"subid_add"_param(type_c< std::size_t >, default_value(0)),
-				"i_add"_param(type_c< std::size_t >, default_value(0)),
-				"j_add"_param(type_c< std::size_t >, default_value(0)),
-				"name"_param(name_generator_types,
+				make("fixed_id"_param, type_c< std::optional< std::size_t > >),
+				make("id_modulo"_param, type_c< std::optional< std::size_t > >),
+				make("id_digits"_param, type_c< std::size_t >,
+					default_value(4)),
+				make("subid_digits"_param, type_c< std::size_t >,
+					default_value(1)),
+				make("i_digits"_param, type_c< std::size_t >,
+					default_value(2)),
+				make("j_digits"_param, type_c< std::size_t >,
+					default_value(2)),
+				make("id_add"_param, type_c< std::size_t >,
+					default_value(0)),
+				make("subid_add"_param, type_c< std::size_t >,
+					default_value(0)),
+				make("i_add"_param, type_c< std::size_t >,
+					default_value(0)),
+				make("j_add"_param, type_c< std::size_t >,
+					default_value(0)),
+				make("name"_param, name_generator_types,
 					enable_fn([](auto const& iop, auto type){
 						auto const& out = iop("content"_out);
 						if constexpr(type == type_c< ng1 >){
@@ -243,17 +251,17 @@ namespace disposer_module::load{
 						hana::make_pair(type_c< ng3 >, "file_list_list"_s)
 					)
 				),
-				"subid_count"_param(type_c< std::size_t >,
+				make("subid_count"_param, type_c< std::size_t >,
 					default_value(1),
 					expect_greater_0),
-				"i_count"_param(type_c< std::size_t >,
+				make("i_count"_param, type_c< std::size_t >,
 					enable_fn([](auto const& iop, auto /*type*/){
 						auto const& out = iop("content"_out);
 						return out.is_enabled(type_c< t2 >)
 							|| out.is_enabled(type_c< t3 >);
 					}),
 					expect_greater_0),
-				"j_count"_param(type_c< std::size_t >,
+				make("j_count"_param, type_c< std::size_t >,
 					enable_fn([](auto const& iop, auto /*type*/){
 						auto const& out = iop("content"_out);
 						return out.is_enabled(type_c< t3 >);

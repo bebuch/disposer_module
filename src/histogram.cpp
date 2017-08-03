@@ -56,8 +56,10 @@ namespace disposer_module::histogram{
 		auto init = module_register_fn(
 			module_configure(
 				make("image"_in, types, wrap_in< bitmap >),
-				make("histogram"_out, hana::type_c< std::vector< std::size_t > >),
-				make("cumulative"_param, hana::type_c< bool >, default_value(false)),
+				make("histogram"_out,
+					hana::type_c< std::vector< std::size_t > >),
+				make("cumulative"_param, hana::type_c< bool >,
+					default_value(false)),
 				make("min"_param, types, enable_by_types_of("image"_in),
 					default_value_fn([](auto const& iop, auto t){
 						using type = typename decltype(t)::type;

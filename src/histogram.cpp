@@ -58,21 +58,31 @@ namespace disposer_module::histogram{
 				make("image"_in, types, wrap_in< bitmap >),
 				make("histogram"_out, hana::type_c< std::vector< std::size_t > >),
 				make("cumulative"_param, hana::type_c< bool >, default_value(false)),
-				make("min"_param, types, enable_by_types_of("image"_in)
-					// TODO: Default for 8 and 16 bit types
-				),
+				make("min"_param, types, enable_by_types_of("image"_in),
+					default_value_fn([](auto const& iop, auto t){
+						using type = typename decltype(t)::type;
+						if constexpr(
+							std::is_integral_v< type > && sizeof(type) == 1
+						){
+							return std::numeric_limits< type >::min();
+						}
+					})),
 				make("max"_param, types, enable_by_types_of("image"_in),
 					verify_value_fn([](auto const& iop, auto const& max){
 						auto const min =
 							iop("min"_param).get(hana::typeid_(max));
 						if(min < max) return;
 						throw std::logic_error("max must be greater min");
-					})
-					// TODO: Default for 8 and 16 bit types
-				),
-				make("bin_count"_param, hana::type_c< std::size_t >
-					// TODO: Default for 8 and 16 bit types
-				)
+					}),
+					default_value_fn([](auto const& iop, auto t){
+						using type = typename decltype(t)::type;
+						if constexpr(
+							std::is_integral_v< type > && sizeof(type) == 1
+						){
+							return std::numeric_limits< type >::max();
+						}
+					})),
+				make("bin_count"_param, hana::type_c< std::size_t >)
 			),
 			module_enable([]{
 				return [](auto& module){

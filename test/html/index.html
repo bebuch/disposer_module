@@ -1,0 +1,111 @@
+<!--
+Copyright (c) 2017 Benjamin Buch
+
+https://github.com/bebuch/http
+
+Distributed under the Boost Software License, Version 1.0. (See accompanying
+file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<title>live view</title>
+</head>
+<body style="text-align:center;">
+	<p>
+		<button id="enable">enable live</button>
+		<button id="snapshot">snapshot</button>
+	</p>
+	<canvas id="image"></canvas>
+	<h1>live view</h1>
+	<script>
+		var image = document.getElementById("image");
+		var enable = document.getElementById("enable");
+		var live_connection = false;
+		var live_image = function(service_name){
+			var socket = new WebSocket('ws://' + window.location.host + '/'
+				+ service_name);
+			socket.binaryType = 'arraybuffer';
+			socket.onmessage = function(evt){
+				console.log("onmessage");
+				if(evt.data instanceof ArrayBuffer){
+					var length = evt.data.byteLength;
+					var blob = new Blob([evt.data],{type:'image/jpeg'});
+					var url = URL.createObjectURL(blob);
+					var img = new Image();
+					img.onload = function(){
+						var ctx = image.getContext("2d");
+						if(image.width != img.width) image.width = img.width;
+						if(image.height != img.height) image.height = img.height;
+						ctx.drawImage(img, 0, 0);
+					}
+					img.src = url;
+					socket.send(JSON.stringify({'ready': true}));
+				}else if(typeof(evt.data) === 'string'){
+					console.log("onmessage string: " + evt.data);
+				}
+			};
+			socket.onopen = function(event){
+				console.log("onopen: " + JSON.stringify(event));
+				socket.send(JSON.stringify({'ready': true}));
+			};
+			socket.onerror = function(event){
+				live_connection = false;
+// 				enable.innerText = 'enable live';
+				console.log("onerror: " + JSON.stringify(event));
+			};
+			socket.onclose = function(event){
+				console.log("onclose: " + JSON.stringify(event));
+			};
+			return socket;
+		};
+
+		live_connection = live_image('scheduler');
+		var command_socket = new WebSocket('ws://' + window.location.host + '/controller');
+		command_socket.onmessage = function(evt){
+			console.log("onmessage");
+			if(typeof(evt.data) === 'string'){
+				console.log("onmessage string: " + evt.data);
+				var data = JSON.parse(evt.data);
+				if(data.live){
+					if(data.live.chain === 'live_image' && data.live.is === "true"){
+						live_connection = live_image('scheduler');
+						enable.innerText = 'disable live';
+					}
+				}else if(data.exec){
+					if(data.exec.chain === 'live_image' && data.exec.count > 0){
+						live_connection = live_image('scheduler');
+					}
+				}else if(data.error){
+					alert("Error in " + data.error.chain + ": " + data.error.message);
+				}
+			}
+		};
+		command_socket.onopen = function(event){
+			console.log("onopen: " + JSON.stringify(event));
+		};
+		command_socket.onerror = function(event){
+			console.log("onerror: " + JSON.stringify(event));
+		};
+		command_socket.onclose = function(event){
+			console.log("onclose: " + JSON.stringify(event));
+		};
+
+		enable.onclick = function(event){
+			var set_enable = enable.innerText === 'enable live';
+			enable.innerText = set_enable ? 'disable live' : 'enable live';
+			var message = JSON.stringify({command: {chain: 'live_image', live: set_enable}});
+			console.log("send: " + message);
+			command_socket.send(message);
+		};
+
+		var snapshot = document.getElementById("snapshot");
+		snapshot.onclick = function(event){
+			var message = JSON.stringify({command: {chain: 'snapshot', exec: 1}});
+			console.log("send: " + message);
+			command_socket.send(message);
+		};
+	</script>
+</body>
+</html>

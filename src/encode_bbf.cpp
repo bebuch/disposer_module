@@ -6,27 +6,27 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 //-----------------------------------------------------------------------------
-#include <disposer/module.hpp>
+#include <bitmap/binary_write.hpp>
 
-#include <bitmap/subbitmap.hpp>
+#include <disposer/module.hpp>
 
 #include <boost/dll.hpp>
 
 
-namespace disposer_module::subbitmap{
+namespace disposer_module::encode_bbf{
 
 
 	using namespace disposer;
 	using namespace disposer::literals;
 	namespace hana = boost::hana;
+	using namespace hana::literals;
 
 	namespace pixel = ::bmp::pixel;
-
-	template < typename T >
-	using bitmap = ::bmp::bitmap< T >;
+	using ::bmp::bitmap;
 
 
 	constexpr auto types = hana::tuple_t<
+			bool,
 			std::int8_t,
 			std::uint8_t,
 			std::int16_t,
@@ -70,32 +70,42 @@ namespace disposer_module::subbitmap{
 		>;
 
 
-	template < typename Module, typename T >
-	bitmap< T > exec(Module const& module, bitmap< T > const& image){
-		auto const x = module("x"_param).get();
-		auto const y = module("y"_param).get();
-		auto const w = module("width"_param).get();
-		auto const h = module("height"_param).get();
-		return ::bmp::subbitmap(image, ::bmp::rect{x, y, w, h});
-	}
-
-
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = module_register_fn(
 			module_configure(
 				make("image"_in, types, wrap_in< bitmap >),
-				make("image"_out, types, wrap_in< bitmap >,
-					enable_by_types_of("image"_in)),
-				make("x"_param, hana::type_c< float >),
-				make("y"_param, hana::type_c< float >),
-				make("width"_param, hana::type_c< std::size_t >),
-				make("height"_param, hana::type_c< std::size_t >)
+				make("data"_out, hana::type_c< std::string >),
+				make("endian"_param, hana::type_c< boost::endian::order >,
+					parser_fn([](
+						auto const& /*iop*/,
+						std::string_view data,
+						hana::basic_type< boost::endian::order >
+					){
+						using boost::endian::order;
+						if(data == "little") return order::little;
+						if(data == "big") return order::big;
+						if(data == "native") return order::native;
+						throw std::runtime_error("unknown value '"
+							+ std::string(data) + "', allowed values are: "
+							"little, big & native");
+
+					}),
+					default_value(boost::endian::order::native),
+					type_as_text(
+						hana::make_pair(hana::type_c< boost::endian::order >,
+						"endian"_s)
+					)
+				)
 			),
 			exec_fn([](auto& module){
 				auto values = module("image"_in).get_references();
 				for(auto const& value: values){
-					std::visit([&module](auto const& img_ref){
-						module("image"_out).put(exec(module, img_ref.get()));
+					std::visit([&module](auto const& img){
+						std::ostringstream os
+							(std::ios::out | std::ios::binary);
+						::bmp::binary_write(img.get(), os,
+							module("endian"_param).get());
+						module("data"_out).put(os.str());
 					}, value);
 				}
 			})

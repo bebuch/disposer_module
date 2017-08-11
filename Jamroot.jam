@@ -4,11 +4,22 @@ local disposer = ../disposer ;
 local gray_code = ../gray_code ;
 local io_tools = ../io_tools ;
 local bitmap = ../bitmap ;
+local range-v3 = ../range-v3 ;
 local tar = ../tar ;
 local big = ../big ;
+local http = ../http ;
+local logsys = ../logsys ;
 
 use-project /boost
 	: $(boost)
+	;
+
+use-project /logsys
+	: $(logsys)
+	;
+
+use-project /http
+	: $(http)
 	;
 
 use-project /disposer
@@ -27,44 +38,78 @@ project disposer_module
 
 	<define>BOOST_HANA_CONFIG_ENABLE_STRING_UDL
 	<define>BOOST_ASIO_HAS_STD_CHRONO
-	<define>BOOST_NO_AUTO_PTR
 
 	<toolset>gcc:<cxxflags>-std=gnu++1z
 	<toolset>gcc:<cxxflags>-fconstexpr-depth=1024
-	<toolset>gcc:<cxxflags>-Wall
-	<toolset>gcc:<cxxflags>-Wextra
 	<toolset>gcc:<linkflags>-lpthread
 	<toolset>gcc:<linkflags>-ldl
 
 	<toolset>clang:<cxxflags>-std=c++1z
 	<toolset>clang:<cxxflags>-fconstexpr-depth=1024
-	<toolset>clang:<cxxflags>-Wall
-	<toolset>clang:<cxxflags>-Wextra
-	<toolset>clang:<cxxflags>-Wno-gnu-string-literal-operator-template
 	<toolset>clang:<cxxflags>-stdlib=libc++
+	<toolset>clang:<cxxflags>-Wno-gnu-string-literal-operator-template
+	<toolset>clang:<cxxflags>-DBOOST_ASIO_HAS_STD_CHRONO
 	<toolset>clang:<linkflags>-lpthread
 	<toolset>clang:<linkflags>-ldl
 	<toolset>clang:<linkflags>-lc++abi
 	<toolset>clang:<linkflags>-stdlib=libc++
 
 	<include>$(boost)
+	<include>$(io_tools)/include
+	<include>$(logsys)/include
 	:
 	usage-requirements <include>include
 	;
 
 
+lib log
+	:
+	log.cpp
+	;
+
 exe disposer_module
 	:
 	main.cpp
+	/disposer_module//log
 	/disposer//disposer
 	/boost//filesystem
+	/http//http
 	:
 	<include>$(bitmap)/include
 	;
 
-lib big_loader
+lib http_server
 	:
-	big_loader.cpp
+	http_server.cpp
+	/disposer_module//log
+	/disposer//disposer
+	/http//http
+	:
+	<include>$(bitmap)/include
+	;
+
+lib vector_join
+	:
+	vector_join.cpp
+	/disposer_module//log
+	/disposer//disposer
+	:
+	<include>$(bitmap)/include
+	;
+
+lib vector_disjoin
+	:
+	vector_disjoin.cpp
+	/disposer_module//log
+	/disposer//disposer
+	:
+	<include>$(bitmap)/include
+	;
+
+lib save
+	:
+	save.cpp
+	/disposer_module//log
 	/disposer//disposer
 	:
 	<include>$(io_tools)/include
@@ -73,42 +118,22 @@ lib big_loader
 	<include>$(big)/cpp/include
 	;
 
-lib big_saver
+lib load
 	:
-	big_saver.cpp
+	load.cpp
+	/disposer_module//log
 	/disposer//disposer
 	:
 	<include>$(io_tools)/include
 	<include>$(bitmap)/include
 	<include>$(tar)/include
 	<include>$(big)/cpp/include
-	;
-
-lib png_loader
-	:
-	png_loader.cpp
-	/disposer//disposer
-	:
-	<include>$(io_tools)/include
-	<include>$(bitmap)/include
-	<include>$(tar)/include
-	<linkflags>-lpng
-	;
-
-lib png_saver
-	:
-	png_saver.cpp
-	/disposer//disposer
-	:
-	<include>$(io_tools)/include
-	<include>$(bitmap)/include
-	<include>$(tar)/include
-	<linkflags>-lpng
 	;
 
 lib camera_ximea
 	:
 	camera_ximea.cpp
+	/disposer_module//log
 	/disposer//disposer
 	:
 	<include>$(bitmap)/include
@@ -118,6 +143,7 @@ lib camera_ximea
 lib show_image
 	:
 	show_image.cpp
+	/disposer_module//log
 	/disposer//disposer
 	:
 	<include>$(bitmap)/include
@@ -130,75 +156,7 @@ lib show_image
 lib raster
 	:
 	raster.cpp
-	/disposer//disposer
-	:
-	<include>$(io_tools)/include
-	<include>$(bitmap)/include
-	;
-
-lib add_to_log
-	:
-	add_to_log.cpp
-	/disposer//disposer
-	:
-	<include>$(bitmap)/include
-	;
-
-lib demosaic
-	:
-	demosaic.cpp
-	/disposer//disposer
-	:
-	<include>$(bitmap)/include
-	;
-
-lib bitmap_vector_join
-	:
-	bitmap_vector_join.cpp
-	/disposer//disposer
-	:
-	<include>$(bitmap)/include
-	;
-
-lib raw_phase
-	:
-	raw_phase.cpp
-	/disposer//disposer
-	:
-	<include>$(io_tools)/include
-	<include>$(bitmap)/include
-	;
-
-lib gray_code_decoder
-	:
-	gray_code_decoder.cpp
-	/disposer//disposer
-	:
-	<include>$(gray_code)/include
-	<include>$(io_tools)/include
-	<include>$(bitmap)/include
-	;
-
-lib gray_code_threshold
-	:
-	gray_code_threshold.cpp
-	/disposer//disposer
-	:
-	<include>$(io_tools)/include
-	<include>$(bitmap)/include
-	;
-
-lib phase_unwrapp_by_index
-	:
-	phase_unwrapp_by_index.cpp
-	/disposer//disposer
-	:
-	<include>$(bitmap)/include
-	;
-
-lib pixel_transform
-	:
-	pixel_transform.cpp
+	/disposer_module//log
 	/disposer//disposer
 	:
 	<include>$(bitmap)/include
@@ -207,15 +165,111 @@ lib pixel_transform
 lib subbitmap
 	:
 	subbitmap.cpp
+	/disposer_module//log
 	/disposer//disposer
 	:
 	<include>$(bitmap)/include
 	;
 
-lib bitmap_bounding_rect
+lib vignetting_correction
 	:
-	bitmap_bounding_rect.cpp
+	vignetting_correction.cpp
+	/disposer_module//log
 	/disposer//disposer
 	:
 	<include>$(bitmap)/include
+	;
+
+lib demosaic
+	:
+	demosaic.cpp
+	/disposer_module//log
+	/disposer//disposer
+	:
+	<include>$(bitmap)/include
+	;
+
+lib multi_subbitmap
+	:
+	multi_subbitmap.cpp
+	/disposer_module//log
+	/disposer//disposer
+	:
+	<include>$(bitmap)/include
+	<include>$(range-v3)/include
+	;
+
+lib bitmap_vector_join
+	:
+	bitmap_vector_join.cpp
+	/disposer_module//log
+	/disposer//disposer
+	:
+	<include>$(bitmap)/include
+	;
+
+lib histogram
+	:
+	histogram.cpp
+	/disposer_module//log
+	/disposer//disposer
+	:
+	<include>$(bitmap)/include
+	;
+
+lib vignetting_correction_creator
+	:
+	vignetting_correction_creator.cpp
+	/disposer_module//log
+	/disposer//disposer
+	:
+	<include>$(bitmap)/include
+	;
+
+lib decode_png
+	:
+	decode_png.cpp
+	/disposer_module//log
+	/disposer//disposer
+	:
+	<include>$(bitmap)/include
+	<linkflags>-lpng
+	;
+
+lib decode_bbf
+	:
+	decode_bbf.cpp
+	/disposer_module//log
+	/disposer//disposer
+	:
+	<include>$(bitmap)/include
+	;
+
+lib encode_bbf
+	:
+	encode_bbf.cpp
+	/disposer_module//log
+	/disposer//disposer
+	:
+	<include>$(bitmap)/include
+	;
+
+lib encode_png
+	:
+	encode_png.cpp
+	/disposer_module//log
+	/disposer//disposer
+	:
+	<include>$(bitmap)/include
+	<linkflags>-lpng
+	;
+
+lib encode_jpg
+	:
+	encode_jpg.cpp
+	/disposer_module//log
+	/disposer//disposer
+	:
+	<include>$(bitmap)/include
+	<linkflags>-lturbojpeg
 	;

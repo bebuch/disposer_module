@@ -10,6 +10,7 @@
 #define _disposer_module__name_generator__hpp_INCLUDED_
 
 #include <unordered_map>
+#include <string_view>
 #include <functional>
 #include <sstream>
 #include <utility>
@@ -62,7 +63,7 @@ namespace disposer_module{
 
 		inline std::vector< std::variant< std::string, std::size_t > >
 		parse_pattern(
-			std::string const& pattern,
+			std::string_view pattern,
 			std::vector< std::string > const& variables
 		){
 			auto iter = pattern.begin();
@@ -124,7 +125,7 @@ namespace disposer_module{
 	class name_generator{
 	public:
 		name_generator(
-			std::string const& pattern,
+			std::string_view pattern,
 			std::pair<
 				std::string,
 				std::function< std::string(T const&) >
@@ -226,13 +227,13 @@ namespace disposer_module{
 	// <--
 
 
-	template < typename String, typename ... T, typename ... U >
+	template < typename ... T, typename ... U >
 	auto make_name_generator(
-		String&& pattern,
+		std::string_view pattern,
 		std::pair< T, U >&& ... variables
 	){
 		return name_generator< argument_t< U > ... >(
-			std::forward< String >(pattern),
+			pattern,
 			std::pair< std::string, std::function<
 				std::string(argument_t< U > const&)
 			> >(
@@ -241,9 +242,9 @@ namespace disposer_module{
 			) ...);
 	}
 
-	template < typename String, typename ... T, typename ... U >
+	template < typename ... T, typename ... U >
 	auto make_name_generator(
-		String&& pattern,
+		std::string_view pattern,
 		std::array< bool, sizeof...(T) > const& must_have,
 		std::pair< T, U >&& ... variables
 	){

@@ -617,26 +617,24 @@ namespace disposer_module::camera_ximea{
 								})
 							)
 						),
-						module_enable([&component](auto const& module){
-							return [&component](auto& module, std::size_t){
-								auto& out = module("image"_out);
-								switch(component("format"_param).get()){
-									case pixel_format::mono8:
-									case pixel_format::raw8:
-										out.put(component.data().template
-											get_image< std::uint8_t >());
-										break;
-									case pixel_format::mono16:
-									case pixel_format::raw16:
-										out.put(component.data().template
-											get_image< std::uint16_t >());
-										break;
-									case pixel_format::rgb8:
-										out.put(component.data().template
-											get_image< pixel::rgb8u >());
-										break;
-								}
-							};
+						exec_fn([&component](auto& module){
+							auto& out = module("image"_out);
+							switch(component("format"_param).get()){
+								case pixel_format::mono8:
+								case pixel_format::raw8:
+									out.put(component.data().template
+										get_image< std::uint8_t >());
+									break;
+								case pixel_format::mono16:
+								case pixel_format::raw16:
+									out.put(component.data().template
+										get_image< std::uint16_t >());
+									break;
+								case pixel_format::rgb8:
+									out.put(component.data().template
+										get_image< pixel::rgb8u >());
+									break;
+							}
 						})
 					);
 				})

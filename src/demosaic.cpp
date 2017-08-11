@@ -148,16 +148,14 @@ namespace disposer_module::demosaic{
 						throw std::logic_error("must be greater 0");
 					}))
 			),
-			module_enable([]{
-				return [](auto& module){
-					auto values = module("image"_in).get_references();
-					for(auto const& value: values){
-						std::visit([&module](auto const& img_ref){
-							module("images"_out).put(
-								demosaic(module, img_ref.get()));
-						}, value);
-					}
-				};
+			exec_fn([](auto& module){
+				auto values = module("image"_in).get_references();
+				for(auto const& value: values){
+					std::visit([&module](auto const& img_ref){
+						module("images"_out).put(
+							demosaic(module, img_ref.get()));
+					}, value);
+				}
 			})
 		);
 

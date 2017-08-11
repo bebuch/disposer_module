@@ -411,20 +411,16 @@ namespace disposer_module::http_server_component{
 							make("service_name"_param,
 								hana::type_c< std::string >)
 						),
-						module_enable([&component](auto const& module){
-							auto init = component.data()
-								.init(module("service_name"_param).get());
-							auto key = init.key;
-							return [&component, key]
-								(auto& module){
-									auto list =
-										module("data"_in).get_references();
-									if(list.empty()) return;
-									auto iter = list.end();
-									--iter;
-									component.data().send(key,
-										iter->get());
-								};
+						state_maker_fn([&component](auto const& module){
+							return component.data()
+								.init(module("service_name"_param).get()).key;
+						}),
+						exec_fn([&component](auto& module){
+							auto list = module("data"_in).get_references();
+							if(list.empty()) return;
+							auto iter = list.end();
+							--iter;
+							component.data().send(module.state(), iter->get());
 						})
 					);
 				})

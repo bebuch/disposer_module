@@ -46,25 +46,23 @@ namespace disposer_module::vector_disjoin{
 						throw std::logic_error("must be greater 0");
 					}))
 			),
-			module_enable([]{
-				return [](auto& module){
-					auto values = module("list"_in).get_values();
-					for(auto&& value: values){
-						std::visit([&module](auto&& list){
-							auto const count = module("count"_param).get();
-							if(list.size() != count){
-								throw std::runtime_error("list size is "
-									"different from parameter count ("
-									+ std::to_string(list.size()) + " != "
-									+ std::to_string(count) + ")");
-							}
+			exec_fn([](auto& module){
+				auto values = module("list"_in).get_values();
+				for(auto&& value: values){
+					std::visit([&module](auto&& list){
+						auto const count = module("count"_param).get();
+						if(list.size() != count){
+							throw std::runtime_error("list size is "
+								"different from parameter count ("
+								+ std::to_string(list.size()) + " != "
+								+ std::to_string(count) + ")");
+						}
 
-							for(auto&& data: std::move(list)){
-								module("data"_out).put(std::move(data));
-							}
-						}, std::move(value));
-					}
-				};
+						for(auto&& data: std::move(list)){
+							module("data"_out).put(std::move(data));
+						}
+					}, std::move(value));
+				}
 			})
 		);
 

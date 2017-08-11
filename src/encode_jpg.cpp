@@ -89,17 +89,15 @@ namespace disposer_module::encode_jpg{
 					}),
 					default_value(90))
 			),
-			module_enable([]{
-				return [](auto& module){
-					auto values = module("image"_in).get_references();
-					for(auto const& value: values){
-						std::visit([&module](auto const& img){
-							auto const quality = module("quality"_param).get();
-							module("data"_out).put(to_jpg_image(
-								img.get(), static_cast< int >(quality)));
-						}, value);
-					}
-				};
+			exec_fn([](auto& module){
+				auto values = module("image"_in).get_references();
+				for(auto const& value: values){
+					std::visit([&module](auto const& img){
+						auto const quality = module("quality"_param).get();
+						module("data"_out).put(to_jpg_image(
+							img.get(), static_cast< int >(quality)));
+					}, value);
+				}
 			})
 		);
 

@@ -142,40 +142,38 @@ namespace disposer_module::decode_png{
 								format == format::rgba16);
 					}))
 			),
-			module_enable([]{
-				return [](auto& module){
-					auto& out = module("image"_out);
-					auto values = module("data"_in).get_references();
-					for(auto const& value: values){
-						auto const& data = value;
-						switch(module("format"_param).get()){
-						case format::g8:
-							out.put(decode_png< std::uint8_t >(data));
-						break;
-						case format::g16:
-							out.put(decode_png< std::uint16_t >(data));
-						break;
-						case format::ga8:
-							out.put(decode_png< pixel::ga8u >(data));
-						break;
-						case format::ga16:
-							out.put(decode_png< pixel::ga16u >(data));
-						break;
-						case format::rgb8:
-							out.put(decode_png< pixel::rgb8u >(data));
-						break;
-						case format::rgb16:
-							out.put(decode_png< pixel::rgb16u >(data));
-						break;
-						case format::rgba8:
-							out.put(decode_png< pixel::rgba8u >(data));
-						break;
-						case format::rgba16:
-							out.put(decode_png< pixel::rgba16u >(data));
-						break;
-						}
+			exec_fn([](auto& module){
+				auto& out = module("image"_out);
+				auto values = module("data"_in).get_references();
+				for(auto const& value: values){
+					auto const& data = value;
+					switch(module("format"_param).get()){
+					case format::g8:
+						out.put(decode_png< std::uint8_t >(data));
+					break;
+					case format::g16:
+						out.put(decode_png< std::uint16_t >(data));
+					break;
+					case format::ga8:
+						out.put(decode_png< pixel::ga8u >(data));
+					break;
+					case format::ga16:
+						out.put(decode_png< pixel::ga16u >(data));
+					break;
+					case format::rgb8:
+						out.put(decode_png< pixel::rgb8u >(data));
+					break;
+					case format::rgb16:
+						out.put(decode_png< pixel::rgb16u >(data));
+					break;
+					case format::rgba8:
+						out.put(decode_png< pixel::rgba8u >(data));
+					break;
+					case format::rgba16:
+						out.put(decode_png< pixel::rgba16u >(data));
+					break;
 					}
-				};
+				}
 			})
 		);
 

@@ -53,7 +53,7 @@ namespace disposer_module::vector_join{
 		}
 
 		template < typename Module >
-		void operator()(Module& module, std::size_t /*id*/){
+		void operator()(Module& module){
 			auto values = module("data"_in).get_values();
 			for(auto&& value: values){
 				auto&& data = std::move(value);
@@ -92,9 +92,7 @@ namespace disposer_module::vector_join{
 						throw std::logic_error("must be greater 0");
 					}))
 			),
-			module_enable([]{
-				return exec{};
-			})
+			exec_fn(exec{})
 		);
 
 		init(name, disposer);

@@ -268,37 +268,37 @@ namespace disposer_module::load{
 					}),
 					expect_greater_0)
 			),
-			module_enable([]{
-				return [](auto& module, std::size_t id){
-					auto fixed_id = module("fixed_id"_param).get();
-					if(fixed_id) id = *fixed_id;
+			exec_fn([](auto& module){
+				auto id = module.id();
 
-					auto const id_modulo = module("id_modulo"_param).get();
-					if(id_modulo) id %= *id_modulo;
+				auto fixed_id = module("fixed_id"_param).get();
+				if(fixed_id) id = *fixed_id;
 
-					auto const subid_count = module("subid_count"_param).get();
+				auto const id_modulo = module("id_modulo"_param).get();
+				if(id_modulo) id %= *id_modulo;
 
-					auto& out = module("content"_out);
-					for(std::size_t subid = 0; subid < subid_count; ++subid){
-						switch(module("type"_param).get()){
-							case data_type::file:
-								out.put(load(module("name"_param)
-									.get(type_c< ng1 >), id, subid));
-								break;
-							case data_type::file_list:
-								out.put(load(module("name"_param)
-									.get(type_c< ng2 >), id, subid,
-										module("i_count"_param).get()));
-								break;
-							case data_type::file_list_list:
-								out.put(load(module("name"_param)
-									.get(type_c< ng3 >), id, subid,
-										module("i_count"_param).get(),
-										module("j_count"_param).get()));
-								break;
-						}
+				auto const subid_count = module("subid_count"_param).get();
+
+				auto& out = module("content"_out);
+				for(std::size_t subid = 0; subid < subid_count; ++subid){
+					switch(module("type"_param).get()){
+						case data_type::file:
+							out.put(load(module("name"_param)
+								.get(type_c< ng1 >), id, subid));
+							break;
+						case data_type::file_list:
+							out.put(load(module("name"_param)
+								.get(type_c< ng2 >), id, subid,
+									module("i_count"_param).get()));
+							break;
+						case data_type::file_list_list:
+							out.put(load(module("name"_param)
+								.get(type_c< ng3 >), id, subid,
+									module("i_count"_param).get(),
+									module("j_count"_param).get()));
+							break;
 					}
-				};
+				}
 			})
 		);
 

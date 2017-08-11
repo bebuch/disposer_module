@@ -163,16 +163,14 @@ namespace disposer_module::multi_subbitmap{
 				make("width"_param, hana::type_c< std::size_t >),
 				make("height"_param, hana::type_c< std::size_t >)
 			),
-			module_enable([]{
-				return [](auto& module){
-					auto values = module("images"_in).get_references();
-					for(auto const& value: values){
-						std::visit([&module](auto const& imgs_ref){
-							module("images"_out)
-								.put(exec(module, imgs_ref.get()));
-						}, value);
-					}
-				};
+			exec_fn([](auto& module){
+				auto values = module("images"_in).get_references();
+				for(auto const& value: values){
+					std::visit([&module](auto const& imgs_ref){
+						module("images"_out)
+							.put(exec(module, imgs_ref.get()));
+					}, value);
+				}
 			})
 		);
 

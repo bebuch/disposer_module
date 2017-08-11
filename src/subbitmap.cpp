@@ -91,16 +91,13 @@ namespace disposer_module::subbitmap{
 				make("width"_param, hana::type_c< std::size_t >),
 				make("height"_param, hana::type_c< std::size_t >)
 			),
-			module_enable([]{
-				return [](auto& module){
-					auto values = module("image"_in).get_references();
-					for(auto const& value: values){
-						std::visit([&module](auto const& img_ref){
-							module("image"_out).put(
-								exec(module, img_ref.get()));
-						}, value);
-					}
-				};
+			exec_fn([](auto& module){
+				auto values = module("image"_in).get_references();
+				for(auto const& value: values){
+					std::visit([&module](auto const& img_ref){
+						module("image"_out).put(exec(module, img_ref.get()));
+					}, value);
+				}
 			})
 		);
 

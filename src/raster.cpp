@@ -124,16 +124,14 @@ namespace disposer_module::demosaic{
 						throw std::logic_error("must be lesser y_count");
 					}))
 			),
-			module_enable([]{
-				return [](auto& module){
-					auto values = module("image"_in).get_references();
-					for(auto const& value: values){
-						std::visit([&module](auto const& img_ref){
-							module("image"_out).put(
-								exec(module, img_ref.get()));
-						}, value);
-					}
-				};
+			exec_fn([](auto& module){
+				auto values = module("image"_in).get_references();
+				for(auto const& value: values){
+					std::visit([&module](auto const& img_ref){
+						module("image"_out).put(
+							exec(module, img_ref.get()));
+					}, value);
+				}
 			})
 		);
 

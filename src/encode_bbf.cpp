@@ -97,19 +97,17 @@ namespace disposer_module::encode_bbf{
 					)
 				)
 			),
-			module_enable([]{
-				return [](auto& module){
-					auto values = module("image"_in).get_references();
-					for(auto const& value: values){
-						std::visit([&module](auto const& img){
-							std::ostringstream os
-								(std::ios::out | std::ios::binary);
-							::bmp::binary_write(img.get(), os,
-								module("endian"_param).get());
-							module("data"_out).put(os.str());
-						}, value);
-					}
-				};
+			exec_fn([](auto& module){
+				auto values = module("image"_in).get_references();
+				for(auto const& value: values){
+					std::visit([&module](auto const& img){
+						std::ostringstream os
+							(std::ios::out | std::ios::binary);
+						::bmp::binary_write(img.get(), os,
+							module("endian"_param).get());
+						module("data"_out).put(os.str());
+					}, value);
+				}
 			})
 		);
 

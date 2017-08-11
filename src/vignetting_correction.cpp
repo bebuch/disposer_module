@@ -68,18 +68,19 @@ namespace disposer_module::vignetting_correction{
 						}
 					}))
 			),
-			module_enable([](auto const& module){
+			state_maker_fn([](auto const& module){
 				auto const path = module("factor_image_filename"_param).get();
-				return [factor_image = bmp::binary_read< float >(path)]
-					(auto& module){
-						auto values = module("image"_in).get_values();
-						for(auto&& value: std::move(values)){
-							std::visit([&module, &factor_image](auto&& img){
-								module("image"_out).put(
-									exec(module, std::move(img), factor_image));
-							}, std::move(value));
-						}
-					};
+				return bmp::binary_read< float >(path);
+			}),
+			exec_fn([](auto& module){
+				auto const& factor_image = module.state();
+				auto values = module("image"_in).get_values();
+				for(auto&& value: std::move(values)){
+					std::visit([&module, &factor_image](auto&& img){
+						module("image"_out).put(
+							exec(module, std::move(img), factor_image));
+					}, std::move(value));
+				}
 			})
 		);
 

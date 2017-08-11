@@ -249,98 +249,96 @@ namespace disposer_module::decode_bbf{
 						return type_as_format[type] == format;
 					}))
 			),
-			module_enable([]{
-				return [](auto& module){
-					auto& out = module("image"_out);
-					auto values = module("data"_in).get_references();
-					for(auto const& value: values){
-						auto const& data = value;
-						switch(module("format"_param).get()){
-						case format::bool_:
-							out.put(decode< bool >(data)); break;
-						case format::g8:
-							out.put(decode< std::int8_t >(data)); break;
-						case format::g16:
-							out.put(decode< std::uint8_t >(data)); break;
-						case format::g32:
-							out.put(decode< std::int16_t >(data)); break;
-						case format::g64:
-							out.put(decode< std::uint16_t >(data)); break;
-						case format::g8u:
-							out.put(decode< std::int32_t >(data)); break;
-						case format::g16u:
-							out.put(decode< std::uint32_t >(data)); break;
-						case format::g32u:
-							out.put(decode< std::int64_t >(data)); break;
-						case format::g64u:
-							out.put(decode< std::uint64_t >(data)); break;
-						case format::g32f:
-							out.put(decode< float >(data)); break;
-						case format::g64f:
-							out.put(decode< double >(data)); break;
-						case format::ga8:
-							out.put(decode< pixel::ga8 >(data)); break;
-						case format::ga16:
-							out.put(decode< pixel::ga16 >(data)); break;
-						case format::ga32:
-							out.put(decode< pixel::ga32 >(data)); break;
-						case format::ga64:
-							out.put(decode< pixel::ga64 >(data)); break;
-						case format::ga8u:
-							out.put(decode< pixel::ga8u >(data)); break;
-						case format::ga16u:
-							out.put(decode< pixel::ga16u >(data)); break;
-						case format::ga32u:
-							out.put(decode< pixel::ga32u >(data)); break;
-						case format::ga64u:
-							out.put(decode< pixel::ga64u >(data)); break;
-						case format::ga32f:
-							out.put(decode< pixel::ga32f >(data)); break;
-						case format::ga64f:
-							out.put(decode< pixel::ga64f >(data)); break;
-						case format::rgb8:
-							out.put(decode< pixel::rgb8 >(data)); break;
-						case format::rgb16:
-							out.put(decode< pixel::rgb16 >(data)); break;
-						case format::rgb32:
-							out.put(decode< pixel::rgb32 >(data)); break;
-						case format::rgb64:
-							out.put(decode< pixel::rgb64 >(data)); break;
-						case format::rgb8u:
-							out.put(decode< pixel::rgb8u >(data)); break;
-						case format::rgb16u:
-							out.put(decode< pixel::rgb16u >(data)); break;
-						case format::rgb32u:
-							out.put(decode< pixel::rgb32u >(data)); break;
-						case format::rgb64u:
-							out.put(decode< pixel::rgb64u >(data)); break;
-						case format::rgb32f:
-							out.put(decode< pixel::rgb32f >(data)); break;
-						case format::rgb64f:
-							out.put(decode< pixel::rgb64f >(data)); break;
-						case format::rgba8:
-							out.put(decode< pixel::rgba8 >(data)); break;
-						case format::rgba16:
-							out.put(decode< pixel::rgba16 >(data)); break;
-						case format::rgba32:
-							out.put(decode< pixel::rgba32 >(data)); break;
-						case format::rgba64:
-							out.put(decode< pixel::rgba64 >(data)); break;
-						case format::rgba8u:
-							out.put(decode< pixel::rgba8u >(data)); break;
-						case format::rgba16u:
-							out.put(decode< pixel::rgba16u >(data)); break;
-						case format::rgba32u:
-							out.put(decode< pixel::rgba32u >(data)); break;
-						case format::rgba64u:
-							out.put(decode< pixel::rgba64u >(data)); break;
-						case format::rgba32f:
-							out.put(decode< pixel::rgba32f >(data)); break;
-						case format::rgba64f:
-							out.put(decode< pixel::rgba64f >(data)); break;
-						}
+			exec_fn([](auto& module){
+				auto& out = module("image"_out);
+				auto values = module("data"_in).get_references();
+				for(auto const& value: values){
+					auto const& data = value;
+					switch(module("format"_param).get()){
+					case format::bool_:
+						out.put(decode< bool >(data)); break;
+					case format::g8:
+						out.put(decode< std::int8_t >(data)); break;
+					case format::g16:
+						out.put(decode< std::uint8_t >(data)); break;
+					case format::g32:
+						out.put(decode< std::int16_t >(data)); break;
+					case format::g64:
+						out.put(decode< std::uint16_t >(data)); break;
+					case format::g8u:
+						out.put(decode< std::int32_t >(data)); break;
+					case format::g16u:
+						out.put(decode< std::uint32_t >(data)); break;
+					case format::g32u:
+						out.put(decode< std::int64_t >(data)); break;
+					case format::g64u:
+						out.put(decode< std::uint64_t >(data)); break;
+					case format::g32f:
+						out.put(decode< float >(data)); break;
+					case format::g64f:
+						out.put(decode< double >(data)); break;
+					case format::ga8:
+						out.put(decode< pixel::ga8 >(data)); break;
+					case format::ga16:
+						out.put(decode< pixel::ga16 >(data)); break;
+					case format::ga32:
+						out.put(decode< pixel::ga32 >(data)); break;
+					case format::ga64:
+						out.put(decode< pixel::ga64 >(data)); break;
+					case format::ga8u:
+						out.put(decode< pixel::ga8u >(data)); break;
+					case format::ga16u:
+						out.put(decode< pixel::ga16u >(data)); break;
+					case format::ga32u:
+						out.put(decode< pixel::ga32u >(data)); break;
+					case format::ga64u:
+						out.put(decode< pixel::ga64u >(data)); break;
+					case format::ga32f:
+						out.put(decode< pixel::ga32f >(data)); break;
+					case format::ga64f:
+						out.put(decode< pixel::ga64f >(data)); break;
+					case format::rgb8:
+						out.put(decode< pixel::rgb8 >(data)); break;
+					case format::rgb16:
+						out.put(decode< pixel::rgb16 >(data)); break;
+					case format::rgb32:
+						out.put(decode< pixel::rgb32 >(data)); break;
+					case format::rgb64:
+						out.put(decode< pixel::rgb64 >(data)); break;
+					case format::rgb8u:
+						out.put(decode< pixel::rgb8u >(data)); break;
+					case format::rgb16u:
+						out.put(decode< pixel::rgb16u >(data)); break;
+					case format::rgb32u:
+						out.put(decode< pixel::rgb32u >(data)); break;
+					case format::rgb64u:
+						out.put(decode< pixel::rgb64u >(data)); break;
+					case format::rgb32f:
+						out.put(decode< pixel::rgb32f >(data)); break;
+					case format::rgb64f:
+						out.put(decode< pixel::rgb64f >(data)); break;
+					case format::rgba8:
+						out.put(decode< pixel::rgba8 >(data)); break;
+					case format::rgba16:
+						out.put(decode< pixel::rgba16 >(data)); break;
+					case format::rgba32:
+						out.put(decode< pixel::rgba32 >(data)); break;
+					case format::rgba64:
+						out.put(decode< pixel::rgba64 >(data)); break;
+					case format::rgba8u:
+						out.put(decode< pixel::rgba8u >(data)); break;
+					case format::rgba16u:
+						out.put(decode< pixel::rgba16u >(data)); break;
+					case format::rgba32u:
+						out.put(decode< pixel::rgba32u >(data)); break;
+					case format::rgba64u:
+						out.put(decode< pixel::rgba64u >(data)); break;
+					case format::rgba32f:
+						out.put(decode< pixel::rgba32f >(data)); break;
+					case format::rgba64f:
+						out.put(decode< pixel::rgba64f >(data)); break;
 					}
-				};
+				}
 			})
 		);
 

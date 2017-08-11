@@ -96,18 +96,16 @@ namespace disposer_module::encode_png{
 				make("image"_in, types, wrap_in< bitmap >),
 				make("data"_out, hana::type_c< std::string >)
 			),
-			module_enable([]{
-				return [](auto& module){
-					auto values = module("image"_in).get_references();
-					for(auto const& value: values){
-						std::visit([&module](auto const& img){
-							std::ostringstream os
-								(std::ios::out | std::ios::binary);
-							to_png_image(img.get()).write_stream(os);
-							module("data"_out).put(os.str());
-						}, value);
-					}
-				};
+			exec_fn([](auto& module){
+				auto values = module("image"_in).get_references();
+				for(auto const& value: values){
+					std::visit([&module](auto const& img){
+						std::ostringstream os
+							(std::ios::out | std::ios::binary);
+						to_png_image(img.get()).write_stream(os);
+						module("data"_out).put(os.str());
+					}, value);
+				}
 			})
 		);
 

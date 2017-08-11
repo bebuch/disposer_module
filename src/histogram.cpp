@@ -86,16 +86,14 @@ namespace disposer_module::histogram{
 					})),
 				make("bin_count"_param, hana::type_c< std::size_t >)
 			),
-			module_enable([]{
-				return [](auto& module){
-					auto values = module("image"_in).get_references();
-					for(auto const& value: values){
-						std::visit([&module](auto const& img_ref){
-							module("histogram"_out).put(
-								exec(module, img_ref.get()));
-						}, value);
-					}
-				};
+			exec_fn([](auto& module){
+				auto values = module("image"_in).get_references();
+				for(auto const& value: values){
+					std::visit([&module](auto const& img_ref){
+						module("histogram"_out).put(
+							exec(module, img_ref.get()));
+					}, value);
+				}
 			})
 		);
 

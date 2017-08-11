@@ -97,26 +97,26 @@ namespace disposer_module::show_image{
 				make("image"_in, types, wrap_in< bitmap >),
 				make("window_title"_param, hana::type_c< std::string >)
 			),
-			module_enable([](auto const& module){
-				return [data_ = resources(module("window_title"_param).get())]
-					(auto& module)mutable
-				{
-					auto values = module("image"_in).get_references();
-					for(auto const& img_data: values){
-						std::visit(assign_visitor(data_.img), img_data);
-						std::visit([&data_](auto const& img){
-							if(
-								data_.display.width() != img.width() ||
-								data_.display.height() != img.height()
-							){
-								data_.display.resize(img, false);
-							}
+			state_maker_fn([](auto const& module){
+				return resources(module("window_title"_param).get());
+			}),
+			exec_fn([](auto& module){
+				auto& data_ = module.state();
+				auto values = module("image"_in).get_references();
+				for(auto const& img_data: values){
+					std::visit(assign_visitor(data_.img), img_data);
+					std::visit([&data_](auto const& img){
+						if(
+							data_.display.width() != img.width() ||
+							data_.display.height() != img.height()
+						){
+							data_.display.resize(img, false);
+						}
 
-							data_.display.display(img);
-						}, data_.img);
-						data_.display.show();
-					}
-				};
+						data_.display.display(img);
+					}, data_.img);
+					data_.display.show();
+				}
 			})
 		);
 

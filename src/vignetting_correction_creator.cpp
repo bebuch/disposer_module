@@ -116,7 +116,7 @@ namespace disposer_module::vignetting_correction_creator{
 					}),
 					default_value(99))
 			),
-			module_enable([]{
+			exec_fn([]{
 				return [](auto& module){
 					auto values = module("image"_in).get_references();
 					for(auto const& value: values){

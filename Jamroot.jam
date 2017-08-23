@@ -180,9 +180,9 @@ lib vignetting_correction
 	<include>$(bitmap)/include
 	;
 
-lib demosaic
+lib channel_unbundle
 	:
-	demosaic.cpp
+	channel_unbundle.cpp
 	/disposer_module//log
 	/disposer//disposer
 	:

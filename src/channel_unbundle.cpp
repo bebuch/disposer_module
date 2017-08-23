@@ -16,7 +16,7 @@
 #include <boost/dll.hpp>
 
 
-namespace disposer_module::demosaic{
+namespace disposer_module::channel_unbundle{
 
 
 	using namespace disposer;
@@ -76,7 +76,7 @@ namespace disposer_module::demosaic{
 		>;
 
 
-	struct demosaic_t{
+	struct channel_unbundle_t{
 		template < typename Module, typename T >
 		auto operator()(Module const& module, bitmap< T > const& image)const{
 			auto const xc = module("x_count"_param).get();
@@ -127,7 +127,7 @@ namespace disposer_module::demosaic{
 		}
 	};
 
-	constexpr auto demosaic = demosaic_t();
+	constexpr auto channel_unbundle = channel_unbundle_t();
 
 
 	void init(std::string const& name, module_declarant& disposer){
@@ -153,7 +153,7 @@ namespace disposer_module::demosaic{
 				for(auto const& value: values){
 					std::visit([&module](auto const& img_ref){
 						module("images"_out).put(
-							demosaic(module, img_ref.get()));
+							channel_unbundle(module, img_ref.get()));
 					}, value);
 				}
 			})

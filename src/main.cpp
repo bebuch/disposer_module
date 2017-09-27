@@ -6,14 +6,14 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 //-----------------------------------------------------------------------------
+#include <disposer/disposer.hpp>
+
 #include <logsys/log.hpp>
 #include <logsys/stdlogb.hpp>
 
-#include <disposer/disposer.hpp>
-
+#include <boost/filesystem.hpp>
 #include <boost/stacktrace.hpp>
 #include <boost/lexical_cast.hpp>
-#include <boost/filesystem.hpp>
 #include <boost/dll.hpp>
 
 #include <regex>

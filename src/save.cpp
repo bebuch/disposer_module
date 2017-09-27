@@ -120,6 +120,11 @@ namespace disposer_module::save{
 
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = module_register_fn(
+			dimension_list{
+				dimension_c<
+
+				>
+			},
 			module_configure(
 				make("content"_in, types),
 				make("fixed_id"_param, type_c< std::optional< std::size_t > >),

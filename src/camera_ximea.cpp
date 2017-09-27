@@ -34,13 +34,6 @@ namespace disposer_module::camera_ximea{
 	using ::bmp::bitmap;
 
 
-	constexpr auto types = hana::tuple_t<
-			std::uint8_t,
-			std::uint16_t,
-			pixel::rgb8u
-		>;
-
-
 	void verify(XI_RETURN xi_return){
 		// Conversion to enum XI_RET to get a warning if ximea extended the enum
 		switch(XI_RET(xi_return)){
@@ -241,7 +234,10 @@ namespace disposer_module::camera_ximea{
 	template < typename Component >
 	class ximea_cam_params{
 	public:
-		constexpr ximea_cam_params(Component const& component, HANDLE handle)noexcept
+		constexpr ximea_cam_params(
+			Component const& component,
+			HANDLE handle
+		)noexcept
 			: component_(component)
 			, handle_(handle) {}
 
@@ -403,16 +399,16 @@ namespace disposer_module::camera_ximea{
 			}
 		}
 
-		if(component("use_camera_region"_param).get()) return mosaic;
+		if(component("use_camera_region"_param)) return mosaic;
 
 		auto rect = ::bmp::rect(
 			::bmp::point(
-				component("x_offset"_param).get(),
-				component("y_offset"_param).get()
+				component("x_offset"_param),
+				component("y_offset"_param)
 			),
 			::bmp::size(
-				component("width"_param).get(),
-				component("height"_param).get()
+				component("width"_param),
+				component("height"_param)
 			)
 		);
 
@@ -440,7 +436,7 @@ namespace disposer_module::camera_ximea{
 		ximea_cam_params< Component > params(component, handle);
 		params.set(XI_PRM_BUFFER_POLICY, XI_BP_SAFE);
 
-		switch(component("format"_param).get()){
+		switch(component("format"_param)){
 			case pixel_format::mono8:
 				params.set(XI_PRM_IMAGE_DATA_FORMAT, XI_MONO8);
 				break;
@@ -465,10 +461,10 @@ namespace disposer_module::camera_ximea{
 		auto cam_width = cam_full_width;
 		auto cam_height = cam_full_height;
 
-		auto const x = component("x_offset"_param).get();
-		auto const y = component("y_offset"_param).get();
-		auto const width = component("width"_param).get();
-		auto const height = component("height"_param).get();
+		auto const x = component("x_offset"_param);
+		auto const y = component("y_offset"_param);
+		auto const width = component("width"_param);
+		auto const height = component("height"_param);
 		if(x + width > cam_full_width || y + height > cam_full_height){
 			std::ostringstream os;
 			os << "parameter region is out of range (x: " << x << ", y: "
@@ -478,7 +474,7 @@ namespace disposer_module::camera_ximea{
 			throw std::logic_error(os.str());
 		}
 
-		if(component("use_camera_region"_param).get()){
+		if(component("use_camera_region"_param)){
 			params.set(XI_PRM_REGION_SELECTOR, 0);
 			params.set(XI_PRM_HEIGHT, static_cast< int >(height));
 			params.set(XI_PRM_WIDTH, static_cast< int >(width));
@@ -495,7 +491,7 @@ namespace disposer_module::camera_ximea{
 		auto const payload_pass = (cam_width * cam_height == payload_size);
 
 		params.set(XI_PRM_EXPOSURE,
-			static_cast< int >(component("exposure_time_ns"_param).get()));
+			static_cast< int >(component("exposure_time_ns"_param)));
 		verify(xiStartAcquisition(handle));
 
 		return ximea_cam{
@@ -513,7 +509,7 @@ namespace disposer_module::camera_ximea{
 	public:
 		ximea_cam_init(Component const& component)
 			: component_(component)
-			, handle_(open_ximea_cam(component("cam_id"_param).get()))
+			, handle_(open_ximea_cam(component("cam_id"_param)))
 			, cam_(make_ximea_cam(component, handle_)) {}
 
 		ximea_cam_init(ximea_cam_init const&) = delete;
@@ -561,7 +557,7 @@ namespace disposer_module::camera_ximea{
 	void init(std::string const& name, component_declarant& declarant){
 		auto init = component_register_fn(
 			component_configure(
-				make("format"_param, type_c< pixel_format >,
+				make("format"_param, free_type_c< pixel_format >,
 					parser_fn([](
 						auto const& /*iop*/,
 						std::string_view data,
@@ -575,70 +571,63 @@ namespace disposer_module::camera_ximea{
 						throw std::runtime_error("unknown value '"
 							+ std::string(data) + "', allowed values are: "
 							"mono8, mono16, raw8, raw16 & rgb8");
-					}),
-					type_as_text(
-						hana::make_pair(type_c< pixel_format >, "format"_s)
-					)),
-				make("cam_id"_param, type_c< std::uint32_t >,
+					})),
+				make("cam_id"_param, free_type_c< std::uint32_t >,
 					default_value(0)),
-				make("use_camera_region"_param, type_c< bool >,
+				make("use_camera_region"_param, free_type_c< bool >,
 					default_value(false)),
-				make("x_offset"_param, type_c< std::size_t >,
+				make("x_offset"_param, free_type_c< std::size_t >,
 					default_value(0)),
-				make("y_offset"_param, type_c< std::size_t >,
+				make("y_offset"_param, free_type_c< std::size_t >,
 					default_value(0)),
-				make("width"_param, type_c< std::size_t >),
-				make("height"_param, type_c< std::size_t >),
-				make("exposure_time_ns"_param, type_c< std::size_t >,
+				make("width"_param, free_type_c< std::size_t >),
+				make("height"_param, free_type_c< std::size_t >),
+				make("exposure_time_ns"_param, free_type_c< std::size_t >,
 					default_value(10000))
 			),
-			component_init([](auto& component){
-				return ximea_cam_init< std::decay_t< decltype(component) > >
-					(component);
-			}),
 			component_modules(
-				"capture"_module([](auto& component){
+				make("capture"_module, register_fn([](auto& component){
 					return module_register_fn(
+						dimension_list{
+							dimension_c<
+								std::uint8_t,
+								std::uint16_t,
+								pixel::rgb8u
+							>
+						},
 						module_configure(
-							make("image"_out, types,
-								wrap_in< bitmap >,
-								enable_fn([&component](auto const& iop, auto type){
-									auto const format =
-										component("format"_param).get();
-									return
-										(type == type_c< std::uint8_t > && (
-											format == pixel_format::mono8 ||
-											format == pixel_format::raw8)) ||
-										(type == type_c< std::uint16_t > && (
-											format == pixel_format::mono16 ||
-											format == pixel_format::raw16)) ||
-										(type == type_c< pixel::rgb8u > && (
-											format == pixel_format::rgb8));
-								})
-							)
+							set_dimension_fn([&component]{
+								auto const format = component("format"_param);
+								switch(format){
+									case pixel_format::mono8: [[fallthrough]];
+									case pixel_format::raw8:
+										return solved_dimensions{
+											index_component< 0 >{0}};
+									case pixel_format::mono16: [[fallthrough]];
+									case pixel_format::raw16:
+										return solved_dimensions{
+											index_component< 0 >{1}};
+									case pixel_format::rgb8:
+										return solved_dimensions{
+											index_component< 0 >{2}};
+								}
+
+								throw std::runtime_error("unknown format");
+							}),
+							make("image"_out, wrapped_type_ref_c< bitmap, 0 >)
 						),
 						exec_fn([&component](auto& module){
-							auto& out = module("image"_out);
-							switch(component("format"_param).get()){
-								case pixel_format::mono8:
-								case pixel_format::raw8:
-									out.put(component.data().template
-										get_image< std::uint8_t >());
-									break;
-								case pixel_format::mono16:
-								case pixel_format::raw16:
-									out.put(component.data().template
-										get_image< std::uint16_t >());
-									break;
-								case pixel_format::rgb8:
-									out.put(component.data().template
-										get_image< pixel::rgb8u >());
-									break;
-							}
+							module("image"_out).push(component.state()
+								.template get_image< typename decltype(
+										module.dimension(hana::size_c< 0 >)
+									)::type >());
 						})
 					);
-				})
-			)
+				}))
+			),
+			component_init_fn([](auto const& component){
+				return ximea_cam_init(component);
+			})
 		);
 
 		init(name, declarant);

@@ -72,6 +72,7 @@ exe disposer_module
 	main.cpp
 	/disposer_module//log
 	/disposer//disposer
+	/boost//system
 	/boost//filesystem
 	/http//http
 	:

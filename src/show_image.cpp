@@ -29,93 +29,88 @@ namespace disposer_module::show_image{
 	using ::bmp::bitmap;
 
 
-	constexpr auto types = hana::tuple_t<
-			std::uint8_t,
-			std::uint16_t,
-			pixel::rgb8u
-		>;
+	template < typename T >
+	struct resources;
 
-
-	struct parameter{
-		std::string window_title;
-	};
-
-
-	using cimg_variant = std::variant<
-			cimg_library::CImg< std::uint8_t >,
-			cimg_library::CImg< std::uint16_t >
-		>;
-
-
-	struct assign_visitor{
-		assign_visitor(cimg_variant& img): img(img){}
-
-		cimg_variant& img;
-
-		void operator()(
-			std::reference_wrapper< bitmap< uint8_t > const > const img_ref
-		)const{
-			auto const& image = img_ref.get();
-			img = cimg_library::CImg< std::uint8_t >(
-				image.data(), image.width(), image.height()
-			);
-		}
-
-		void operator()(
-			std::reference_wrapper< bitmap< uint16_t > const > const img_ref
-		)const{
-			auto const& image = img_ref.get();
-			img = cimg_library::CImg< std::uint16_t >(
-				image.data(), image.width(), image.height()
-			);
-		}
-
-		void operator()(
-			std::reference_wrapper< bitmap< pixel::rgb8u > const > const img_ref
-		)const{
-			auto const& image = img_ref.get();
-			img = cimg_library::CImg< std::uint8_t >(
-				reinterpret_cast< std::uint8_t const* >(image.data()),
-				image.width(), image.height(), 1, 3
-			);
-		}
-	};
-
-
-	struct resources{
+	template <>
+	struct resources< std::uint8_t >{
 		resources(std::string const& title):
 			display(200, 100, title.c_str()){}
 
 		cimg_library::CImgDisplay display;
-		cimg_variant img;
+		cimg_library::CImg< std::uint8_t > img;
+
+		void set_image(bitmap< std::uint8_t > const& image){
+			img = cimg_library::CImg< std::uint8_t >(
+				reinterpret_cast< std::uint8_t const* >(image.data()),
+				image.width(), image.height(), 1, 1);
+		}
+	};
+
+	template <>
+	struct resources< std::uint16_t >{
+		resources(std::string const& title):
+			display(200, 100, title.c_str()){}
+
+		cimg_library::CImgDisplay display;
+		cimg_library::CImg< std::uint16_t > img;
+
+		void set_image(bitmap< std::uint16_t > const& image){
+			img = cimg_library::CImg< std::uint16_t >(
+				reinterpret_cast< std::uint16_t const* >(image.data()),
+				image.width(), image.height(), 1, 1);
+		}
+	};
+
+	template <>
+	struct resources< pixel::rgb8u >{
+		resources(std::string const& title):
+			display(200, 100, title.c_str()){}
+
+		cimg_library::CImgDisplay display;
+		cimg_library::CImg< std::uint8_t > img;
+
+		void set_image(bitmap< pixel::rgb8u > const& image){
+			img = cimg_library::CImg< std::uint8_t >(
+				reinterpret_cast< std::uint8_t const* >(image.data()),
+				image.width(), image.height(), 1, 3);
+		}
 	};
 
 
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = module_register_fn(
+			dimension_list{
+				dimension_c<
+					std::uint8_t,
+					std::uint16_t,
+					pixel::rgb8u
+				>
+			},
 			module_configure(
-				make("image"_in, types, wrap_in< bitmap >),
-				make("window_title"_param, hana::type_c< std::string >)
+				make("image"_in, wrapped_type_ref_c< bitmap, 0 >),
+				make("window_title"_param, free_type_c< std::string >)
 			),
-			state_maker_fn([](auto const& module){
-				return resources(module("window_title"_param).get());
+			module_init_fn([](auto const& module){
+				using type = typename
+					decltype(module.dimension(hana::size_c< 0 >))::type;
+
+				return resources< type >(module("window_title"_param));
 			}),
 			exec_fn([](auto& module){
-				auto& data_ = module.state();
-				auto values = module("image"_in).get_references();
-				for(auto const& img_data: values){
-					std::visit(assign_visitor(data_.img), img_data);
-					std::visit([&data_](auto const& img){
-						if(
-							data_.display.width() != img.width() ||
-							data_.display.height() != img.height()
-						){
-							data_.display.resize(img, false);
-						}
+				auto& state = module.state();
+				for(auto const& img: module("image"_in).references()){
+					state.set_image(img);
 
-						data_.display.display(img);
-					}, data_.img);
-					data_.display.show();
+					if(
+						state.display.width() != state.img.width() ||
+						state.display.height() != state.img.height()
+					){
+						state.display.resize(state.img, false);
+					}
+
+					state.display.display(state.img);
+					state.display.show();
 				}
 			})
 		);

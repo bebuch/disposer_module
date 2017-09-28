@@ -72,6 +72,7 @@ exe disposer_module
 	main.cpp
 	/disposer_module//log
 	/disposer//disposer
+	/boost//system
 	/boost//filesystem
 	/http//http
 	:
@@ -180,9 +181,9 @@ lib vignetting_correction
 	<include>$(bitmap)/include
 	;
 
-lib demosaic
+lib channel_unbundle
 	:
-	demosaic.cpp
+	channel_unbundle.cpp
 	/disposer_module//log
 	/disposer//disposer
 	:

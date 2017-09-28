@@ -26,77 +26,73 @@ namespace disposer_module::subbitmap{
 	using bitmap = ::bmp::bitmap< T >;
 
 
-	constexpr auto types = hana::tuple_t<
-			std::int8_t,
-			std::uint8_t,
-			std::int16_t,
-			std::uint16_t,
-			std::int32_t,
-			std::uint32_t,
-			std::int64_t,
-			std::uint64_t,
-			float,
-			double,
-			pixel::ga8,
-			pixel::ga16,
-			pixel::ga32,
-			pixel::ga64,
-			pixel::ga8u,
-			pixel::ga16u,
-			pixel::ga32u,
-			pixel::ga64u,
-			pixel::ga32f,
-			pixel::ga64f,
-			pixel::rgb8,
-			pixel::rgb16,
-			pixel::rgb32,
-			pixel::rgb64,
-			pixel::rgb8u,
-			pixel::rgb16u,
-			pixel::rgb32u,
-			pixel::rgb64u,
-			pixel::rgb32f,
-			pixel::rgb64f,
-			pixel::rgba8,
-			pixel::rgba16,
-			pixel::rgba32,
-			pixel::rgba64,
-			pixel::rgba8u,
-			pixel::rgba16u,
-			pixel::rgba32u,
-			pixel::rgba64u,
-			pixel::rgba32f,
-			pixel::rgba64f
-		>;
-
-
 	template < typename Module, typename T >
 	bitmap< T > exec(Module const& module, bitmap< T > const& image){
-		auto const x = module("x"_param).get();
-		auto const y = module("y"_param).get();
-		auto const w = module("width"_param).get();
-		auto const h = module("height"_param).get();
+		auto const x = module("x"_param);
+		auto const y = module("y"_param);
+		auto const w = module("width"_param);
+		auto const h = module("height"_param);
 		return ::bmp::subbitmap(image, ::bmp::rect{x, y, w, h});
 	}
 
 
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = module_register_fn(
+			dimension_list{
+				dimension_c<
+					std::int8_t,
+					std::uint8_t,
+					std::int16_t,
+					std::uint16_t,
+					std::int32_t,
+					std::uint32_t,
+					std::int64_t,
+					std::uint64_t,
+					float,
+					double,
+					pixel::ga8,
+					pixel::ga16,
+					pixel::ga32,
+					pixel::ga64,
+					pixel::ga8u,
+					pixel::ga16u,
+					pixel::ga32u,
+					pixel::ga64u,
+					pixel::ga32f,
+					pixel::ga64f,
+					pixel::rgb8,
+					pixel::rgb16,
+					pixel::rgb32,
+					pixel::rgb64,
+					pixel::rgb8u,
+					pixel::rgb16u,
+					pixel::rgb32u,
+					pixel::rgb64u,
+					pixel::rgb32f,
+					pixel::rgb64f,
+					pixel::rgba8,
+					pixel::rgba16,
+					pixel::rgba32,
+					pixel::rgba64,
+					pixel::rgba8u,
+					pixel::rgba16u,
+					pixel::rgba32u,
+					pixel::rgba64u,
+					pixel::rgba32f,
+					pixel::rgba64f
+				>
+			},
 			module_configure(
-				make("image"_in, types, wrap_in< bitmap >),
-				make("image"_out, types, wrap_in< bitmap >,
-					enable_by_types_of("image"_in)),
-				make("x"_param, hana::type_c< float >),
-				make("y"_param, hana::type_c< float >),
-				make("width"_param, hana::type_c< std::size_t >),
-				make("height"_param, hana::type_c< std::size_t >)
+				make("x"_param, free_type_c< float >),
+				make("y"_param, free_type_c< float >),
+				make("width"_param, free_type_c< std::size_t >),
+				make("height"_param, free_type_c< std::size_t >),
+				make("image"_in, wrapped_type_ref_c< bitmap, 0 >),
+				make("image"_out, wrapped_type_ref_c< bitmap, 0 >)
 			),
 			exec_fn([](auto& module){
-				auto values = module("image"_in).get_references();
-				for(auto const& value: values){
-					std::visit([&module](auto const& img_ref){
-						module("image"_out).put(exec(module, img_ref.get()));
-					}, value);
+				for(auto const& img: module("image"_in).references()){
+					module("image"_out).push(exec(module, img));
 				}
 			})
 		);

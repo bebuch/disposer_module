@@ -386,45 +386,45 @@ namespace disposer_module::http_server_component{
 
 		auto init = component_register_fn(
 			component_configure(
-				make("root"_param, hana::type_c< std::string >),
-				make("port"_param, hana::type_c< std::uint16_t >,
+				make("root"_param, free_type_c< std::string >),
+				make("port"_param, free_type_c< std::uint16_t >,
 					default_value(8000)),
-				make("thread_count"_param, hana::type_c< std::size_t >,
+				make("thread_count"_param, free_type_c< std::size_t >,
 					default_value(2),
-					verify_value_fn([](auto const& /*iop*/, std::size_t value){
+					verify_value_fn([](std::size_t value){
 						if(value > 0) return;
 						throw std::logic_error("must be greater or equal 1");
 					}))
 			),
-			component_init([](auto& component){
-				return http_server< decltype(component) >(
-					component,
-					component("root"_param).get(),
-					component("port"_param).get(),
-					component("thread_count"_param).get());
-			}),
 			component_modules(
-				"websocket"_module([](auto& component){
+				make("websocket"_module, register_fn([](auto component){
 					return module_register_fn(
 						module_configure(
-							make("data"_in, hana::type_c< std::string >),
+							make("data"_in, free_type_c< std::string >),
 							make("service_name"_param,
-								hana::type_c< std::string >)
+								free_type_c< std::string >)
 						),
-						state_maker_fn([&component](auto const& module){
-							return component.data()
-								.init(module("service_name"_param).get()).key;
+						module_init_fn([&component](auto const& module){
+							return component.state()
+								.init(module("service_name"_param)).key;
 						}),
 						exec_fn([&component](auto& module){
-							auto list = module("data"_in).get_references();
+							auto list = module("data"_in).references();
 							if(list.empty()) return;
 							auto iter = list.end();
 							--iter;
-							component.data().send(module.state(), iter->get());
+							component.state().send(module.state(), *iter);
 						})
 					);
-				})
-			)
+				}))
+			),
+			component_init_fn([](auto component){
+				return http_server< decltype(component) >(
+					component,
+					component("root"_param),
+					component("port"_param),
+					component("thread_count"_param));
+			})
 		);
 
 		init(name, declarant);

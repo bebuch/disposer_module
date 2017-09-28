@@ -27,14 +27,6 @@ namespace disposer_module::encode_jpg{
 	using ::bmp::bitmap;
 
 
-	constexpr auto types = hana::tuple_t<
-			std::int8_t,
-			std::uint8_t,
-			pixel::rgb8,
-			pixel::rgb8u
-		>;
-
-
 	template < typename T >
 	auto to_jpg_image(bitmap< T > const& img, int quality){
 		// JPEG encoding
@@ -77,11 +69,19 @@ namespace disposer_module::encode_jpg{
 
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = module_register_fn(
+			dimension_list{
+				dimension_c<
+					std::int8_t,
+					std::uint8_t,
+					pixel::rgb8,
+					pixel::rgb8u
+				>
+			},
 			module_configure(
-				make("image"_in, types, wrap_in< bitmap >),
-				make("data"_out, hana::type_c< std::string >),
-				make("quality"_param, hana::type_c< std::size_t >,
-					verify_value_fn([](auto const& /*iop*/, std::size_t value){
+				make("image"_in, wrapped_type_ref_c< bitmap, 0 >),
+				make("data"_out, free_type_c< std::string >),
+				make("quality"_param, free_type_c< std::size_t >,
+					verify_value_fn([](std::size_t value){
 						if(value > 100){
 							throw std::logic_error(
 								"expected a percent value (0% - 100%)");
@@ -90,13 +90,10 @@ namespace disposer_module::encode_jpg{
 					default_value(90))
 			),
 			exec_fn([](auto& module){
-				auto values = module("image"_in).get_references();
-				for(auto const& value: values){
-					std::visit([&module](auto const& img){
-						auto const quality = module("quality"_param).get();
-						module("data"_out).put(to_jpg_image(
-							img.get(), static_cast< int >(quality)));
-					}, value);
+				for(auto const& img: module("image"_in).references()){
+					auto const quality = module("quality"_param);
+					module("data"_out).push(to_jpg_image(
+						img, static_cast< int >(quality)));
 				}
 			})
 		);

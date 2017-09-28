@@ -29,13 +29,6 @@ namespace disposer_module::vignetting_correction_creator{
 	using bitmap = ::bmp::bitmap< T >;
 
 
-	constexpr auto types = hana::tuple_t<
-			std::uint8_t,
-			std::uint16_t,
-			std::uint32_t,
-			std::uint64_t
-		>;
-
 	template < typename T >
 	T max_value(bitmap< T > const& image){
 		return std::accumulate(image.begin(), image.end(), *image.begin(),
@@ -47,7 +40,7 @@ namespace disposer_module::vignetting_correction_creator{
 
 	template < typename Module, typename T >
 	bitmap< float > exec(Module const& module, bitmap< T > const& image){
-		auto const max_v = module("max_value"_param).get(hana::type_c< T >);
+		auto const max_v = module("max_value"_param);
 
 		T const max = module.log([](logsys::stdlogb& os, T const* max){
 				os << "find max image value";
@@ -60,7 +53,7 @@ namespace disposer_module::vignetting_correction_creator{
 			throw std::runtime_error("image is overexposed");
 		}
 
-		auto const reference = module("reference"_param).get();
+		auto const reference = module("reference"_param);
 		float const reference_value = module.log(
 			[](logsys::stdlogb& os, float const* ref_v){
 				os << "reference value";
@@ -94,38 +87,39 @@ namespace disposer_module::vignetting_correction_creator{
 
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = module_register_fn(
+			dimension_list{
+				dimension_c<
+					std::uint8_t,
+					std::uint16_t,
+					std::uint32_t,
+					std::uint64_t
+				>
+			},
 			module_configure(
-				make("image"_in, types, wrap_in< bitmap >),
-				make("image"_out, hana::type_c< bitmap< float > >),
-				make("max_value"_param, types,
-					enable_by_types_of("image"_in),
-					default_value_fn([](auto const& iop, auto t){
+				make("reference"_param, free_type_c< float >,
+					verify_value_fn([](std::size_t value){
+						if(value > 100 || value < 1){
+							throw std::logic_error(
+								"expected a percent value (1% - 100%)");
+						}
+					}),
+					default_value(99)),
+				make("image"_in, wrapped_type_ref_c< bitmap, 0 >),
+				make("image"_out, free_type_c< bitmap< float > >),
+				make("max_value"_param, type_ref_c< 0 >,
+					default_value_fn([](auto, auto t){
 						using type = typename decltype(t)::type;
 						if constexpr(
 							std::is_integral_v< type > && sizeof(type) == 1
 						){
 							return std::numeric_limits< type >::max();
 						}
-					})),
-				make("reference"_param, hana::type_c< float >,
-					verify_value_fn([](auto const& /*iop*/, std::size_t value){
-						if(value > 100 || value < 1){
-							throw std::logic_error(
-								"expected a percent value (1% - 100%)");
-						}
-					}),
-					default_value(99))
+					}))
 			),
-			exec_fn([]{
-				return [](auto& module){
-					auto values = module("image"_in).get_references();
-					for(auto const& value: values){
-						std::visit([&module](auto const& img_ref){
-							module("image"_out).put(
-								exec(module, img_ref.get()));
-						}, value);
-					}
-				};
+			exec_fn([](auto& module){
+				for(auto const& img: module("image"_in).references()){
+					module("image"_out).push(exec(module, img));
+				}
 			})
 		);
 

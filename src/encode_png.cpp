@@ -13,6 +13,8 @@
 
 #include <boost/dll.hpp>
 
+#include <boost/hana/at_key.hpp>
+
 #include <png++/png.hpp>
 
 
@@ -25,26 +27,6 @@ namespace disposer_module::encode_png{
 
 	namespace pixel = ::bmp::pixel;
 	using ::bmp::bitmap;
-
-
-	constexpr auto types = hana::tuple_t<
-			std::int8_t,
-			std::int16_t,
-			std::uint8_t,
-			std::uint16_t,
-			pixel::ga8,
-			pixel::ga16,
-			pixel::ga8u,
-			pixel::ga16u,
-			pixel::rgb8,
-			pixel::rgb16,
-			pixel::rgb8u,
-			pixel::rgb16u,
-			pixel::rgba8,
-			pixel::rgba16,
-			pixel::rgba8u,
-			pixel::rgba16u
-		>;
 
 
 	template < typename T1, typename T2 >
@@ -92,19 +74,35 @@ namespace disposer_module::encode_png{
 
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = module_register_fn(
+			dimension_list{
+				dimension_c<
+					std::int8_t,
+					std::int16_t,
+					std::uint8_t,
+					std::uint16_t,
+					pixel::ga8,
+					pixel::ga16,
+					pixel::ga8u,
+					pixel::ga16u,
+					pixel::rgb8,
+					pixel::rgb16,
+					pixel::rgb8u,
+					pixel::rgb16u,
+					pixel::rgba8,
+					pixel::rgba16,
+					pixel::rgba8u,
+					pixel::rgba16u
+				>
+			},
 			module_configure(
-				make("image"_in, types, wrap_in< bitmap >),
-				make("data"_out, hana::type_c< std::string >)
+				make("image"_in, wrapped_type_ref_c< bitmap, 0 >),
+				make("data"_out, free_type_c< std::string >)
 			),
 			exec_fn([](auto& module){
-				auto values = module("image"_in).get_references();
-				for(auto const& value: values){
-					std::visit([&module](auto const& img){
-						std::ostringstream os
-							(std::ios::out | std::ios::binary);
-						to_png_image(img.get()).write_stream(os);
-						module("data"_out).put(os.str());
-					}, value);
+				for(auto const& img: module("image"_in).references()){
+					std::ostringstream os(std::ios::out | std::ios::binary);
+					to_png_image(img).write_stream(os);
+					module("data"_out).push(os.str());
 				}
 			})
 		);

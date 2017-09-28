@@ -25,57 +25,57 @@ namespace disposer_module::encode_bbf{
 	using ::bmp::bitmap;
 
 
-	constexpr auto types = hana::tuple_t<
-			bool,
-			std::int8_t,
-			std::uint8_t,
-			std::int16_t,
-			std::uint16_t,
-			std::int32_t,
-			std::uint32_t,
-			std::int64_t,
-			std::uint64_t,
-			float,
-			double,
-			pixel::ga8,
-			pixel::ga16,
-			pixel::ga32,
-			pixel::ga64,
-			pixel::ga8u,
-			pixel::ga16u,
-			pixel::ga32u,
-			pixel::ga64u,
-			pixel::ga32f,
-			pixel::ga64f,
-			pixel::rgb8,
-			pixel::rgb16,
-			pixel::rgb32,
-			pixel::rgb64,
-			pixel::rgb8u,
-			pixel::rgb16u,
-			pixel::rgb32u,
-			pixel::rgb64u,
-			pixel::rgb32f,
-			pixel::rgb64f,
-			pixel::rgba8,
-			pixel::rgba16,
-			pixel::rgba32,
-			pixel::rgba64,
-			pixel::rgba8u,
-			pixel::rgba16u,
-			pixel::rgba32u,
-			pixel::rgba64u,
-			pixel::rgba32f,
-			pixel::rgba64f
-		>;
-
-
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = module_register_fn(
+			dimension_list{
+				dimension_c<
+					bool,
+					std::int8_t,
+					std::uint8_t,
+					std::int16_t,
+					std::uint16_t,
+					std::int32_t,
+					std::uint32_t,
+					std::int64_t,
+					std::uint64_t,
+					float,
+					double,
+					pixel::ga8,
+					pixel::ga16,
+					pixel::ga32,
+					pixel::ga64,
+					pixel::ga8u,
+					pixel::ga16u,
+					pixel::ga32u,
+					pixel::ga64u,
+					pixel::ga32f,
+					pixel::ga64f,
+					pixel::rgb8,
+					pixel::rgb16,
+					pixel::rgb32,
+					pixel::rgb64,
+					pixel::rgb8u,
+					pixel::rgb16u,
+					pixel::rgb32u,
+					pixel::rgb64u,
+					pixel::rgb32f,
+					pixel::rgb64f,
+					pixel::rgba8,
+					pixel::rgba16,
+					pixel::rgba32,
+					pixel::rgba64,
+					pixel::rgba8u,
+					pixel::rgba16u,
+					pixel::rgba32u,
+					pixel::rgba64u,
+					pixel::rgba32f,
+					pixel::rgba64f
+				>
+			},
 			module_configure(
-				make("image"_in, types, wrap_in< bitmap >),
-				make("data"_out, hana::type_c< std::string >),
-				make("endian"_param, hana::type_c< boost::endian::order >,
+				make("image"_in, wrapped_type_ref_c< bitmap, 0 >),
+				make("data"_out, free_type_c< std::string >),
+				make("endian"_param, free_type_c< boost::endian::order >,
 					parser_fn([](
 						auto const& /*iop*/,
 						std::string_view data,
@@ -90,23 +90,14 @@ namespace disposer_module::encode_bbf{
 							"little, big & native");
 
 					}),
-					default_value(boost::endian::order::native),
-					type_as_text(
-						hana::make_pair(hana::type_c< boost::endian::order >,
-						"endian"_s)
-					)
+					default_value(boost::endian::order::native)
 				)
 			),
 			exec_fn([](auto& module){
-				auto values = module("image"_in).get_references();
-				for(auto const& value: values){
-					std::visit([&module](auto const& img){
-						std::ostringstream os
-							(std::ios::out | std::ios::binary);
-						::bmp::binary_write(img.get(), os,
-							module("endian"_param).get());
-						module("data"_out).put(os.str());
-					}, value);
+				for(auto const& img: module("image"_in).references()){
+					std::ostringstream os(std::ios::out | std::ios::binary);
+					::bmp::binary_write(img, os, module("endian"_param));
+					module("data"_out).push(os.str());
 				}
 			})
 		);

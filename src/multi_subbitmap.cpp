@@ -34,50 +34,6 @@ namespace disposer_module::multi_subbitmap{
 	using bitmap_vector = ::bmp::bitmap_vector< T >;
 
 
-	constexpr auto types = hana::tuple_t<
-			std::int8_t,
-			std::uint8_t,
-			std::int16_t,
-			std::uint16_t,
-			std::int32_t,
-			std::uint32_t,
-			std::int64_t,
-			std::uint64_t,
-			float,
-			double,
-			pixel::ga8,
-			pixel::ga16,
-			pixel::ga32,
-			pixel::ga64,
-			pixel::ga8u,
-			pixel::ga16u,
-			pixel::ga32u,
-			pixel::ga64u,
-			pixel::ga32f,
-			pixel::ga64f,
-			pixel::rgb8,
-			pixel::rgb16,
-			pixel::rgb32,
-			pixel::rgb64,
-			pixel::rgb8u,
-			pixel::rgb16u,
-			pixel::rgb32u,
-			pixel::rgb64u,
-			pixel::rgb32f,
-			pixel::rgb64f,
-			pixel::rgba8,
-			pixel::rgba16,
-			pixel::rgba32,
-			pixel::rgba64,
-			pixel::rgba8u,
-			pixel::rgba16u,
-			pixel::rgba32u,
-			pixel::rgba64u,
-			pixel::rgba32f,
-			pixel::rgba64f
-		>;
-
-
 	struct list_parser{
 		template < typename IOP_List >
 		std::vector< float > operator()(
@@ -110,10 +66,10 @@ namespace disposer_module::multi_subbitmap{
 
 	template < typename Module, typename Bitmaps >
 	auto exec(Module const& module, Bitmaps const& images){
-		auto const& xos = module("x_offsets"_param).get();
-		auto const& yos = module("y_offsets"_param).get();
-		auto const w = module("width"_param).get();
-		auto const h = module("height"_param).get();
+		auto const& xos = module("x_offsets"_param);
+		auto const& yos = module("y_offsets"_param);
+		auto const w = module("width"_param);
+		auto const h = module("height"_param);
 
 		if(xos.size() != images.size()){
 			throw std::logic_error("wrong image count");
@@ -125,51 +81,82 @@ namespace disposer_module::multi_subbitmap{
 			module.log([xo, yo](logsys::stdlogb& os){
 				os << "x = " << xo << ", y = " << yo;
 			}, [&]{
-				result.push_back(
-					subbitmap(image, ::bmp::rect{xo, yo, w, h}));
+				result.push_back(subbitmap(image, ::bmp::rect{xo, yo, w, h}));
 			});
 		}
 
 		return result;
 	}
 
-	constexpr auto as_text = type_as_text
-		(hana::make_pair(hana::type_c< std::vector< float > >,
-			"float32_list"_s));
-
-
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = module_register_fn(
+			dimension_list{
+				dimension_c<
+					std::int8_t,
+					std::uint8_t,
+					std::int16_t,
+					std::uint16_t,
+					std::int32_t,
+					std::uint32_t,
+					std::int64_t,
+					std::uint64_t,
+					float,
+					double,
+					pixel::ga8,
+					pixel::ga16,
+					pixel::ga32,
+					pixel::ga64,
+					pixel::ga8u,
+					pixel::ga16u,
+					pixel::ga32u,
+					pixel::ga64u,
+					pixel::ga32f,
+					pixel::ga64f,
+					pixel::rgb8,
+					pixel::rgb16,
+					pixel::rgb32,
+					pixel::rgb64,
+					pixel::rgb8u,
+					pixel::rgb16u,
+					pixel::rgb32u,
+					pixel::rgb64u,
+					pixel::rgb32f,
+					pixel::rgb64f,
+					pixel::rgba8,
+					pixel::rgba16,
+					pixel::rgba32,
+					pixel::rgba64,
+					pixel::rgba8u,
+					pixel::rgba16u,
+					pixel::rgba32u,
+					pixel::rgba64u,
+					pixel::rgba32f,
+					pixel::rgba64f
+				>
+			},
 			module_configure(
-				make("images"_in, types, wrap_in< bitmap_vector >),
-				make("images"_out, types, wrap_in< bitmap_vector >,
-					enable_by_types_of("images"_in)),
-				make("x_offsets"_param, hana::type_c< std::vector< float > >,
+				make("x_offsets"_param, free_type_c< std::vector< float > >,
 					parser_fn< list_parser >(),
-					verify_value_fn([](auto const& /*iop*/, auto const& values){
+					verify_value_fn([](auto const& values){
 						if(!values.empty()) return;
 						throw std::logic_error("Need at least one x value");
-					}),
-					as_text),
-				make("y_offsets"_param, hana::type_c< std::vector< float > >,
+					})),
+				make("y_offsets"_param, free_type_c< std::vector< float > >,
 					parser_fn< list_parser >(),
-					verify_value_fn([](auto const& iop, auto const& values){
-						auto const& x_offsets = iop("x_offsets"_param).get();
+					verify_value_fn([](auto const& values, auto const& iop){
+						auto const& x_offsets = iop("x_offsets"_param);
 						if(values.size() == x_offsets.size()) return;
 						throw std::logic_error(
 							"different element count as in x_offsets");
-					}),
-					as_text),
-				make("width"_param, hana::type_c< std::size_t >),
-				make("height"_param, hana::type_c< std::size_t >)
+					})),
+				make("width"_param, free_type_c< std::size_t >),
+				make("height"_param, free_type_c< std::size_t >),
+				make("images"_in, wrapped_type_ref_c< bitmap_vector, 0 >),
+				make("images"_out, wrapped_type_ref_c< bitmap_vector, 0 >),
 			),
 			exec_fn([](auto& module){
-				auto values = module("images"_in).get_references();
-				for(auto const& value: values){
-					std::visit([&module](auto const& imgs_ref){
-						module("images"_out)
-							.put(exec(module, imgs_ref.get()));
-					}, value);
+				for(auto const& img: module("images"_in).references()){
+					module("images"_out).push(exec(module, img));
 				}
 			})
 		);

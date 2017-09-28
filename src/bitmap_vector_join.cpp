@@ -34,50 +34,6 @@ namespace disposer_module::bitmap_vector_join{
 	using bitmap_vector = std::vector< bitmap< T > >;
 
 
-	constexpr auto types = hana::tuple_t<
-			std::int8_t,
-			std::uint8_t,
-			std::int16_t,
-			std::uint16_t,
-			std::int32_t,
-			std::uint32_t,
-			std::int64_t,
-			std::uint64_t,
-			float,
-			double,
-			pixel::ga8,
-			pixel::ga16,
-			pixel::ga32,
-			pixel::ga64,
-			pixel::ga8u,
-			pixel::ga16u,
-			pixel::ga32u,
-			pixel::ga64u,
-			pixel::ga32f,
-			pixel::ga64f,
-			pixel::rgb8,
-			pixel::rgb16,
-			pixel::rgb32,
-			pixel::rgb64,
-			pixel::rgb8u,
-			pixel::rgb16u,
-			pixel::rgb32u,
-			pixel::rgb64u,
-			pixel::rgb32f,
-			pixel::rgb64f,
-			pixel::rgba8,
-			pixel::rgba16,
-			pixel::rgba32,
-			pixel::rgba64,
-			pixel::rgba8u,
-			pixel::rgba16u,
-			pixel::rgba32u,
-			pixel::rgba64u,
-			pixel::rgba32f,
-			pixel::rgba64f
-		>;
-
-
 	namespace{
 
 
@@ -250,9 +206,8 @@ namespace disposer_module::bitmap_vector_join{
 			Module const& module,
 			bitmap_vector< T > const& vectors
 		)const{
-			auto const ips = module("images_per_line"_param).get();
-			auto const default_value =
-				module("default_value"_param).get(hana::type_c< T >);
+			auto const ips = module("images_per_line"_param);
+			auto const default_value = module("default_value"_param);
 			auto const& input_size = vectors[0].size();
 
 			std::size_t width =
@@ -287,28 +242,64 @@ namespace disposer_module::bitmap_vector_join{
 
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = module_register_fn(
+			dimension_list{
+				dimension_c<
+					std::int8_t,
+					std::uint8_t,
+					std::int16_t,
+					std::uint16_t,
+					std::int32_t,
+					std::uint32_t,
+					std::int64_t,
+					std::uint64_t,
+					float,
+					double,
+					pixel::ga8,
+					pixel::ga16,
+					pixel::ga32,
+					pixel::ga64,
+					pixel::ga8u,
+					pixel::ga16u,
+					pixel::ga32u,
+					pixel::ga64u,
+					pixel::ga32f,
+					pixel::ga64f,
+					pixel::rgb8,
+					pixel::rgb16,
+					pixel::rgb32,
+					pixel::rgb64,
+					pixel::rgb8u,
+					pixel::rgb16u,
+					pixel::rgb32u,
+					pixel::rgb64u,
+					pixel::rgb32f,
+					pixel::rgb64f,
+					pixel::rgba8,
+					pixel::rgba16,
+					pixel::rgba32,
+					pixel::rgba64,
+					pixel::rgba8u,
+					pixel::rgba16u,
+					pixel::rgba32u,
+					pixel::rgba64u,
+					pixel::rgba32f,
+					pixel::rgba64f
+				>
+			},
 			module_configure(
-				make("images"_in, types,
-					wrap_in< bitmap_vector >),
-				make("image"_out, types,
-					wrap_in< bitmap >,
-					enable_by_types_of("images"_in)),
-				make("images_per_line"_param, hana::type_c< std::size_t >,
-					verify_value_fn([](auto const& /*iop*/, auto const& value){
+				make("images"_in, wrapped_type_ref_c< bitmap_vector, 0 >),
+				make("image"_out, wrapped_type_ref_c< bitmap, 0 >),
+				make("images_per_line"_param, free_type_c< std::size_t >,
+					verify_value_fn([](auto const value){
 						if(value > 0) return;
 						throw std::logic_error("must be greater 0");
 					})),
-				make("default_value"_param, types,
-					parser_fn(value_parser{}),
-					enable_by_types_of("images"_in))
+				make("default_value"_param, type_ref_c< 0 >,
+					parser_fn(value_parser{}))
 			),
 			exec_fn([](auto& module){
-				auto values = module("images"_in).get_references();
-				for(auto const& value: values){
-					std::visit([&module](auto const& imgs_ref){
-						module("image"_out).put(
-							bitmap_vector_join(module, imgs_ref.get()));
-					}, value);
+				for(auto const& img: module("images"_in).references()){
+					module("image"_out).push(bitmap_vector_join(module, img));
 				}
 			})
 		);

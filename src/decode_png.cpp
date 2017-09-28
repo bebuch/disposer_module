@@ -13,6 +13,8 @@
 
 #include <boost/dll.hpp>
 
+#include <boost/hana/at_key.hpp>
+
 #include <png++/png.hpp>
 
 
@@ -27,30 +29,6 @@ namespace disposer_module::decode_png{
 
 	namespace pixel = ::bmp::pixel;
 	using ::bmp::bitmap;
-
-
-	constexpr auto types = hana::tuple_t<
-			std::uint8_t,
-			std::uint16_t,
-			pixel::ga8u,
-			pixel::ga16u,
-			pixel::rgb8u,
-			pixel::rgb16u,
-			pixel::rgba8u,
-			pixel::rgba16u
-		>;
-
-
-	enum class format{
-		g8,
-		g16,
-		ga8,
-		ga16,
-		rgb8,
-		rgb16,
-		rgba8,
-		rgba16
-	};
 
 
 	template < typename T1, typename T2 >
@@ -71,7 +49,7 @@ namespace disposer_module::decode_png{
 
 
 	template < typename T >
-	auto decode_png(std::string const& data){
+	auto decode(std::string const& data){
 		using png_type =
 			typename decltype(+bitmap_to_png_type[type_c< T >])::type;
 
@@ -95,84 +73,62 @@ namespace disposer_module::decode_png{
 
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = module_register_fn(
+			dimension_list{
+				dimension_c<
+					std::uint8_t,
+					std::uint16_t,
+					pixel::ga8u,
+					pixel::ga16u,
+					pixel::rgb8u,
+					pixel::rgb16u,
+					pixel::rgba8u,
+					pixel::rgba16u
+				>
+			},
 			module_configure(
-				make("data"_in, type_c< std::string >),
-				make("format"_param, type_c< format >,
+				make("data"_in, free_type_c< std::string >),
+				make("format"_param, free_type_c< std::size_t >,
 					parser_fn([](
 						auto const& /*iop*/,
 						std::string_view data,
-						hana::basic_type< format >
+						hana::basic_type< std::size_t >
 					){
-						if(data == "g8") return format::g8;
-						if(data == "g16") return format::g16;
-						if(data == "ga8") return format::ga8;
-						if(data == "ga16") return format::ga16;
-						if(data == "rgb8") return format::rgb8;
-						if(data == "rgb16") return format::rgb16;
-						if(data == "rgba8") return format::rgba8;
-						if(data == "rgba16") return format::rgba16;
-						throw std::runtime_error("unknown value '"
-							+ std::string(data) + "', allowed values are: "
-							"g8, g16, ga8, ga16, rgb8, rgb16, rgba8, rgba16");
-
-					}),
-					type_as_text(
-						hana::make_pair(type_c< format >, "format"_s)
-					)),
-				make("image"_out, types,
-					wrap_in< bitmap >,
-					enable_fn([](auto const& iop, auto type){
-						auto const format = iop("format"_param).get();
-						return
-							(type == type_c< std::uint8_t > &&
-								format == format::g8) ||
-							(type == type_c< std::uint16_t > &&
-								format == format::g16) ||
-							(type == type_c< pixel::ga8u > &&
-								format == format::ga8) ||
-							(type == type_c< pixel::ga16u > &&
-								format == format::ga16) ||
-							(type == type_c< pixel::rgb8u > &&
-								format == format::rgb8) ||
-							(type == type_c< pixel::rgb16u > &&
-								format == format::rgb16) ||
-							(type == type_c< pixel::rgba8u > &&
-								format == format::rgba8) ||
-							(type == type_c< pixel::rgba16u > &&
-								format == format::rgba16);
-					}))
+						constexpr std::array< std::string_view, 8 > list{{
+								"g8",
+								"g16",
+								"ga8",
+								"ga16",
+								"rgb8",
+								"rgb16",
+								"rgba8",
+								"rgba16"
+							}};
+						auto iter = std::find(list.begin(), list.end(), data);
+						if(iter == list.end()){
+							std::ostringstream os;
+							os << "unknown value '" << data
+								<< "', allowed values are: ";
+							bool first = true;
+							for(auto name: list){
+								if(first){ first = false; }else{ os << ", "; }
+								os << name;
+							}
+							throw std::runtime_error(os.str());
+						}
+						return iter - list.begin();
+					})),
+				set_dimension_fn([](auto const& module){
+					return solved_dimensions{index_component< 0 >{
+						module("format"_param)}};
+				}),
+				make("image"_out, wrapped_type_ref_c< bitmap, 0 >)
 			),
 			exec_fn([](auto& module){
-				auto& out = module("image"_out);
-				auto values = module("data"_in).get_references();
-				for(auto const& value: values){
-					auto const& data = value;
-					switch(module("format"_param).get()){
-					case format::g8:
-						out.put(decode_png< std::uint8_t >(data));
-					break;
-					case format::g16:
-						out.put(decode_png< std::uint16_t >(data));
-					break;
-					case format::ga8:
-						out.put(decode_png< pixel::ga8u >(data));
-					break;
-					case format::ga16:
-						out.put(decode_png< pixel::ga16u >(data));
-					break;
-					case format::rgb8:
-						out.put(decode_png< pixel::rgb8u >(data));
-					break;
-					case format::rgb16:
-						out.put(decode_png< pixel::rgb16u >(data));
-					break;
-					case format::rgba8:
-						out.put(decode_png< pixel::rgba8u >(data));
-					break;
-					case format::rgba16:
-						out.put(decode_png< pixel::rgba16u >(data));
-					break;
-					}
+				using type = typename
+					decltype(module.dimension(hana::size_c< 0 >))::type;
+
+				for(auto const& value: module("data"_in).references()){
+					module("image"_out).push(decode< type >(value));
 				}
 			})
 		);

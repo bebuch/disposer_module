@@ -142,22 +142,17 @@ int main(int argc, char** argv){
 				}
 			}else{
 				// multi threaded version
-				auto const cores = std::thread::hardware_concurrency();
-				std::vector< std::thread > workers;
-				workers.reserve(cores);
+				std::vector< std::future< void > > tasks;
+				tasks.reserve(exec_count);
 
 				::disposer::chain_enable_guard enable(chain);
-				std::atomic< std::size_t > index(0);
-				for(std::size_t i = 0; i < cores; ++i){
-					workers.emplace_back([&chain, &index]{
-						while(index++ < 1000){
-							chain.exec();
-						}
-					});
+				for(std::size_t i = 0; i < exec_count; ++i){
+					tasks.push_back(std::async(std::launch::async,
+						[&chain]{ chain.exec(); }));
 				}
 
-				for(auto& worker: workers){
-					worker.join();
+				for(auto& task: tasks){
+					task.get();
 				}
 			}
 		}

@@ -147,8 +147,7 @@ int main(int argc, char** argv){
 
 				::disposer::chain_enable_guard enable(chain);
 				for(std::size_t i = 0; i < exec_count; ++i){
-					tasks.push_back(std::async(std::launch::async,
-						[&chain]{ chain.exec(); }));
+					tasks.push_back(std::async([&chain]{ chain.exec(); }));
 				}
 
 				for(auto& task: tasks){

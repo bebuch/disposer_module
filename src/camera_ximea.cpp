@@ -513,14 +513,7 @@ namespace disposer_module::camera_ximea{
 			, cam_(make_ximea_cam(component, handle_)) {}
 
 		ximea_cam_init(ximea_cam_init const&) = delete;
-
-		ximea_cam_init(ximea_cam_init&& other):
-			component_(other.component_),
-			handle_(other.handle_),
-			cam_(std::move(other.cam_))
-		{
-			other.handle_ = nullptr;
-		}
+		ximea_cam_init(ximea_cam_init&&) = delete;
 
 		~ximea_cam_init(){
 			if(handle_ == nullptr) return;

@@ -523,7 +523,7 @@ namespace disposer_module::camera_ximea{
 				[this]{ verify(xiStopAcquisition(handle_)); });
 
 			component_.exception_catching_log(
-				[](logsys::stdlogb& os){ os << "close camera";},
+				[](logsys::stdlogb& os){ os << "close camera"; },
 				[this]{ verify(xiCloseDevice(handle_)); });
 		}
 

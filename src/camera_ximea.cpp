@@ -518,18 +518,12 @@ namespace disposer_module::camera_ximea{
 		~ximea_cam_init(){
 			if(handle_ == nullptr) return;
 
-			try{
+			component_.exception_catching_log([](logsys::stdlogb& os){
+				os << "close camera";
+			}, [this]{
 				verify(xiStopAcquisition(handle_));
 				verify(xiCloseDevice(handle_));
-			}catch(std::exception const& e){
-				component_.log([&e](logsys::stdlogb& os){
-					os << e.what();
-				});
-			}catch(...){
-				component_.log([](logsys::stdlogb& os){
-					os << "unknown exception";
-				});
-			}
+			});
 		}
 
 		template < typename T >

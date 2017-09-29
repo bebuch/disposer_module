@@ -10,6 +10,11 @@ local big = ../big ;
 local http = ../http ;
 local logsys = ../logsys ;
 
+local vimba = ../../libraries/src/Vimba_2_1 ;
+local vimba_libstdcxx = $(vimba)/VimbaCPP/lib/libstdcxx/dynamic/x86_64bit ;
+local vimba_libcxx = $(vimba)/VimbaCPP/lib/libcxx/dynamic/x86_64bit ;
+
+
 use-project /boost
 	: $(boost)
 	;
@@ -65,6 +70,18 @@ project disposer_module
 lib log
 	:
 	log.cpp
+	;
+
+lib vimba
+	:
+	vimba.cpp
+	/disposer_module//log
+	:
+	<include>$(vimba)
+	<toolset>gcc:<linkflags>-L$(vimba_libstdcxx)
+	<toolset>clang:<linkflags>-L$(vimba_libcxx)
+	<linkflags>-lVimbaC
+	<linkflags>-lVimbaCPP
 	;
 
 exe disposer_module
@@ -273,4 +290,19 @@ lib encode_jpg
 	:
 	<include>$(bitmap)/include
 	<linkflags>-lturbojpeg
+	;
+
+lib camera_vimba
+	:
+	camera_vimba.cpp
+	/disposer_module//log
+	/disposer_module//vimba
+	/disposer//disposer
+	:
+	<include>$(bitmap)/include
+	<include>$(vimba)
+	<toolset>gcc:<linkflags>-L$(vimba_libstdcxx)
+	<toolset>clang:<linkflags>-L$(vimba_libcxx)
+	<linkflags>-lVimbaC
+	<linkflags>-lVimbaCPP
 	;

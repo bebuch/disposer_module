@@ -16,6 +16,7 @@
 #include <http/websocket_server_json_service.hpp>
 
 #include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/json_parser.hpp>
 #include <boost/dll.hpp>
 
 #include <shared_mutex>
@@ -81,18 +82,17 @@ namespace disposer_module::http_server_component{
 			, active_(true)
 			, thread_([this]{
 				while(active_){
-					logsys::exception_catching_log(
+					component_.exception_catching_log(
 						[this](logsys::stdlogb& os){
-							os << "chain(" << chain_ << ") server live exec";
+							os << "server live exec";
 						}, [this]{
 							auto& chain =
 								component_.disposer().get_chain(chain_);
 							disposer::chain_enable_guard enable(chain);
 							while(active_){
-								logsys::exception_catching_log(
+								component_.exception_catching_log(
 									[this](logsys::stdlogb& os){
-										os << "chain(" << chain_
-											<< ") server live exec loop";
+										os << "server live exec loop";
 									}, [this, &chain]{
 										while(active_){
 											chain.exec();
@@ -116,7 +116,7 @@ namespace disposer_module::http_server_component{
 		}
 
 	private:
-		Component& component_;
+		Component component_;
 		std::string chain_;
 		std::atomic< bool > active_;
 		std::thread thread_;
@@ -131,55 +131,68 @@ namespace disposer_module::http_server_component{
 					boost::property_tree::ptree const& data,
 					http::server::connection_ptr const& /*con*/
 				){
-					try{
-						auto chain_name = data.get_optional< std::string >(
-							"command.chain");
-						if(!chain_name) return;
-
-						auto live = data.get_optional< bool >("command.live");
-						auto count = data.get_optional< std::size_t >(
-							"command.exec");
-						if(!live && !count) return;
-
-						std::lock_guard< std::mutex > lock(mutex_);
-						if(live){
-							if(*live){
-								active_chains_.try_emplace(
-									*chain_name, component_, *chain_name);
-							}else{
-								active_chains_.erase(*chain_name);
+					component_.exception_catching_log(
+						[&data](logsys::stdlogb& os){
+							os << "json message: ";
+							try{
+								std::ostringstream stringified;
+								write_json(stringified, data);
+								os << stringified.str();
+							}catch(...){
+								os << "ERROR: print data failed";
 							}
-							send(live_answer(*chain_name, *live));
-						}
+						},
+						[this, &data]{
+							auto chain_name = data.get_optional< std::string >
+								("command.chain");
+							if(!chain_name) return;
 
-						if(count){
-							if(active_chains_.find(*chain_name)
-								!= active_chains_.end()){
+							auto live = data.get_optional< bool >
+								("command.live");
+							auto count = data.get_optional< std::size_t >
+								("command.exec");
+							if(!live && !count) return;
+
+							std::lock_guard< std::mutex > lock(mutex_);
+							if(live){
+								if(*live){
+									active_chains_.try_emplace(
+										*chain_name, component_, *chain_name);
+								}else{
+									active_chains_.erase(*chain_name);
+								}
+								send(live_answer(*chain_name, *live));
+							}
+
+							if(count){
+								if(active_chains_.find(*chain_name)
+									!= active_chains_.end()){
+									boost::property_tree::ptree answer;
+									answer.put("error.chain", *chain_name);
+									answer.put("error.message",
+										"can not exec while live is enabled");
+									send(answer);
+
+									throw std::runtime_error(
+										"can not exec chain '"
+										+ *chain_name
+										+ "' while it is in live mode");
+								}
+
+								auto& chain = component_.disposer()
+									.get_chain(*chain_name);
+								disposer::chain_enable_guard enable(chain);
+
 								boost::property_tree::ptree answer;
-								answer.put("error.chain", *chain_name);
-								answer.put("error.message",
-									"can not exec while live is enabled");
+								answer.put("exec.chain", *chain_name);
+								answer.put("exec.count", *count);
 								send(answer);
 
-								throw std::runtime_error("can not exec chain '"
-									+ *chain_name
-									+ "' while it is in live mode");
+								for(std::size_t i = 0; i < *count; ++i){
+									chain.exec();
+								}
 							}
-
-							auto& chain =
-								component_.disposer().get_chain(*chain_name);
-							disposer::chain_enable_guard enable(chain);
-
-							boost::property_tree::ptree answer;
-							answer.put("exec.chain", *chain_name);
-							answer.put("exec.count", *count);
-							send(answer);
-
-							for(std::size_t i = 0; i < *count; ++i){
-								chain.exec();
-							}
-						}
-					}catch(...){}
+						});
 				},
 				http::websocket::server::data_callback_fn(),
 				[this](http::server::connection_ptr const& con){
@@ -228,7 +241,7 @@ namespace disposer_module::http_server_component{
 			return answer;
 		}
 
-		Component& component_;
+		Component component_;
 
 		std::mutex mutex_;
 

@@ -57,13 +57,13 @@ namespace disposer_module::camera_infratec{
 					verify(frame->GetWidth(width));
 					verify(frame->GetHeight(height));
 
-					VmbUchar_t* buffer;
+					VmbUchar_t* buffer = nullptr;
 					verify(frame->GetImage(buffer));
 
 					auto image = std::make_unique< bitmap< std::uint16_t > >(
 						width, height);
 					std::copy(buffer, buffer + (width * height * 2),
-						image->data());
+						reinterpret_cast< VmbUchar_t* >(image->data()));
 
 					set_image(std::move(image));
 				});
@@ -89,6 +89,16 @@ namespace disposer_module::camera_infratec{
 		std::mutex mutex_;
 	};
 
+	AVT::VmbAPI::CameraPtr open_camera(
+		AVT::VmbAPI::VimbaSystem& system,
+		std::string_view ip
+	){
+		AVT::VmbAPI::CameraPtr result = nullptr;
+
+		verify(system.OpenCameraByID(ip.data(), VmbAccessModeFull, result));
+
+		return result;
+	}
 
 	template < typename Component >
 	class cam_init{
@@ -96,16 +106,31 @@ namespace disposer_module::camera_infratec{
 		cam_init(Component const& component)
 			: component_(component)
 			, system_(vimba_system::get())
-			, frames_(20)
+			, cam_(open_camera(*system_, component("ip"_param).c_str()))
+			, frames_(1)
 			, observer_(component, cam_)
 		{
-			verify(system_->OpenCameraByID(
-				component("ip"_param).c_str(), VmbAccessModeFull, cam_));
+			AVT::VmbAPI::FeaturePtr feature = nullptr;
+			verify(cam_->GetFeatureByName("Width", feature));
+			VmbInt64_t width = 0;
+			verify(feature->GetValue(width));
+			component.log([width](logsys::stdlogb& os){
+				os << "width: " << width;
+			});
 
-			AVT::VmbAPI::FeaturePtr feature;
-			verify(cam_->GetFeatureByName("PayloadSize", feature));
+			VmbInt64_t height = 0;
+			verify(cam_->GetFeatureByName("Height", feature));
+			verify(feature->GetValue(height));
+			component.log([height](logsys::stdlogb& os){
+				os << "height: " << height;
+			});
+
 			VmbInt64_t payload_size = 0;
+			verify(cam_->GetFeatureByName("PayloadSize", feature));
 			verify(feature->GetValue(payload_size));
+			component.log([payload_size](logsys::stdlogb& os){
+				os << "payload_size: " << payload_size;
+			});
 
 			for(auto& frame: frames_){
 				frame.reset(new AVT::VmbAPI::Frame(payload_size));

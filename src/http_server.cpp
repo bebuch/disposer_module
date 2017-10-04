@@ -288,6 +288,7 @@ namespace disposer_module::http_server_component{
 		}
 
 		http_server_init_t init(std::string const& service_name){
+			std::unique_lock lock(mutex_);
 			auto [iter, success] = websocket_services_.try_emplace(
 				service_name, "ready");
 
@@ -308,16 +309,21 @@ namespace disposer_module::http_server_component{
 		}
 
 		void uninit(websocket_identifier key){
+			std::unique_lock lock(mutex_);
 			websocket_handler_.shutdown_service(key.name);
 			websocket_services_.erase(key.name);
 		}
 
 		void send(websocket_identifier key, std::string const& data){
+			std::shared_lock lock(mutex_);
 			websocket_services_.at(key.name).send(data);
 		}
 
 
 	private:
+		/// \brief Protects websocket_services_
+		std::shared_mutex mutex_;
+
 		/// \brief Handler for normal HTTP-File-Requests
 		http::server::file_request_handler http_file_handler_;
 
@@ -397,7 +403,7 @@ namespace disposer_module::http_server_component{
 					}))
 			),
 			component_modules(
-				make("websocket"_module, register_fn([](auto component){
+				make("websocket"_module, register_fn([](auto& component){
 					return module_register_fn(
 						module_configure(
 							make("data"_in, free_type_c< std::string >),

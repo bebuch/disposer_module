@@ -10,9 +10,7 @@ local big = ../big ;
 local http = ../http ;
 local logsys = ../logsys ;
 
-local vimba = ../../libraries/src/Vimba_2_1 ;
-local vimba_libstdcxx = $(vimba)/VimbaCPP/lib/libstdcxx/dynamic/x86_64bit ;
-local vimba_libcxx = $(vimba)/VimbaCPP/lib/libcxx/dynamic/x86_64bit ;
+local vimba = /home/bebuch/media/libraries/src/Vimba_2_1 ;
 
 
 use-project /boost
@@ -66,22 +64,35 @@ project disposer_module
 	usage-requirements <include>include
 	;
 
-
 lib log
 	:
 	log.cpp
+	;
+
+lib VimbaC
+	:
+	:
+	<file>$(vimba)/VimbaC/DynamicLib/x86_64bit/libVimbaC.so
+	;
+
+lib VimbaCPP
+	:
+	[ glob $(vimba)/VimbaCPP/Source/*.cpp ]
+	/disposer_module//VimbaC
+	:
+	<define>USER_SHARED_POINTER
+	<include>$(vimba)
 	;
 
 lib vimba
 	:
 	vimba.cpp
 	/disposer_module//log
+	/disposer_module//VimbaC
+	/disposer_module//VimbaCPP
 	:
+	<define>USER_SHARED_POINTER
 	<include>$(vimba)
-	<toolset>gcc:<linkflags>-L$(vimba_libstdcxx)
-	<toolset>clang:<linkflags>-L$(vimba_libcxx)
-	<linkflags>-lVimbaC
-	<linkflags>-lVimbaCPP
 	;
 
 exe disposer_module
@@ -295,14 +306,13 @@ lib encode_jpg
 lib camera_vimba
 	:
 	camera_vimba.cpp
+	/disposer//disposer
 	/disposer_module//log
 	/disposer_module//vimba
-	/disposer//disposer
+	/disposer_module//VimbaC
+	/disposer_module//VimbaCPP
 	:
-	<include>$(bitmap)/include
+	<define>USER_SHARED_POINTER
 	<include>$(vimba)
-	<toolset>gcc:<linkflags>-L$(vimba_libstdcxx)
-	<toolset>clang:<linkflags>-L$(vimba_libcxx)
-	<linkflags>-lVimbaC
-	<linkflags>-lVimbaCPP
+	<include>$(bitmap)/include
 	;

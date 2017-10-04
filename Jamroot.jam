@@ -246,6 +246,15 @@ lib histogram
 	<include>$(bitmap)/include
 	;
 
+lib normalize_bitmap
+	:
+	normalize_bitmap.cpp
+	/disposer_module//log
+	/disposer//disposer
+	:
+	<include>$(bitmap)/include
+	;
+
 lib vignetting_correction_creator
 	:
 	vignetting_correction_creator.cpp

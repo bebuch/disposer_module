@@ -38,6 +38,8 @@ namespace disposer_module::camera_infratec{
 			: AVT::VmbAPI::IFrameObserver(pCamera)
 			, component_(component) {}
 
+		virtual ~FrameObserver()override = default;
+
 		virtual void FrameReceived(AVT::VmbAPI::FramePtr frame)override{
 			component_.exception_catching_log(
 				[](logsys::stdlogb& os){ os << "received frame"; },
@@ -108,7 +110,8 @@ namespace disposer_module::camera_infratec{
 			, system_(vimba_system::get())
 			, cam_(open_camera(*system_, component("ip"_param).c_str()))
 			, frames_(1)
-			, observer_(component, cam_)
+			, observer_(std::make_shared< FrameObserver< Component > >
+				(component, cam_))
 		{
 			AVT::VmbAPI::FeaturePtr feature = nullptr;
 			verify(cam_->GetFeatureByName("Width", feature));
@@ -134,8 +137,7 @@ namespace disposer_module::camera_infratec{
 
 			for(auto& frame: frames_){
 				frame.reset(new AVT::VmbAPI::Frame(payload_size));
-				verify(frame->RegisterObserver(
-					AVT::VmbAPI::IFrameObserverPtr(&observer_)));
+				verify(frame->RegisterObserver(observer_));
 				verify(cam_->AnnounceFrame(frame));
 			}
 
@@ -152,6 +154,15 @@ namespace disposer_module::camera_infratec{
 		cam_init(cam_init&&) = delete;
 
 		~cam_init(){
+			assert(!cam_);
+			assert(!system_);
+		}
+
+		bitmap< std::uint16_t > get_image(){
+			return observer_->get_image();
+		}
+
+		void shutdown(){
 			if(!cam_) return;
 
 			component_.exception_catching_log(
@@ -183,10 +194,9 @@ namespace disposer_module::camera_infratec{
 			component_.exception_catching_log(
 				[](logsys::stdlogb& os){ os << "camera close"; },
 				[this]{ verify(cam_->Close()); });
-		}
 
-		bitmap< std::uint16_t > get_image(){
-			return observer_.get_image();
+			cam_.reset();
+			system_.reset();
 		}
 
 
@@ -195,7 +205,7 @@ namespace disposer_module::camera_infratec{
 		std::shared_ptr< AVT::VmbAPI::VimbaSystem > system_;
 		AVT::VmbAPI::CameraPtr cam_;
 		AVT::VmbAPI::FramePtrVector frames_;
-		FrameObserver< Component > observer_;
+		std::shared_ptr< FrameObserver< Component > > observer_;
 	};
 
 

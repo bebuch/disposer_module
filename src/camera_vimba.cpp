@@ -59,6 +59,18 @@ namespace disposer_module::camera_infratec{
 					verify(frame->GetWidth(width));
 					verify(frame->GetHeight(height));
 
+					if(
+						width != component_("width"_param) ||
+						height != component_("height"_param)
+					){
+						throw std::runtime_error(
+							"Image size is " + std::to_string(width) + "×" +
+							std::to_string(height) + " but " +
+							std::to_string(component_("width"_param)) + "×" +
+							std::to_string(component_("height"_param)) +
+							" was expected");
+					}
+
 					VmbUchar_t* buffer = nullptr;
 					verify(frame->GetImage(buffer));
 
@@ -108,35 +120,39 @@ namespace disposer_module::camera_infratec{
 		cam_init(Component const& component)
 			: component_(component)
 			, system_(vimba_system::get())
-			, cam_(open_camera(*system_, component("ip"_param).c_str()))
+			, cam_(open_camera(*system_, component_("ip"_param).c_str()))
 			, frames_(1)
 			, observer_(std::make_shared< FrameObserver< Component > >
-				(component, cam_))
+				(component_, cam_))
 		{
 			AVT::VmbAPI::FeaturePtr feature = nullptr;
-			verify(cam_->GetFeatureByName("Width", feature));
-			VmbInt64_t width = 0;
-			verify(feature->GetValue(width));
-			component.log([width](logsys::stdlogb& os){
-				os << "width: " << width;
-			});
 
-			VmbInt64_t height = 0;
-			verify(cam_->GetFeatureByName("Height", feature));
-			verify(feature->GetValue(height));
-			component.log([height](logsys::stdlogb& os){
-				os << "height: " << height;
-			});
+			// TODO; Set image size
+// 			verify(cam_->GetFeatureByName("Width", feature));
+// 			VmbInt64_t width = 0;
+// 			verify(feature->GetValue(width));
+//
+// 			verify(cam_->GetFeatureByName("Height", feature));
+// 			VmbInt64_t height = 0;
+// 			verify(feature->GetValue(height));
+//
+// 			if(
+// 				width != component_("width"_param) ||
+// 				height != component_("height"_param)
+// 			){
+// 				throw std::runtime_error(
+// 					"Image size is " + std::to_string(width) + "×" +
+// 					std::to_string(height) + " but " +
+// 					std::to_string(component_("width"_param)) + "×" +
+// 					std::to_string(component_("height"_param)) +
+// 					" was expected");
+// 			}
 
-			VmbInt64_t payload_size = 0;
-			verify(cam_->GetFeatureByName("PayloadSize", feature));
-			verify(feature->GetValue(payload_size));
-			component.log([payload_size](logsys::stdlogb& os){
-				os << "payload_size: " << payload_size;
-			});
+			VmbInt64_t width = component_("width"_param);
+			VmbInt64_t height = component_("height"_param);
 
 			for(auto& frame: frames_){
-				frame.reset(new AVT::VmbAPI::Frame(payload_size));
+				frame.reset(new AVT::VmbAPI::Frame(width * height * 2));
 				verify(frame->RegisterObserver(observer_));
 				verify(cam_->AnnounceFrame(frame));
 			}
@@ -212,7 +228,9 @@ namespace disposer_module::camera_infratec{
 	void init(std::string const& name, component_declarant& declarant){
 		auto init = component_register_fn(
 			component_configure(
-				make("ip"_param, free_type_c< std::string >)
+				make("ip"_param, free_type_c< std::string >),
+				make("width"_param, free_type_c< std::size_t >),
+				make("height"_param, free_type_c< std::size_t >)
 			),
 			component_modules(
 				make("capture"_module, register_fn([](auto& component){

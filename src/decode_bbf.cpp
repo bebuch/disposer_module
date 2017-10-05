@@ -138,8 +138,8 @@ namespace disposer_module::decode_bbf{
 						return iter - list.begin();
 					})),
 				set_dimension_fn([](auto const& module){
-					return solved_dimensions{index_component< 0 >{
-						module("format"_param)}};
+					std::size_t const number = module("format"_param);
+					return solved_dimensions{index_component< 0 >{number}};
 				}),
 				make("image"_out, wrapped_type_ref_c< bitmap, 0 >)
 			),

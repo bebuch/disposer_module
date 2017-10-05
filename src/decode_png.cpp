@@ -49,7 +49,7 @@ namespace disposer_module::decode_png{
 
 
 	template < typename T >
-	auto decode(std::string const& data){
+	bitmap< T > decode(std::string const& data){
 		using png_type =
 			typename decltype(+bitmap_to_png_type[type_c< T >])::type;
 
@@ -118,8 +118,8 @@ namespace disposer_module::decode_png{
 						return iter - list.begin();
 					})),
 				set_dimension_fn([](auto const& module){
-					return solved_dimensions{index_component< 0 >{
-						module("format"_param)}};
+					std::size_t const number = module("format"_param);
+					return solved_dimensions{index_component< 0 >{number}};
 				}),
 				make("image"_out, wrapped_type_ref_c< bitmap, 0 >)
 			),

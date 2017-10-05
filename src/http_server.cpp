@@ -83,7 +83,7 @@ namespace disposer_module::http_server_component{
 			, thread_([this]{
 				while(active_){
 					component_.exception_catching_log(
-						[this](logsys::stdlogb& os){
+						[](logsys::stdlogb& os){
 							os << "server live exec";
 						}, [this]{
 							auto& chain =
@@ -91,7 +91,7 @@ namespace disposer_module::http_server_component{
 							disposer::chain_enable_guard enable(chain);
 							while(active_){
 								component_.exception_catching_log(
-									[this](logsys::stdlogb& os){
+									[](logsys::stdlogb& os){
 										os << "server live exec loop";
 									}, [this, &chain]{
 										while(active_){

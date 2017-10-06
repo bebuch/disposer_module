@@ -194,6 +194,11 @@ namespace disposer_module::bitmap_vector_join{
 		};
 
 
+		enum class orientation{
+			horizontal = 0, vertical = 1
+		};
+
+
 	}
 
 
@@ -206,29 +211,55 @@ namespace disposer_module::bitmap_vector_join{
 		)const{
 			auto const default_value = module("default_value"_param);
 
-			std::size_t width = img1.width() + img2.width();
-			std::size_t height = std::max(img1.height(), img2.height());
+			if(module("orientation"_param) == orientation::horizontal){
+				std::size_t width = img1.width() + img2.width();
+				std::size_t height = std::max(img1.height(), img2.height());
 
-			bitmap< T > result(width, height, default_value);
+				bitmap< T > result(width, height, default_value);
 
-			for(std::size_t y = 0; y < img1.height(); ++y){
-				auto const in_start = img1.data() + (y * img1.width());
-				auto const in_end = in_start + img1.width();
-				auto const out_start = result.data() + (y * result.width());
+				for(std::size_t y = 0; y < img1.height(); ++y){
+					auto const in_start = img1.data() + (y * img1.width());
+					auto const in_end = in_start + img1.width();
+					auto const out_start = result.data() + (y * result.width());
 
-				std::copy(in_start, in_end, out_start);
-			}
+					std::copy(in_start, in_end, out_start);
+				}
 
-			for(std::size_t y = 0; y < img2.height(); ++y){
-				auto const in_start = img2.data() + (y * img2.width());
-				auto const in_end = in_start + img2.width();
-				auto const out_start = result.data() +
-					(y * result.width() + img1.width());
+				for(std::size_t y = 0; y < img2.height(); ++y){
+					auto const in_start = img2.data() + (y * img2.width());
+					auto const in_end = in_start + img2.width();
+					auto const out_start = result.data() +
+						(y * result.width() + img1.width());
 
-				std::copy(in_start, in_end, out_start);
-			}
+					std::copy(in_start, in_end, out_start);
+				}
 
-			return result;
+				return result;
+			}else{
+				std::size_t width = std::max(img1.width(), img2.width());
+				std::size_t height = img1.height() + img2.height();
+
+				bitmap< T > result(width, height, default_value);
+
+				for(std::size_t y = 0; y < img1.height(); ++y){
+					auto const in_start = img1.data() + (y * img1.width());
+					auto const in_end = in_start + img1.width();
+					auto const out_start = result.data() + (y * result.width());
+
+					std::copy(in_start, in_end, out_start);
+				}
+
+				auto const offset = img1.point_count();
+				for(std::size_t y = 0; y < img2.height(); ++y){
+					auto const in_start = img2.data() + (y * img2.width());
+					auto const in_end = in_start + img2.width();
+					auto const out_start = result.data() + offset +
+						(y * result.width());
+
+					std::copy(in_start, in_end, out_start);
+				}
+
+				return result;			}
 		}
 	};
 
@@ -282,6 +313,30 @@ namespace disposer_module::bitmap_vector_join{
 				>
 			},
 			module_configure(
+				make("orientation"_param, free_type_c< orientation >,
+					parser_fn([](
+						auto const& /*iop*/,
+						std::string_view data,
+						hana::basic_type< orientation >
+					){
+						constexpr std::array< std::string_view, 2 > list{{
+								"horizontal", "vertical"
+							}};
+						auto iter = std::find(list.begin(), list.end(), data);
+						if(iter == list.end()){
+							std::ostringstream os;
+							os << "unknown value '" << data
+								<< "', allowed values are: ";
+							bool first = true;
+							for(auto name: list){
+								if(first){ first = false; }else{ os << ", "; }
+								os << name;
+							}
+							throw std::runtime_error(os.str());
+						}
+						return orientation(iter - list.begin());
+					}),
+					default_value(orientation::horizontal)),
 				make("image1"_in, wrapped_type_ref_c< bitmap, 0 >),
 				make("image2"_in, wrapped_type_ref_c< bitmap, 0 >),
 				make("image"_out, wrapped_type_ref_c< bitmap, 0 >),

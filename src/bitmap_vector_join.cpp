@@ -208,7 +208,14 @@ namespace disposer_module::bitmap_vector_join{
 		)const{
 			auto const ips = module("images_per_line"_param);
 			auto const default_value = module("default_value"_param);
-			auto const& input_size = vectors[0].size();
+			auto const input_size = vectors[0].size();
+			if(!std::all_of(vectors.cbegin(), vectors.cend(),
+				[input_size](auto const& img){
+					return input_size == img.size();
+				})
+			){
+				throw std::runtime_error("all bitmaps must have the same size");
+			}
 
 			std::size_t width =
 				std::min(ips, vectors.size()) * input_size.width();

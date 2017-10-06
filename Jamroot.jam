@@ -237,6 +237,15 @@ lib bitmap_vector_join
 	<include>$(bitmap)/include
 	;
 
+lib bitmap_join
+	:
+	bitmap_join.cpp
+	/disposer_module//log
+	/disposer//disposer
+	:
+	<include>$(bitmap)/include
+	;
+
 lib histogram
 	:
 	histogram.cpp

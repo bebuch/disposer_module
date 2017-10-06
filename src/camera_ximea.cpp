@@ -251,7 +251,7 @@ namespace disposer_module::camera_ximea{
 
 
 	private:
-		Component const& component_;
+		Component const component_;
 		HANDLE handle_;
 	};
 
@@ -535,7 +535,7 @@ namespace disposer_module::camera_ximea{
 
 
 	private:
-		Component const& component_;
+		Component const component_;
 		HANDLE handle_ = nullptr;
 		ximea_cam cam_;
 		std::mutex mutex;

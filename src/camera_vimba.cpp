@@ -242,7 +242,8 @@ namespace disposer_module::camera_infratec{
 						exec_fn([&component](auto& module){
 							module("image"_out)
 								.push(component.state().get_image());
-						})
+						}),
+						no_overtaking
 					);
 				}))
 			),

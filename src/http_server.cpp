@@ -433,7 +433,8 @@ namespace disposer_module::http_server_component{
 							auto iter = list.end();
 							--iter;
 							component.state().send(module.state(), *iter);
-						})
+						}),
+						no_overtaking
 					);
 				}))
 			),

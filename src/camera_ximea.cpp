@@ -609,7 +609,8 @@ namespace disposer_module::camera_ximea{
 								.template get_image< typename decltype(
 										module.dimension(hana::size_c< 0 >)
 									)::type >());
-						})
+						}),
+						no_overtaking
 					);
 				}))
 			),

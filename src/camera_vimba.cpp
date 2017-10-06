@@ -232,6 +232,9 @@ namespace disposer_module::camera_infratec{
 				make("width"_param, free_type_c< std::size_t >),
 				make("height"_param, free_type_c< std::size_t >)
 			),
+			component_init_fn([](auto const& component){
+				return cam_init(component);
+			}),
 			component_modules(
 				make("capture"_module, register_fn([](auto& component){
 					return module_register_fn(
@@ -246,10 +249,7 @@ namespace disposer_module::camera_infratec{
 						no_overtaking
 					);
 				}))
-			),
-			component_init_fn([](auto const& component){
-				return cam_init(component);
-			})
+			)
 		);
 
 		init(name, declarant);

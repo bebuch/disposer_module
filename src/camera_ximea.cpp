@@ -573,6 +573,9 @@ namespace disposer_module::camera_ximea{
 				make("exposure_time_ns"_param, free_type_c< std::size_t >,
 					default_value(10000))
 			),
+			component_init_fn([](auto const& component){
+				return ximea_cam_init(component);
+			}),
 			component_modules(
 				make("capture"_module, register_fn([](auto& component){
 					return module_register_fn(
@@ -613,10 +616,7 @@ namespace disposer_module::camera_ximea{
 						no_overtaking
 					);
 				}))
-			),
-			component_init_fn([](auto const& component){
-				return ximea_cam_init(component);
-			})
+			)
 		);
 
 		init(name, declarant);

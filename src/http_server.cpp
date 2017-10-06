@@ -415,6 +415,13 @@ namespace disposer_module::http_server_component{
 						throw std::logic_error("must be greater or equal 1");
 					}))
 			),
+			component_init_fn([](auto component){
+				return http_server< decltype(component) >(
+					component,
+					component("root"_param),
+					component("port"_param),
+					component("thread_count"_param));
+			}),
 			component_modules(
 				make("websocket"_module, register_fn([](auto& component){
 					return module_register_fn(
@@ -437,14 +444,7 @@ namespace disposer_module::http_server_component{
 						no_overtaking
 					);
 				}))
-			),
-			component_init_fn([](auto component){
-				return http_server< decltype(component) >(
-					component,
-					component("root"_param),
-					component("port"_param),
-					component("thread_count"_param));
-			})
+			)
 		);
 
 		init(name, declarant);

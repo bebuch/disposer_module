@@ -31,7 +31,7 @@ file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 				console.log("onmessage");
 				if(evt.data instanceof ArrayBuffer){
 					var length = evt.data.byteLength;
-					var blob = new Blob([evt.data],{type:'image/png'});
+					var blob = new Blob([evt.data],{type:'image/jpeg'});
 					var url = URL.createObjectURL(blob);
 					var img = new Image();
 					img.onload = function(){

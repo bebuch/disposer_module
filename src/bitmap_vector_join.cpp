@@ -84,7 +84,7 @@ namespace disposer_module::bitmap_vector_join{
 				std::string_view value,
 				hana::basic_type< T > type
 			)const{
-				return stream_parser(iop, value, type);
+				return stream_parser_t{}(iop, value, type);
 			}
 
 			template < typename IOP_List, typename T >

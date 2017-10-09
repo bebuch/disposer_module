@@ -11,6 +11,8 @@
 #include <logsys/log.hpp>
 #include <logsys/stdlogb.hpp>
 
+#include <cxxopts.hpp>
+
 #include <boost/filesystem.hpp>
 #include <boost/stacktrace.hpp>
 #include <boost/lexical_cast.hpp>
@@ -37,29 +39,45 @@ int main(int argc, char** argv){
 	std::signal(SIGSEGV, signal_handler);
 	std::signal(SIGABRT, signal_handler);
 
+	cxxopts::Options options(argv[0], "disposer module system");
 
-	bool const server_mode = argc == 2 ? argv[1] == "--server"sv : false;
-	bool multithreading = argc > 1 ? argv[1] == "--multithreading"sv : false;
-	bool exec_all = (argc == (multithreading ? 2 : 1));
-	std::string exec_chain;
-	std::size_t exec_count = 0;
-	if(!server_mode && !exec_all){
-		if(argc != (multithreading ? 4 : 3)){
-			std::cerr << argv[0] << " [--multithreading] [chain exec_count]"
-				<< std::endl;
-			return 1;
-		}
+	options.add_options()
+		("c,config", "Configuration file", cxxopts::value< std::string >(),
+			"config.ini")
+		("l,log", "Your log file",
+			cxxopts::value< std::string >()->default_value("disposer.log"),
+			"disposer.log")
+		("s,server", "Run until the enter key is pressed")
+		("m,multithreading",
+			"All N executions of a chain are stated instantly")
+		("chain", "Execute a chain", cxxopts::value< std::string >(), "Name")
+		("n,count", "Count of chain executions",
+			cxxopts::value< std::size_t >()->default_value("1"), "Count");
 
-		exec_chain = argv[multithreading ? 2 : 1];
-		try{
-			exec_count = boost::lexical_cast< std::size_t >(
-				argv[multithreading ? 3 : 2]);
-		}catch(...){
-			std::cerr << argv[0] << " [chain exec_count]" << std::endl;
-			std::cerr << "exec_count parsing failed: "
-				<< argv[multithreading ? 3 : 2] << std::endl;
-			return 1;
+	try{
+		options.parse(argc, argv);
+		cxxopts::check_required(options, {"config"});
+		bool const server = options["server"].count() > 0;
+		if(server && options["multithreading"].count() > 0){
+			throw std::logic_error("Option ‘multithreading‘ is not compatible "
+				"with option ‘server‘");
 		}
+		bool const chain = options["chain"].count() > 0;
+		if(server && chain){
+			throw std::logic_error("Option ‘chain‘ is not compatible "
+				"with option ‘server‘");
+		}
+		if(server && options["count"].count() > 0){
+			throw std::logic_error("Option ‘count‘ is not compatible "
+				"with option ‘server‘");
+		}
+		if(!server && !chain){
+			throw std::logic_error("Need option ‘server‘ option ‘chain‘");
+		}
+	}catch(std::exception const& e){
+		std::cerr << e.what() << "\n\n";
+		std::cout << options.help();
+		return -1;
 	}
 
 	// modules must be deleted last, to access the destructors in shared libs
@@ -112,11 +130,13 @@ int main(int argc, char** argv){
 		}
 	})) return 1;
 
+	std::string const config = options["config"].as< std::string >();
+
 	if(!logsys::exception_catching_log(
 		[](logsys::stdlogb& os){ os << "load config file"; },
-		[&disposer]{ disposer.load("plan.ini"); })) return -1;
+		[&disposer, &config]{ disposer.load(config); })) return -1;
 
-	if(server_mode){
+	if(options["server"].count() > 0){
 		std::cout << "Hit Enter to exit!" << std::endl;
 		std::cin.get();
 		return 0;
@@ -124,35 +144,31 @@ int main(int argc, char** argv){
 
 	return !logsys::exception_catching_log(
 		[](logsys::stdlogb& os){ os << "exec chains"; },
-	[&disposer, exec_all, &exec_chain, exec_count, multithreading]{
-		if(exec_all){
-			for(auto& chain_name: disposer.chains()){
-				auto& chain = disposer.get_chain(chain_name);
-				::disposer::chain_enable_guard enable(chain);
+	[&disposer, &options]{
+		auto const multithreading = options["multithreading"].count() > 0;
+		auto const exec_chain = options["chain"].as< std::string >();
+		auto const exec_count = options["count"].as< std::size_t >();
+
+		auto& chain = disposer.get_chain(exec_chain);
+
+		if(!multithreading){
+			// single thread version
+			::disposer::chain_enable_guard enable(chain);
+			for(std::size_t i = 0; i < exec_count; ++i){
 				chain.exec();
 			}
 		}else{
-			auto& chain = disposer.get_chain(exec_chain);
+			// multi threaded version
+			std::vector< std::future< void > > tasks;
+			tasks.reserve(exec_count);
 
-			if(!multithreading){
-				// single thread version
-				::disposer::chain_enable_guard enable(chain);
-				for(std::size_t i = 0; i < exec_count; ++i){
-					chain.exec();
-				}
-			}else{
-				// multi threaded version
-				std::vector< std::future< void > > tasks;
-				tasks.reserve(exec_count);
+			::disposer::chain_enable_guard enable(chain);
+			for(std::size_t i = 0; i < exec_count; ++i){
+				tasks.push_back(std::async([&chain]{ chain.exec(); }));
+			}
 
-				::disposer::chain_enable_guard enable(chain);
-				for(std::size_t i = 0; i < exec_count; ++i){
-					tasks.push_back(std::async([&chain]{ chain.exec(); }));
-				}
-
-				for(auto& task: tasks){
-					task.get();
-				}
+			for(auto& task: tasks){
+				task.get();
 			}
 		}
 	});

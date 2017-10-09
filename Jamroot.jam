@@ -9,6 +9,7 @@ local tar = ../tar ;
 local big = ../big ;
 local http = ../http ;
 local logsys = ../logsys ;
+local cxxopts = ../cxxopts ;
 
 local vimba = /home/bebuch/media/libraries/src/Vimba_2_1 ;
 
@@ -105,6 +106,7 @@ exe disposer_module
 	/http//http
 	:
 	<include>$(bitmap)/include
+	<include>$(cxxopts)/include
 	;
 
 lib http_server

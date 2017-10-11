@@ -13,15 +13,28 @@ file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 	<title>live view</title>
 </head>
 <body style="text-align:center;">
-	<p>
-		<button id="enable">enable live</button>
-		<button id="snapshot">snapshot</button>
-	</p>
+	<form>
+		<fieldset style="display:inline-block;text-align:left;border:none;">
+			<label style="display:inline-block;border:1px solid black;padding:0.5em;margin:0.2em 0;">
+				<input type="radio" name="state" value="none" id="state_none" checked="checked">
+				Aus
+			</label>
+			<label style="display:inline-block;border:1px solid black;padding:0.5em;margin:0.2em 0;">
+				<input type="radio" name="state" value="show" id="state_show">
+				Live
+			</label>
+			<label style="display:inline-block;border:1px solid black;padding:0.5em;margin:0.2em 0;">
+				<input type="radio" name="state" value="save" id="state_save">
+				Live mit speichern
+			</label>
+		</fieldset>
+	</form>
 	<canvas id="image"></canvas>
 	<h1>live view</h1>
 	<script>
+		var radios = document.querySelectorAll('input[type=radio][name="state"]');
+
 		var image = document.getElementById("image");
-		var enable = document.getElementById("enable");
 		var live_connection = false;
 		var live_image = function(service_name){
 			var socket = new WebSocket('ws://' + window.location.host + '/'
@@ -52,13 +65,24 @@ file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 			};
 			socket.onerror = function(event){
 				live_connection = false;
-// 				enable.innerText = 'enable live';
 				console.log("onerror: " + JSON.stringify(event));
 			};
 			socket.onclose = function(event){
 				console.log("onclose: " + JSON.stringify(event));
 			};
 			return socket;
+		};
+
+		var enable_change_events = function(){
+			Array.prototype.forEach.call(radios, function(radio){
+				radio.addEventListener('change', changeHandler);
+			});
+		};
+
+		var disable_change_events = function(){
+			Array.prototype.forEach.call(radios, function(radio){
+				radio.removeEventListener('change', changeHandler);
+			});
 		};
 
 		live_connection = live_image('scheduler');
@@ -68,17 +92,29 @@ file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 			if(typeof(evt.data) === 'string'){
 				console.log("onmessage string: " + evt.data);
 				var data = JSON.parse(evt.data);
-				if(data.live){
-					if(data.live.chain === 'live_image' && data.live.is === "true"){
+
+				if(data.hasOwnProperty('token')){
+					disable_change_events();
+					document.getElementById("state_" + data.token).checked = true;
+					enable_change_events();
+
+					if(data.token != 'none'){
 						live_connection = live_image('scheduler');
-						enable.innerText = 'disable live';
 					}
-				}else if(data.exec){
-					if(data.exec.chain === 'live_image' && data.exec.count > 0){
-						live_connection = live_image('scheduler');
+				}else if(data.hasOwnProperty('chains')){
+					disable_change_events();
+					if(typeof(data.chains) === 'string' && data.chains === ''){
+						document.getElementById("state_none").checked = true;
+					}else if(Object.prototype.toString.call(data.chains) === '[object Array]'){
+						if(data.chains.includes("show_live")){
+							document.getElementById("state_show").checked = true;
+						}else if(data.chains.includes("save_live")){
+							document.getElementById("state_save").checked = true;
+						}
 					}
+					enable_change_events();
 				}else if(data.error){
-					alert("Error in " + data.error.chain + ": " + data.error.message);
+					alert("Error: " + data.error);
 				}
 			}
 		};
@@ -92,20 +128,34 @@ file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 			console.log("onclose: " + JSON.stringify(event));
 		};
 
-		enable.onclick = function(event){
-			var set_enable = enable.innerText === 'enable live';
-			enable.innerText = set_enable ? 'disable live' : 'enable live';
-			var message = JSON.stringify({command: {chain: 'live_image', live: set_enable}});
-			console.log("send: " + message);
-			command_socket.send(message);
-		};
 
-		var snapshot = document.getElementById("snapshot");
-		snapshot.onclick = function(event){
-			var message = JSON.stringify({command: {chain: 'snapshot', exec: 1}});
-			console.log("send: " + message);
-			command_socket.send(message);
-		};
+		function changeHandler(event){
+			switch(this.value){
+			case "none":
+				console.log("click: none");
+				command_socket.send(JSON.stringify({commands: [
+						{chain: 'show_live', live: false},
+						{chain: 'save_live', live: false}
+					], token: 'none'}));
+				break;
+			case "show":
+				console.log("click: show");
+				command_socket.send(JSON.stringify({commands: [
+						{chain: 'save_live', live: false},
+						{chain: 'show_live', live: true}
+					], token: 'show'}));
+				break;
+			case "save":
+				console.log("click: save");
+				command_socket.send(JSON.stringify({commands: [
+						{chain: 'show_live', live: false},
+						{chain: 'save_live', live: true}
+					], token: 'save'}));
+				break;
+			}
+		}
+
+		enable_change_events();
 	</script>
 </body>
 </html>

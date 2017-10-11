@@ -131,7 +131,7 @@ namespace disposer_module::http_server_component{
 					boost::property_tree::ptree const& data,
 					http::server::connection_ptr const& /*con*/
 				){
-					component_.exception_catching_log(
+					auto success = component_.exception_catching_log(
 						[&data](logsys::stdlogb& os){
 							os << "json message: ";
 							try{
@@ -143,65 +143,78 @@ namespace disposer_module::http_server_component{
 							}
 						},
 						[this, &data]{
-							auto chain_name = data.get_optional< std::string >
-								("command.chain");
-							if(!chain_name) return;
+							auto const commands_opt
+								= data.get_child_optional("commands");
+							auto const token_opt
+								= data.get_optional< std::string >("token");
 
-							auto live = data.get_optional< bool >
-								("command.live");
-							auto count = data.get_optional< std::size_t >
-								("command.exec");
-							if(!live && !count) return;
+							if(!commands_opt || !token_opt) return;
+							auto const commands = *commands_opt;
+							auto const token = *token_opt;
 
 							std::lock_guard< std::mutex > lock(mutex_);
-							if(live){
-								if(*live){
+							for(auto const& [dummy, data]: commands){
+								(void)dummy;
+
+								auto const chain_opt =
+									data.get_optional< std::string >("chain");
+								auto const live_opt =
+									data.get_optional< bool >("live");
+
+								if(!chain_opt || !live_opt) continue;
+								auto const chain = *chain_opt;
+								auto const live = *live_opt;
+
+								if(live){
 									active_chains_.try_emplace(
-										*chain_name, component_, *chain_name);
+										chain, component_, chain);
 								}else{
-									active_chains_.erase(*chain_name);
+									active_chains_.erase(chain);
 								}
-								send(live_answer(*chain_name, *live));
 							}
 
-							if(count){
-								if(active_chains_.find(*chain_name)
-									!= active_chains_.end()){
-									boost::property_tree::ptree answer;
-									answer.put("error.chain", *chain_name);
-									answer.put("error.message",
-										"can not exec while live is enabled");
-									send(answer);
+							boost::property_tree::ptree answer;
+							answer.put("token", token);
+							send(answer);
+						});
 
-									throw std::runtime_error(
-										"can not exec chain '"
-										+ *chain_name
-										+ "' while it is in live mode");
-								}
+					if(!success){
+						component_.exception_catching_log(
+							[](logsys::stdlogb& os){
+								os << "Send error message";
+							},
+							[&data]{
+								std::string message =
+									"Execution of command failed";
 
-								auto& chain = component_.disposer()
-									.get_chain(*chain_name);
-								disposer::chain_enable_guard enable(chain);
+								try{
+									std::ostringstream stringified;
+									write_json(stringified, data);
+									message += " (" + stringified.str() + ")";
+								}catch(...){}
 
 								boost::property_tree::ptree answer;
-								answer.put("exec.chain", *chain_name);
-								answer.put("exec.count", *count);
-								send(answer);
-
-								for(std::size_t i = 0; i < *count; ++i){
-									chain.exec();
-								}
-							}
-						});
+								answer.put("error", message);
+								return answer;
+							});
+					}
 				},
 				http::websocket::server::data_callback_fn(),
 				[this](http::server::connection_ptr const& con){
 					std::lock_guard< std::mutex > lock(mutex_);
 					controller_.emplace(con);
+
+					boost::property_tree::ptree chains;
 					for(auto const& [name, chain]: active_chains_){
 						(void)chain;
-						send_json(live_answer(name, true), con);
+						boost::property_tree::ptree n;
+						n.put("", name);
+						chains.push_back(std::make_pair("", std::move(n)));
 					}
+
+					boost::property_tree::ptree active_chains;
+					active_chains.put_child("chains", std::move(chains));
+					send(active_chains);
 				},
 				[this](http::server::connection_ptr const& con){
 					std::lock_guard< std::mutex > lock(mutex_);
@@ -231,14 +244,6 @@ namespace disposer_module::http_server_component{
 			for(auto& controller: controller_){
 				send_json(data, controller);
 			}
-		}
-
-		boost::property_tree::ptree
-		live_answer(std::string const& name, bool enabled){
-			boost::property_tree::ptree answer;
-			answer.put("live.chain", name);
-			answer.put("live.is", enabled);
-			return answer;
 		}
 
 		Component component_;

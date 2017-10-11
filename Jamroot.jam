@@ -73,7 +73,8 @@ lib log
 lib VimbaC
 	:
 	:
-	<file>$(vimba)/VimbaC/DynamicLib/x86_64bit/libVimbaC.so
+	<name>VimbaC
+	<search>$(vimba)/VimbaC/DynamicLib/x86_64bit
 	;
 
 lib VimbaCPP

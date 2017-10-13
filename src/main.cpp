@@ -58,21 +58,10 @@ int main(int argc, char** argv){
 		options.parse(argc, argv);
 		cxxopts::check_required(options, {"config"});
 		bool const server = options["server"].count() > 0;
-		if(server && options["multithreading"].count() > 0){
-			throw std::logic_error("Option ‘multithreading‘ is not compatible "
-				"with option ‘server‘");
-		}
 		bool const chain = options["chain"].count() > 0;
-		if(server && chain){
-			throw std::logic_error("Option ‘chain‘ is not compatible "
-				"with option ‘server‘");
-		}
-		if(server && options["count"].count() > 0){
-			throw std::logic_error("Option ‘count‘ is not compatible "
-				"with option ‘server‘");
-		}
 		if(!server && !chain){
-			throw std::logic_error("Need option ‘server‘ option ‘chain‘");
+			throw std::logic_error(
+				"Need at least option ‘server‘ or option ‘chain‘");
 		}
 	}catch(std::exception const& e){
 		std::cerr << e.what() << "\n\n";
@@ -136,40 +125,41 @@ int main(int argc, char** argv){
 		[](logsys::stdlogb& os){ os << "load config file"; },
 		[&disposer, &config]{ disposer.load(config); })) return -1;
 
+	if(options["chain"].count() > 0){
+		logsys::exception_catching_log(
+			[](logsys::stdlogb& os){ os << "exec chains"; },
+		[&disposer, &options]{
+			auto const multithreading = options["multithreading"].count() > 0;
+			auto const exec_chain = options["chain"].as< std::string >();
+			auto const exec_count = options["count"].as< std::size_t >();
+
+			auto& chain = disposer.get_chain(exec_chain);
+
+			if(!multithreading){
+				// single thread version
+				::disposer::chain_enable_guard enable(chain);
+				for(std::size_t i = 0; i < exec_count; ++i){
+					chain.exec();
+				}
+			}else{
+				// multi threaded version
+				std::vector< std::future< void > > tasks;
+				tasks.reserve(exec_count);
+
+				::disposer::chain_enable_guard enable(chain);
+				for(std::size_t i = 0; i < exec_count; ++i){
+					tasks.push_back(std::async([&chain]{ chain.exec(); }));
+				}
+
+				for(auto& task: tasks){
+					task.get();
+				}
+			}
+		});
+	}
+
 	if(options["server"].count() > 0){
 		std::cout << "Hit Enter to exit!" << std::endl;
 		std::cin.get();
-		return 0;
 	}
-
-	return !logsys::exception_catching_log(
-		[](logsys::stdlogb& os){ os << "exec chains"; },
-	[&disposer, &options]{
-		auto const multithreading = options["multithreading"].count() > 0;
-		auto const exec_chain = options["chain"].as< std::string >();
-		auto const exec_count = options["count"].as< std::size_t >();
-
-		auto& chain = disposer.get_chain(exec_chain);
-
-		if(!multithreading){
-			// single thread version
-			::disposer::chain_enable_guard enable(chain);
-			for(std::size_t i = 0; i < exec_count; ++i){
-				chain.exec();
-			}
-		}else{
-			// multi threaded version
-			std::vector< std::future< void > > tasks;
-			tasks.reserve(exec_count);
-
-			::disposer::chain_enable_guard enable(chain);
-			for(std::size_t i = 0; i < exec_count; ++i){
-				tasks.push_back(std::async([&chain]{ chain.exec(); }));
-			}
-
-			for(auto& task: tasks){
-				task.get();
-			}
-		}
-	});
 }

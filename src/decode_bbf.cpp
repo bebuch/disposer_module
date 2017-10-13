@@ -148,8 +148,9 @@ namespace disposer_module::decode_bbf{
 					decltype(module.dimension(hana::size_c< 0 >))::type;
 
 				for(auto const& value: module("data"_in).references()){
+					std::istringstream is(value);
 					bitmap< type > result;
-					binary_read(result, value);
+					binary_read(result, is);
 					module("image"_out).push(result);
 				}
 			})

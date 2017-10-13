@@ -75,21 +75,29 @@ namespace disposer_module::load{
 		throw std::runtime_error("Can not read file '" + filename + "'");
 	}
 
+	template < typename Module >
 	t1 load(
+		Module& module,
 		ng1 const& name,
 		std::size_t id,
 		std::size_t subid
 	){
 		auto const filename = name(id, subid);
-		std::ifstream is(filename.c_str(),
-			std::ios::in | std::ios::binary);
-		verify_stream(is, filename);
-		return std::string(
-			std::istreambuf_iterator<char>(is),
-			std::istreambuf_iterator<char>());
+		return module.log([&filename](logsys::stdlogb& os){
+				os << "load: " << filename;
+			}, [&filename]{
+				std::ifstream is(filename.c_str(),
+					std::ios::in | std::ios::binary);
+				verify_stream(is, filename);
+				return std::string(
+					std::istreambuf_iterator<char>(is),
+					std::istreambuf_iterator<char>());
+			});
 	}
 
+	template < typename Module >
 	t2 load(
+		Module& module,
 		ng2 const& name,
 		std::size_t id,
 		std::size_t subid,
@@ -99,17 +107,23 @@ namespace disposer_module::load{
 		result.reserve(ic);
 		for(std::size_t i = 0; i < ic; ++i){
 			auto const filename = name(id, subid, i);
-			std::ifstream is(filename.c_str(),
-				std::ios::in | std::ios::binary);
-			verify_stream(is, filename);
-			result.emplace_back(
-				std::istreambuf_iterator<char>(is),
-				std::istreambuf_iterator<char>());
+			module.log([&filename](logsys::stdlogb& os){
+					os << "load: " << filename;
+				}, [&filename, &result]{
+					std::ifstream is(filename.c_str(),
+						std::ios::in | std::ios::binary);
+					verify_stream(is, filename);
+					result.emplace_back(
+						std::istreambuf_iterator<char>(is),
+						std::istreambuf_iterator<char>());
+				});
 		}
 		return result;
 	}
 
+	template < typename Module >
 	t3 load(
+		Module& module,
 		ng3 const& name,
 		std::size_t id,
 		std::size_t subid,
@@ -122,12 +136,16 @@ namespace disposer_module::load{
 			result.emplace_back().reserve(ic);
 			for(std::size_t j = 0; j < jc; ++j){
 				auto const filename = name(id, subid, i, j);
-				std::ifstream is(filename.c_str(),
-					std::ios::in | std::ios::binary);
-				verify_stream(is, filename);
-				result.back().emplace_back(
-					std::istreambuf_iterator<char>(is),
-					std::istreambuf_iterator<char>());
+				module.log([&filename](logsys::stdlogb& os){
+						os << "load: " << filename;
+					}, [&filename, &result]{
+						std::ifstream is(filename.c_str(),
+							std::ios::in | std::ios::binary);
+						verify_stream(is, filename);
+						result.back().emplace_back(
+							std::istreambuf_iterator<char>(is),
+							std::istreambuf_iterator<char>());
+				});
 			}
 		}
 		return result;
@@ -293,12 +311,12 @@ namespace disposer_module::load{
 				auto& out = module("content"_out);
 				for(std::size_t subid = 0; subid < subid_count; ++subid){
 					if constexpr(std::is_same_v< type, t1 >){
-						out.push(load(module("name"_param), id, subid));
+						out.push(load(module, module("name"_param), id, subid));
 					}else if constexpr(std::is_same_v< type, t2 >){
-						out.push(load(module("name"_param), id, subid,
+						out.push(load(module, module("name"_param), id, subid,
 							module("i_count"_param)));
 					}else if constexpr(std::is_same_v< type, t3 >){
-						out.push(load(module("name"_param), id, subid,
+						out.push(load(module, module("name"_param), id, subid,
 							module("i_count"_param),
 							module("j_count"_param)));
 					}

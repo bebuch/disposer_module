@@ -20,6 +20,7 @@
 #include <boost/dll.hpp>
 
 #include <shared_mutex>
+#include <chrono>
 
 
 namespace disposer_module::http_server_component{
@@ -86,6 +87,11 @@ namespace disposer_module::http_server_component{
 						[](logsys::stdlogb& os){
 							os << "server live exec";
 						}, [this]{
+							auto const min_interval_in_ms =
+								component_("min_interval_in_ms"_param);
+							auto const interval =
+								std::chrono::milliseconds(min_interval_in_ms);
+
 							auto& chain =
 								component_.disposer().get_chain(chain_);
 							disposer::chain_enable_guard enable(chain);
@@ -93,9 +99,21 @@ namespace disposer_module::http_server_component{
 								component_.exception_catching_log(
 									[](logsys::stdlogb& os){
 										os << "server live exec loop";
-									}, [this, &chain]{
+									}, [this, &chain, interval]{
 										while(active_){
+											auto const start = std::chrono
+												::high_resolution_clock::now();
 											chain.exec();
+											auto const end = std::chrono
+												::high_resolution_clock::now();
+											std::chrono::duration< double,
+												std::milli > const diff
+													= end - start;
+											if(diff < interval){
+												if(!active_) break;
+												std::this_thread::sleep_for(
+													interval - diff);
+											}
 										}
 									});
 							}
@@ -418,7 +436,9 @@ namespace disposer_module::http_server_component{
 					verify_value_fn([](std::size_t value){
 						if(value > 0) return;
 						throw std::logic_error("must be greater or equal 1");
-					}))
+					})),
+				make("min_interval_in_ms"_param, free_type_c< std::uint32_t >,
+					default_value(50))
 			),
 			component_init_fn([](auto component){
 				return http_server< decltype(component) >(

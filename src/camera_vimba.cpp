@@ -114,6 +114,11 @@ namespace disposer_module::camera_infratec{
 		return result;
 	}
 
+	struct range{
+		double min;
+		double max;
+	};
+
 	template < typename Component >
 	class cam_init{
 	public:
@@ -124,6 +129,13 @@ namespace disposer_module::camera_infratec{
 			, frames_(1)
 			, observer_(std::make_shared< FrameObserver< Component > >
 				(component_, cam_))
+			, distance([this]{
+					AVT::VmbAPI::FeaturePtr feature = nullptr;
+					verify(cam_->GetFeatureByName("FocDistM", feature));
+					range value;
+					verify(feature->GetRange(value.min, value.max));
+					return value;
+				}())
 		{
 			AVT::VmbAPI::FeaturePtr feature = nullptr;
 
@@ -215,6 +227,9 @@ namespace disposer_module::camera_infratec{
 			system_.reset();
 		}
 
+		AVT::VmbAPI::CameraPtr cam(){
+			return cam_;
+		}
 
 	private:
 		Component const component_;
@@ -222,6 +237,9 @@ namespace disposer_module::camera_infratec{
 		AVT::VmbAPI::CameraPtr cam_;
 		AVT::VmbAPI::FramePtrVector frames_;
 		std::shared_ptr< FrameObserver< Component > > observer_;
+
+	public:
+		range const distance;
 	};
 
 
@@ -245,6 +263,39 @@ namespace disposer_module::camera_infratec{
 						exec_fn([&component](auto& module){
 							module("image"_out)
 								.push(component.state().get_image());
+						}),
+						no_overtaking
+					);
+				})),
+				make("focus"_module, register_fn([](auto& component){
+					return module_register_fn(
+						module_configure(
+							make("distance_in_m"_param,
+								free_type_c< double >,
+								verify_value_fn(
+									[component](double value){
+										auto& state = component.state();
+										if(
+											value >= state.distance.min &&
+											value <= state.distance.max
+										) return;
+
+										throw std::out_of_range(
+											io_tools::make_string(
+											"distance is out of range "
+											"(value: ", value,
+											", min: ", state.distance.min,
+											", max: ", state.distance.max,
+											")"));
+									}))
+						),
+						exec_fn([&component](auto& module){
+							AVT::VmbAPI::FeaturePtr feature = nullptr;
+
+							verify(component.state().cam()
+								->GetFeatureByName("FocDistM", feature));
+							verify(feature->SetValue(
+								module("distance_in_m"_param)));
 						}),
 						no_overtaking
 					);

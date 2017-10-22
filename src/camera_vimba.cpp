@@ -299,6 +299,77 @@ namespace disposer_module::camera_infratec{
 						}),
 						no_overtaking
 					);
+				})),
+				make("setting"_module, register_fn([](auto& component){
+					return module_register_fn(
+						dimension_list{
+							dimension_c<
+								bool,
+								VmbInt32_t,
+								VmbInt64_t,
+								double,
+								std::string
+							>
+						},
+						module_configure(
+							make("name"_param, free_type_c< std::string >),
+							make("type"_param, free_type_c< std::size_t >,
+								parser_fn([](
+									auto const& /*iop*/,
+									std::string_view data,
+									hana::basic_type< std::size_t >
+								){
+									constexpr std::array< std::string_view, 5 >
+										list{{
+											"bool",
+											"int32",
+											"int64",
+											"float64",
+											"string"
+										}};
+									auto iter = std::find(
+										list.begin(), list.end(), data);
+									if(iter == list.end()){
+										std::ostringstream os;
+										os << "unknown value '" << data
+											<< "', allowed values are: ";
+										bool first = true;
+										for(auto name: list){
+											if(first){
+												first = false;
+											}else{
+												os << ", ";
+											}
+											os << name;
+										}
+										throw std::runtime_error(os.str());
+									}
+									return iter - list.begin();
+								})),
+							set_dimension_fn([](auto const& module){
+									std::size_t const number =
+										module("type"_param);
+									return solved_dimensions{
+										index_component< 0 >{number}};
+								}),
+							make("value"_param, type_ref_c< 0 >)),
+						exec_fn([&component](auto& module){
+							AVT::VmbAPI::FeaturePtr feature = nullptr;
+
+							verify(component.state().cam()->GetFeatureByName(
+								module("name"_param).c_str(), feature));
+
+							auto type = module.dimension(hana::size_c< 0 >);
+							if constexpr(type == hana::type_c< std::string >){
+								verify(feature->SetValue(
+									module("value"_param).c_str()));
+							}else{
+								verify(feature->SetValue(
+									module("value"_param)));
+							}
+						}),
+						no_overtaking
+					);
 				}))
 			)
 		);

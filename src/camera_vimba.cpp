@@ -242,6 +242,31 @@ namespace disposer_module::camera_infratec{
 		range const distance;
 	};
 
+	constexpr std::array< std::string_view, 4 > type_list{{
+			"bool",
+			"int",
+			"float",
+			"string"
+		}};
+
+	std::string type_list_string(){
+		std::ostringstream os;
+		bool first = true;
+		for(auto name: type_list){
+			if(first){
+				first = false;
+			}else{
+				os << ", ";
+			}
+			os << name;
+		}
+		return os.str();
+	}
+
+	struct settings_state{
+		AVT::VmbAPI::FeaturePtr value_feature = nullptr;
+		AVT::VmbAPI::FeaturePtr command_feature = nullptr;
+	};
 
 	void init(std::string const& name, component_declarant& declarant){
 		auto init = component_register_fn(
@@ -305,7 +330,6 @@ namespace disposer_module::camera_infratec{
 						dimension_list{
 							dimension_c<
 								bool,
-								VmbInt32_t,
 								VmbInt64_t,
 								double,
 								std::string
@@ -313,38 +337,24 @@ namespace disposer_module::camera_infratec{
 						},
 						module_configure(
 							make("name"_param, free_type_c< std::string >),
+							make("command"_param,
+								free_type_c< std::optional< std::string > >),
 							make("type"_param, free_type_c< std::size_t >,
 								parser_fn([](
 									auto const& /*iop*/,
 									std::string_view data,
 									hana::basic_type< std::size_t >
 								){
-									constexpr std::array< std::string_view, 5 >
-										list{{
-											"bool",
-											"int32",
-											"int64",
-											"float64",
-											"string"
-										}};
-									auto iter = std::find(
-										list.begin(), list.end(), data);
-									if(iter == list.end()){
+									auto iter = std::find(type_list.begin(),
+										type_list.end(), data);
+									if(iter == type_list.end()){
 										std::ostringstream os;
 										os << "unknown value '" << data
-											<< "', allowed values are: ";
-										bool first = true;
-										for(auto name: list){
-											if(first){
-												first = false;
-											}else{
-												os << ", ";
-											}
-											os << name;
-										}
+											<< "', allowed values are: "
+											<< type_list_string();
 										throw std::runtime_error(os.str());
 									}
-									return iter - list.begin();
+									return iter - type_list.begin();
 								})),
 							set_dimension_fn([](auto const& module){
 									std::size_t const number =
@@ -353,19 +363,122 @@ namespace disposer_module::camera_infratec{
 										index_component< 0 >{number}};
 								}),
 							make("value"_param, type_ref_c< 0 >)),
-						exec_fn([&component](auto& module){
-							AVT::VmbAPI::FeaturePtr feature = nullptr;
+						module_init_fn([&component](auto& module){
+							settings_state state;
 
+							auto const name = "name"_param;
 							verify(component.state().cam()->GetFeatureByName(
-								module("name"_param).c_str(), feature));
+								module(name).c_str(), state.value_feature));
 
 							auto type = module.dimension(hana::size_c< 0 >);
+							auto const type_index = module("type"_param);
+
+							VmbFeatureDataType feature_type{};
+							verify(state.value_feature
+								->GetDataType(feature_type));
+							switch(feature_type){
+								case VmbFeatureDataUnknown:
+									throw std::logic_error("feature '"
+										+ detail::to_std_string(name) +
+										"' has type 'unknown'"
+										" which is not suppored");
+								case VmbFeatureDataEnum:
+									throw std::logic_error("feature '"
+										+ detail::to_std_string(name) +
+										"' has type 'enum' which"
+										" is currently not suppored");
+								break;
+								case VmbFeatureDataInt:
+									if(type != hana::type_c< VmbInt64_t >){
+										throw std::logic_error("feature '"
+											+ detail::to_std_string(name) +
+											"' has type 'int',"
+											" but module expected type '"
+											+ std::string(type_list[type_index])
+											+ "'");
+									}
+								break;
+								case VmbFeatureDataFloat:
+									if(type != hana::type_c< double >){
+										throw std::logic_error("feature '"
+											+ detail::to_std_string(name) +
+											"' has type 'float',"
+											" but module expected type '"
+											+ std::string(type_list[type_index])
+											+ "'");
+									}
+								break;
+								case VmbFeatureDataString:
+									if(type != hana::type_c< std::string >){
+										throw std::logic_error("feature '"
+											+ detail::to_std_string(name) +
+											"' has type 'string',"
+											" but module expected type '"
+											+ std::string(type_list[type_index])
+											+ "'");
+									}
+								break;
+								case VmbFeatureDataBool:
+									if(type != hana::type_c< bool >){
+										throw std::logic_error("feature '"
+											+ detail::to_std_string(name) +
+											"' has type 'bool',"
+											" but module expected type '"
+											+ std::string(type_list[type_index])
+											+ "'");
+									}
+								break;
+								case VmbFeatureDataCommand:
+									throw std::logic_error("feature '"
+										+ detail::to_std_string(name) +
+										"' has type 'command' which is"
+										" currently not suppored as name, use"
+										" command instead");
+								break;
+								case VmbFeatureDataRaw:
+									throw std::logic_error("feature '"
+										+ detail::to_std_string(name) +
+										"' has type 'raw' which is currently"
+										" not suppored");
+								break;
+								case VmbFeatureDataNone:
+									throw std::logic_error("feature '"
+										+ detail::to_std_string(name) +
+										"' has type 'none' which is currently"
+										" not suppored");
+								break;
+							}
+
+							auto const command = module("command"_param);
+							if(command){
+								verify(component.state().cam()->
+									GetFeatureByName(command->c_str(),
+										state.command_feature));
+								VmbFeatureDataType feature_type{};
+								verify(state.command_feature
+									->GetDataType(feature_type));
+								if(feature_type != VmbFeatureDataCommand){
+									throw std::logic_error("feature '"
+										+ *command + "' has not type "
+										"'command'");
+								}
+							}
+
+							return state;
+						}),
+						exec_fn([](auto& module){
+							auto& state = module.state();
+							auto type = module.dimension(hana::size_c< 0 >);
 							if constexpr(type == hana::type_c< std::string >){
-								verify(feature->SetValue(
+								verify(state.value_feature->SetValue(
 									module("value"_param).c_str()));
 							}else{
-								verify(feature->SetValue(
+								verify(state.value_feature->SetValue(
 									module("value"_param)));
+							}
+
+							if(state.command_feature){
+								verify(state.command_feature->RunCommand());
 							}
 						}),
 						no_overtaking

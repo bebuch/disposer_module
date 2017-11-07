@@ -14,8 +14,6 @@
 
 #include <boost/dll.hpp>
 
-#include <thread>
-
 
 namespace disposer_module::camera_infratec{
 
@@ -129,6 +127,8 @@ namespace disposer_module::camera_infratec{
 			, system_(vimba_system::get())
 			, cam_(open_camera(*system_, component_("ip"_param).c_str()))
 			, frames_(1)
+			, observer_(std::make_shared< FrameObserver< Component > >
+				(component_, cam_))
 			, distance([this]{
 					AVT::VmbAPI::FeaturePtr feature = nullptr;
 					verify(cam_->GetFeatureByName("FocDistM", feature));
@@ -137,27 +137,7 @@ namespace disposer_module::camera_infratec{
 					return value;
 				}())
 		{
-// 			verify(cam_->SaveCameraSettings("ir_settings.xml"));
-// 			verify(cam_->LoadCameraSettings("ir_settings.xml"));
-
-			{
-				AVT::VmbAPI::FeaturePtr feature = nullptr;
-				verify(cam_->GetFeatureByName("CalibSelect", feature));
-				verify(feature->SetValue(component_("calib"_param)));
-			}
-
-			{
-				AVT::VmbAPI::FeaturePtr feature = nullptr;
-				verify(cam_->GetFeatureByName("CalibChange", feature));
-				verify(feature->RunCommand());
-	// 			for(std::size_t i = 0; i < 1000; ++i){
-	// 				bool ready = false;
-	// 				verify(feature->IsCommandDone(ready));
-	// 				if(ready) break;
-	// 				using namespace std::literals::chrono_literals;
-	// 				std::this_thread::sleep_for(1ms);
-	// 			}
-			}
+			AVT::VmbAPI::FeaturePtr feature = nullptr;
 
 			// TODO; Set image size
 // 			verify(cam_->GetFeatureByName("Width", feature));
@@ -183,9 +163,6 @@ namespace disposer_module::camera_infratec{
 			VmbInt64_t width = component_("width"_param);
 			VmbInt64_t height = component_("height"_param);
 
-			observer_ = std::make_shared< FrameObserver< Component > >
-				(component_, cam_);
-
 			for(auto& frame: frames_){
 				frame.reset(new AVT::VmbAPI::Frame(width * height * 2));
 				verify(frame->RegisterObserver(observer_));
@@ -197,11 +174,8 @@ namespace disposer_module::camera_infratec{
 				verify(cam_->QueueFrame(frame));
 			}
 
-			{
-				AVT::VmbAPI::FeaturePtr feature = nullptr;
-				verify(cam_->GetFeatureByName("AcquisitionStart", feature));
-				verify(feature->RunCommand());
-			}
+			verify(cam_->GetFeatureByName("AcquisitionStart", feature));
+			verify(feature->RunCommand());
 		}
 
 		cam_init(cam_init const&) = delete;
@@ -299,9 +273,7 @@ namespace disposer_module::camera_infratec{
 			component_configure(
 				make("ip"_param, free_type_c< std::string >),
 				make("width"_param, free_type_c< std::size_t >),
-				make("height"_param, free_type_c< std::size_t >),
-				make("calib"_param, free_type_c< VmbInt64_t >,
-					default_value(4001))
+				make("height"_param, free_type_c< std::size_t >)
 			),
 			component_init_fn([](auto const& component){
 				return cam_init(component);
@@ -365,6 +337,8 @@ namespace disposer_module::camera_infratec{
 						},
 						module_configure(
 							make("name"_param, free_type_c< std::string >),
+							make("command"_param,
+								free_type_c< std::optional< std::string > >),
 							make("type"_param, free_type_c< std::size_t >,
 								parser_fn([](
 									auto const& /*iop*/,
@@ -475,6 +449,21 @@ namespace disposer_module::camera_infratec{
 								break;
 							}
 
+							auto const command = module("command"_param);
+							if(command){
+								verify(component.state().cam()->
+									GetFeatureByName(command->c_str(),
+										state.command_feature));
+								VmbFeatureDataType feature_type{};
+								verify(state.command_feature
+									->GetDataType(feature_type));
+								if(feature_type != VmbFeatureDataCommand){
+									throw std::logic_error("feature '"
+										+ *command + "' has not type "
+										"'command'");
+								}
+							}
+
 							return state;
 						}),
 						exec_fn([](auto& module){
@@ -486,6 +475,10 @@ namespace disposer_module::camera_infratec{
 							}else{
 								verify(state.value_feature->SetValue(
 									module("value"_param)));
+							}
+
+							if(state.command_feature){
+								verify(state.command_feature->RunCommand());
 							}
 						}),
 						no_overtaking

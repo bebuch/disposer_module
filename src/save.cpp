@@ -24,6 +24,7 @@ namespace disposer_module::save{
 	using namespace disposer::literals;
 	namespace hana = boost::hana;
 	using namespace hana::literals;
+	using namespace std::literals::string_literals;
 	using hana::type_c;
 
 
@@ -182,39 +183,39 @@ namespace disposer_module::save{
 						if constexpr(type == type_c< ng1 >){
 							return make_name_generator(
 								data,
-								std::make_pair("id",
+								std::make_pair("id"s,
 									format{iop("id_digits"_param),
 										iop("id_add"_param)}),
-								std::make_pair("subid",
+								std::make_pair("subid"s,
 									format{iop("subid_digits"_param),
 										iop("subid_add"_param)})
 							);
 						}else if constexpr(type == type_c< ng2 >){
 							return make_name_generator(
 								data,
-								std::make_pair("id",
+								std::make_pair("id"s,
 									format{iop("id_digits"_param),
 										iop("id_add"_param)}),
-								std::make_pair("subid",
+								std::make_pair("subid"s,
 									format{iop("subid_digits"_param),
 										iop("subid_add"_param)}),
-								std::make_pair("i",
+								std::make_pair("i"s,
 									format{iop("i_digits"_param),
 										iop("i_add"_param)})
 							);
 						}else{
 							return make_name_generator(
 								data,
-								std::make_pair("id",
+								std::make_pair("id"s,
 									format{iop("id_digits"_param),
 										iop("id_add"_param)}),
-								std::make_pair("subid",
+								std::make_pair("subid"s,
 									format{iop("subid_digits"_param),
 										iop("subid_add"_param)}),
-								std::make_pair("i",
+								std::make_pair("i"s,
 									format{iop("i_digits"_param),
 										iop("i_add"_param)}),
-								std::make_pair("j",
+								std::make_pair("j"s,
 									format{iop("j_digits"_param),
 										iop("j_add"_param)})
 							);

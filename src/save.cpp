@@ -10,7 +10,7 @@
 
 #include <disposer/module.hpp>
 
-#include <io_tools/time_to_string.hpp>
+#include <io_tools/time_to_dir_string.hpp>
 
 #include <boost/filesystem.hpp>
 
@@ -276,7 +276,7 @@ namespace disposer_module::save{
 				)
 			),
 			module_init_fn([](auto const& module){
-				return state{io_tools::time_to_string(
+				return state{io_tools::time_to_dir_string(
 					std::chrono::system_clock::now())};
 			}),
 			exec_fn([](auto& module){

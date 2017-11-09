@@ -35,6 +35,9 @@ namespace disposer_module{
 	template < typename T, typename ... U >
 	using first_of_t = typename first_of< T, U ... >::type;
 
+	using text_or_variable_index_t =
+		std::variant< std::string, std::size_t >;
+
 
 	namespace impl{ namespace name_generator{
 
@@ -61,7 +64,7 @@ namespace disposer_module{
 			variable
 		)
 
-		inline std::vector< std::variant< std::string, std::size_t > >
+		inline std::vector< text_or_variable_index_t >
 		parse_pattern(
 			std::string_view pattern,
 			std::vector< std::string > const& variables
@@ -87,28 +90,26 @@ namespace disposer_module{
 
 				std::vector< std::string > const& variables;
 
-				std::variant< std::string, std::size_t >
-				operator()(std::string const& v){
+				text_or_variable_index_t operator()(std::string const& v){
 					return v;
 				}
 
-				std::variant< std::string, std::size_t >
-				operator()(variable_string const& v){
-					auto pos = static_cast< std::size_t >(std::find(
+				text_or_variable_index_t operator()(variable_string const& v){
+					auto variable_i = static_cast< std::size_t >(std::find(
 							variables.begin(), variables.end(), v
 						) - variables.begin());
 
-					if(pos >= variables.size()){
+					if(variable_i >= variables.size()){
 						throw std::runtime_error(
 							"Unknown variable '" + v + "'"
 						);
 					}
 
-					return pos;
+					return variable_i;
 				}
 			} v{variables};
 
-			std::vector< std::variant< std::string, std::size_t > > result;
+			std::vector< text_or_variable_index_t > result;
 			result.reserve(variables.size());
 			for(auto& data: parts){
 				result.push_back(std::visit(v, data));
@@ -151,6 +152,10 @@ namespace disposer_module{
 			return result;
 		}
 
+		std::vector< text_or_variable_index_t > const& pattern()const{
+			return pattern_;
+		}
+
 	private:
 		struct visitor{
 			visitor(first_of_t< std::string, T >&& ... v):
@@ -181,8 +186,10 @@ namespace disposer_module{
 			return os.str();
 		}
 
-		std::vector< std::variant< std::string, std::size_t > > pattern_;
+		std::vector< text_or_variable_index_t > pattern_;
 		std::tuple< std::function< std::string(T const&) > ... > functions_;
+
+
 	};
 
 

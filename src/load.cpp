@@ -10,8 +10,6 @@
 
 #include <disposer/module.hpp>
 
-#include <io_tools/time_to_string.hpp>
-
 #include <boost/dll.hpp>
 
 #include <fstream>
@@ -32,11 +30,12 @@ namespace disposer_module::load{
 	using t2 = std::vector< std::string >;
 	using t3 = std::vector< std::vector< std::string > >;
 
-	using ng1 = name_generator< std::string, std::size_t, std::size_t >;
-	using ng2 = name_generator< std::string, std::size_t, std::size_t,
-		std::size_t >;
-	using ng3 = name_generator< std::string, std::size_t, std::size_t,
-		std::size_t, std::size_t >;
+	using ng1 =
+		name_generator< std::size_t, std::size_t >;
+	using ng2 =
+		name_generator< std::size_t, std::size_t, std::size_t >;
+	using ng3 =
+		name_generator< std::size_t, std::size_t, std::size_t, std::size_t >;
 
 	template < typename T >
 	struct type_transform;
@@ -84,7 +83,7 @@ namespace disposer_module::load{
 		std::size_t id,
 		std::size_t subid
 	){
-		auto const filename = name(module.state().date_time, id, subid);
+		auto const filename = name(id, subid);
 		return module.log([&filename](logsys::stdlogb& os){
 				os << "load: " << filename;
 			}, [&filename]{
@@ -108,8 +107,7 @@ namespace disposer_module::load{
 		std::vector< std::string > result;
 		result.reserve(ic);
 		for(std::size_t i = 0; i < ic; ++i){
-			auto const filename =
-				name(module.state().date_time, id, subid, i);
+			auto const filename = name(id, subid, i);
 			module.log([&filename](logsys::stdlogb& os){
 					os << "load: " << filename;
 				}, [&filename, &result]{
@@ -138,8 +136,7 @@ namespace disposer_module::load{
 		for(std::size_t i = 0; i < ic; ++i){
 			result.emplace_back().reserve(ic);
 			for(std::size_t j = 0; j < jc; ++j){
-				auto const filename =
-					name(module.state().date_time, id, subid, i, j);
+				auto const filename = name(id, subid, i, j);
 				module.log([&filename](logsys::stdlogb& os){
 						os << "load: " << filename;
 					}, [&filename, &result]{
@@ -167,20 +164,10 @@ namespace disposer_module::load{
 		}
 	};
 
-	struct nothing{
-		std::string operator()(std::string const& value){
-			return value;
-		}
-	};
-
 	enum class data_type{
 		file,
 		file_list,
 		file_list_list
-	};
-
-	struct state{
-		std::string date_time;
 	};
 
 
@@ -268,7 +255,7 @@ namespace disposer_module::load{
 						if constexpr(type == type_c< ng1 >){
 							return make_name_generator(
 								data,
-								std::make_pair("data_time"s, nothing{}),
+								{true, false},
 								std::make_pair("id"s,
 									format{iop("id_digits"_param),
 										iop("id_add"_param)}),
@@ -279,7 +266,7 @@ namespace disposer_module::load{
 						}else if constexpr(type == type_c< ng2 >){
 							return make_name_generator(
 								data,
-								std::make_pair("data_time"s, nothing{}),
+								{true, false, true},
 								std::make_pair("id"s,
 									format{iop("id_digits"_param),
 										iop("id_add"_param)}),
@@ -293,7 +280,7 @@ namespace disposer_module::load{
 						}else{
 							return make_name_generator(
 								data,
-								std::make_pair("data_time"s, nothing{}),
+								{true, false, true, true},
 								std::make_pair("id"s,
 									format{iop("id_digits"_param),
 										iop("id_add"_param)}),
@@ -311,10 +298,6 @@ namespace disposer_module::load{
 					})
 				)
 			),
-			module_init_fn([](auto const& module){
-				return state{io_tools::time_to_string(
-					std::chrono::system_clock::now())};
-			}),
 			exec_fn([](auto& module){
 				auto id = module.id();
 

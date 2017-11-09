@@ -227,31 +227,31 @@ namespace disposer_module{
 	// <--
 
 
-	template < typename ... T, typename ... U >
+	template < typename ... T >
 	auto make_name_generator(
 		std::string_view pattern,
-		std::pair< T, U >&& ... variables
+		std::pair< std::string, T >&& ... variables
 	){
-		return name_generator< argument_t< U > ... >(
+		return name_generator< argument_t< T > ... >(
 			pattern,
 			std::pair< std::string, std::function<
-				std::string(argument_t< U > const&)
+				std::string(argument_t< T > const&)
 			> >(
 				std::move(variables.first),
 				std::move(variables.second)
 			) ...);
 	}
 
-	template < typename ... T, typename ... U >
+	template < typename ... T >
 	auto make_name_generator(
 		std::string_view pattern,
 		std::array< bool, sizeof...(T) > const& must_have,
-		std::pair< T, U >&& ... variables
+		std::pair< std::string, T >&& ... variables
 	){
-		auto result = name_generator< argument_t< U > ... >(
+		auto result = name_generator< argument_t< T > ... >(
 			pattern,
 			std::pair< std::string, std::function<
-				std::string(argument_t< U > const&)
+				std::string(argument_t< T > const&)
 			> >(
 				variables.first,
 				std::move(variables.second)

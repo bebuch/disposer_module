@@ -223,7 +223,7 @@ namespace disposer_module{
 	};
 
 	template < typename F >
-	using argument_t = typename argument< F >::type;
+	using argument_t = std::decay_t< typename argument< F >::type >;
 	// <--
 
 

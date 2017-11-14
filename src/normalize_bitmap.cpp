@@ -24,36 +24,26 @@ namespace disposer_module::normalize_bitmap{
 	using bitmap = ::bmp::bitmap< T >;
 
 
+	constexpr auto types = dimension_c<
+			std::int8_t,
+			std::int16_t,
+			std::int32_t,
+			std::int64_t,
+			std::uint8_t,
+			std::uint16_t,
+			std::uint32_t,
+			std::uint64_t,
+			float,
+			double
+		>;
+
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = module_register_fn(
 			dimension_list{
-				dimension_c<
-					std::int8_t,
-					std::int16_t,
-					std::int32_t,
-					std::int64_t,
-					std::uint8_t,
-					std::uint16_t,
-					std::uint32_t,
-					std::uint64_t,
-					float,
-					double
-				>,
-				dimension_c<
-					std::int8_t,
-					std::int16_t,
-					std::int32_t,
-					std::int64_t,
-					std::uint8_t,
-					std::uint16_t,
-					std::uint32_t,
-					std::uint64_t,
-					float,
-					double
-				>
+				types,
+				types
 			},
 			module_configure(
-				make("image"_in, wrapped_type_ref_c< bitmap, 0 >),
 				make("format"_param,
 					free_type_c< std::optional< std::size_t > >,
 					parser_fn([](
@@ -88,6 +78,7 @@ namespace disposer_module::normalize_bitmap{
 						return std::optional< std::size_t >
 							(iter - list.begin());
 					})),
+				make("image"_in, wrapped_type_ref_c< bitmap, 0 >),
 				set_dimension_fn([](auto const& module){
 					auto const optional_number = module("format"_param);
 					std::size_t const number =

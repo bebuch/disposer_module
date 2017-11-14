@@ -6,6 +6,8 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 //-----------------------------------------------------------------------------
+#include "log.hpp"
+
 #include <disposer/disposer.hpp>
 
 #include <logsys/log.hpp>
@@ -68,6 +70,11 @@ int main(int argc, char** argv){
 		std::cout << options.help();
 		return -1;
 	}
+
+	// add a log file to the log system
+	auto const log_filename = options["log"].as< std::string >();
+	auto log_file(std::make_shared< std::ofstream >(log_filename));
+	disposer_module::stdlog::file_ptr = log_file;
 
 	// modules must be deleted last, to access the destructors in shared libs
 	std::list< boost::dll::shared_library > libraries;

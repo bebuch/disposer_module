@@ -305,6 +305,15 @@ lib encode_bbf
 	<include>$(bitmap)/include
 	;
 
+lib transform_bitmap
+	:
+	transform_bitmap.cpp
+	/disposer_module//log
+	/disposer//disposer
+	:
+	<include>$(bitmap)/include
+	;
+
 lib calibchange
 	:
 	calibchange.cpp

@@ -9,8 +9,7 @@
 #include <disposer/module.hpp>
 
 #include <bitmap/rect_transform.hpp>
-#include <bitmap/point_io.hpp>
-#include <bitmap/size_io.hpp>
+#include <bitmap/rect_io.hpp>
 
 #include <io_tools/std_array_io.hpp>
 
@@ -207,6 +206,10 @@ namespace disposer_module::transform_bitmap{
 					homography, source_size);
 
 				auto const target_contour = bmp::image_contour(target_rect);
+
+				module.log([&target_contour](logsys::stdlogb& os){
+						os << "calculated image contour: " << target_contour;
+					});
 
 				return state< matrix_type >{invert(homography), target_contour};
 			}),

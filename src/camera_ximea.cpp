@@ -491,7 +491,7 @@ namespace disposer_module::camera_ximea{
 		auto const payload_pass = (cam_width * cam_height == payload_size);
 
 		params.set(XI_PRM_EXPOSURE,
-			static_cast< int >(component("exposure_time_ns"_param)));
+			static_cast< int >(component("exposure_time_us"_param)));
 		verify(xiStartAcquisition(handle));
 
 		return ximea_cam{
@@ -570,7 +570,7 @@ namespace disposer_module::camera_ximea{
 					default_value(0)),
 				make("width"_param, free_type_c< std::size_t >),
 				make("height"_param, free_type_c< std::size_t >),
-				make("exposure_time_ns"_param, free_type_c< std::size_t >,
+				make("exposure_time_us"_param, free_type_c< std::size_t >,
 					default_value(10000))
 			),
 			component_init_fn([](auto const& component){

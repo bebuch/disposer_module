@@ -265,7 +265,6 @@ namespace disposer_module::camera_infratec{
 
 	struct settings_state{
 		AVT::VmbAPI::FeaturePtr value_feature = nullptr;
-		AVT::VmbAPI::FeaturePtr command_feature = nullptr;
 	};
 
 	void init(std::string const& name, component_declarant& declarant){
@@ -337,8 +336,6 @@ namespace disposer_module::camera_infratec{
 						},
 						module_configure(
 							make("name"_param, free_type_c< std::string >),
-							make("command"_param,
-								free_type_c< std::optional< std::string > >),
 							make("type"_param, free_type_c< std::size_t >,
 								parser_fn([](
 									auto const& /*iop*/,
@@ -432,8 +429,7 @@ namespace disposer_module::camera_infratec{
 									throw std::logic_error("feature '"
 										+ detail::to_std_string(name) +
 										"' has type 'command' which is"
-										" currently not suppored as name, use"
-										" command instead");
+										" currently not suppored");
 								break;
 								case VmbFeatureDataRaw:
 									throw std::logic_error("feature '"
@@ -449,21 +445,6 @@ namespace disposer_module::camera_infratec{
 								break;
 							}
 
-							auto const command = module("command"_param);
-							if(command){
-								verify(component.state().cam()->
-									GetFeatureByName(command->c_str(),
-										state.command_feature));
-								VmbFeatureDataType feature_type{};
-								verify(state.command_feature
-									->GetDataType(feature_type));
-								if(feature_type != VmbFeatureDataCommand){
-									throw std::logic_error("feature '"
-										+ *command + "' has not type "
-										"'command'");
-								}
-							}
-
 							return state;
 						}),
 						exec_fn([](auto& module){
@@ -475,10 +456,6 @@ namespace disposer_module::camera_infratec{
 							}else{
 								verify(state.value_feature->SetValue(
 									module("value"_param)));
-							}
-
-							if(state.command_feature){
-								verify(state.command_feature->RunCommand());
 							}
 						}),
 						no_overtaking

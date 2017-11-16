@@ -366,6 +366,11 @@ namespace disposer_module::camera_ximea{
 		Component const& component,
 		HANDLE handle
 	)const{
+		{
+			ximea_cam_params< Component > params(component, handle);
+			params.set(XI_PRM_TRG_SOFTWARE, 1);
+		}
+
 		bitmap< T > mosaic(width, height);
 		if(payload_pass){
 			XI_IMG image{}; // {} makes the 0-initialization
@@ -485,6 +490,8 @@ namespace disposer_module::camera_ximea{
 			cam_width = width;
 			cam_height = height;
 		}
+
+		params.set(XI_PRM_TRG_SOURCE, XI_TRG_SOFTWARE);
 
 		auto const payload_size = static_cast< std::size_t >(
 			params.get_int(XI_PRM_IMAGE_PAYLOAD_SIZE));

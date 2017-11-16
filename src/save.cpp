@@ -99,7 +99,7 @@ namespace disposer_module::save{
 		auto const filename = name(date_time, id, subid);
 
 		module.log([&filename](logsys::stdlogb& os){
-				os << "load: " << filename;
+				os << filename;
 			}, [&filename, &data]{
 				filesystem::create_directories(
 					filesystem::path(filename).remove_filename());
@@ -125,7 +125,7 @@ namespace disposer_module::save{
 			auto const filename = name(date_time, id, subid, i);
 
 			module.log([&filename](logsys::stdlogb& os){
-					os << "load: " << filename;
+					os << filename;
 				}, [&filename, &data, i]{
 					filesystem::create_directories(
 						filesystem::path(filename).remove_filename());
@@ -153,7 +153,7 @@ namespace disposer_module::save{
 				auto const filename = name(date_time, id, subid, i, j);
 
 				module.log([&filename](logsys::stdlogb& os){
-						os << "load: " << filename;
+						os << filename;
 					}, [&filename, &data, i, j]{
 						filesystem::create_directories(
 							filesystem::path(filename).remove_filename());

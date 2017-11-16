@@ -85,7 +85,7 @@ namespace disposer_module::load{
 	){
 		auto const filename = name(id, subid);
 		return module.log([&filename](logsys::stdlogb& os){
-				os << "load: " << filename;
+				os << filename;
 			}, [&filename]{
 				std::ifstream is(filename.c_str(),
 					std::ios::in | std::ios::binary);
@@ -109,7 +109,7 @@ namespace disposer_module::load{
 		for(std::size_t i = 0; i < ic; ++i){
 			auto const filename = name(id, subid, i);
 			module.log([&filename](logsys::stdlogb& os){
-					os << "load: " << filename;
+					os << filename;
 				}, [&filename, &result]{
 					std::ifstream is(filename.c_str(),
 						std::ios::in | std::ios::binary);
@@ -138,7 +138,7 @@ namespace disposer_module::load{
 			for(std::size_t j = 0; j < jc; ++j){
 				auto const filename = name(id, subid, i, j);
 				module.log([&filename](logsys::stdlogb& os){
-						os << "load: " << filename;
+						os << filename;
 					}, [&filename, &result]{
 						std::ifstream is(filename.c_str(),
 							std::ios::in | std::ios::binary);

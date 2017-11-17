@@ -426,7 +426,7 @@ namespace disposer_module::http_server_component{
 		using namespace std::literals::string_literals;
 		using namespace disposer;
 
-		auto init = component_register_fn(
+		auto init = generate_component(
 			component_configure(
 				make("root"_param, free_type_c< std::string >),
 				make("port"_param, free_type_c< std::uint16_t >,
@@ -448,8 +448,8 @@ namespace disposer_module::http_server_component{
 					component("thread_count"_param));
 			}),
 			component_modules(
-				make("websocket"_module, register_fn([](auto& component){
-					return module_register_fn(
+				make("websocket"_module, generate_fn([](auto& component){
+					return generate_module(
 						module_configure(
 							make("data"_in, free_type_c< std::string >),
 							make("service_name"_param,

@@ -22,7 +22,7 @@ namespace disposer_module::calibchange{
 
 
 	void init(std::string const& name, module_declarant& disposer){
-		auto init = module_register_fn(
+		auto init = generate_module(
 			module_configure(
 				make("ip"_param, free_type_c< std::string >),
 				make("value"_param, free_type_c< std::uint16_t >)

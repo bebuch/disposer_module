@@ -268,7 +268,7 @@ namespace disposer_module::camera_infratec{
 	};
 
 	void init(std::string const& name, component_declarant& declarant){
-		auto init = component_register_fn(
+		auto init = generate_component(
 			component_configure(
 				make("ip"_param, free_type_c< std::string >),
 				make("width"_param, free_type_c< std::size_t >),
@@ -278,8 +278,8 @@ namespace disposer_module::camera_infratec{
 				return cam_init(component);
 			}),
 			component_modules(
-				make("capture"_module, register_fn([](auto& component){
-					return module_register_fn(
+				make("capture"_module, generate_fn([](auto& component){
+					return generate_module(
 						module_configure(
 							make("image"_out,
 								free_type_c< bitmap< std::uint16_t > >)
@@ -291,8 +291,8 @@ namespace disposer_module::camera_infratec{
 						no_overtaking
 					);
 				})),
-				make("focus"_module, register_fn([](auto& component){
-					return module_register_fn(
+				make("focus"_module, generate_fn([](auto& component){
+					return generate_module(
 						module_configure(
 							make("distance_in_m"_param,
 								free_type_c< double >,
@@ -324,8 +324,8 @@ namespace disposer_module::camera_infratec{
 						no_overtaking
 					);
 				})),
-				make("setting"_module, register_fn([](auto& component){
-					return module_register_fn(
+				make("setting"_module, generate_fn([](auto& component){
+					return generate_module(
 						dimension_list{
 							dimension_c<
 								bool,

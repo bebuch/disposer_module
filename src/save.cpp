@@ -192,7 +192,7 @@ namespace disposer_module::save{
 
 
 	void init(std::string const& name, module_declarant& disposer){
-		auto init = module_register_fn(
+		auto init = generate_module(
 			dimension_list{
 				dimension_c<
 					std::string,

@@ -43,7 +43,7 @@ namespace disposer_module::vector_join{
 						throw std::logic_error("must be greater 0");
 					}))
 			),
-			module_init_fn([](auto& module){
+			module_init_fn([](auto module){
 				using type = typename
 					decltype(module.dimension(hana::size_c< 0 >))::type;
 
@@ -51,7 +51,7 @@ namespace disposer_module::vector_join{
 				result.reserve(module("count"_param));
 				return result;
 			}),
-			exec_fn([](auto& module){
+			exec_fn([](auto module){
 				auto& list = module.state();
 				for(auto&& data: module("data"_in).values()){
 					list.push_back(std::move(data));

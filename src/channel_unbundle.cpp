@@ -34,7 +34,7 @@ namespace disposer_module::channel_unbundle{
 
 	struct channel_unbundle_t{
 		template < typename Module, typename T >
-		auto operator()(Module const& module, bitmap< T > const& image)const{
+		auto operator()(Module const module, bitmap< T > const& image)const{
 			auto const xc = module("x_count"_param);
 			auto const yc = module("y_count"_param);
 
@@ -146,7 +146,7 @@ namespace disposer_module::channel_unbundle{
 						throw std::logic_error("must be greater 0");
 					}))
 			),
-			exec_fn([](auto& module){
+			exec_fn([](auto module){
 				for(auto const& value: module("image"_in).references()){
 					module("images"_out).push(channel_unbundle(module, value));
 				}

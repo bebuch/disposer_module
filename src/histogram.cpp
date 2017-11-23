@@ -56,7 +56,7 @@ namespace disposer_module::histogram{
 						}
 					})),
 				make("max"_param, type_ref_c< 0 >,
-					verify_value_fn([](auto const& max, auto const& module){
+					verify_value_fn([](auto const& max, auto const module){
 						if(module("min"_param) < max) return;
 						throw std::logic_error("max must be greater min");
 					}),
@@ -70,7 +70,7 @@ namespace disposer_module::histogram{
 					})),
 				make("bin_count"_param, free_type_c< std::size_t >)
 			),
-			exec_fn([](auto& module){
+			exec_fn([](auto module){
 				for(auto const& img: module("image"_in).references()){
 					module("histogram"_out).push(bmp::histogram(img,
 							module("min"_param),

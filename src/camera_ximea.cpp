@@ -235,7 +235,7 @@ namespace disposer_module::camera_ximea{
 	class ximea_cam_params{
 	public:
 		constexpr ximea_cam_params(
-			Component const& component,
+			Component const component,
 			HANDLE handle
 		)noexcept
 			: component_(component)
@@ -347,7 +347,7 @@ namespace disposer_module::camera_ximea{
 	struct ximea_cam{
 		template < typename T, typename Component >
 		bitmap< T > get_image(
-			Component const& component,
+			Component const component,
 			HANDLE handle
 		)const;
 
@@ -363,7 +363,7 @@ namespace disposer_module::camera_ximea{
 
 	template < typename T, typename Component >
 	bitmap< T > ximea_cam::get_image(
-		Component const& component,
+		Component const component,
 		HANDLE handle
 	)const{
 		{
@@ -437,7 +437,7 @@ namespace disposer_module::camera_ximea{
 	}
 
 	template < typename Component >
-	ximea_cam make_ximea_cam(Component const& component, HANDLE handle){
+	ximea_cam make_ximea_cam(Component const component, HANDLE handle){
 		ximea_cam_params< Component > params(component, handle);
 		params.set(XI_PRM_BUFFER_POLICY, XI_BP_SAFE);
 
@@ -514,7 +514,7 @@ namespace disposer_module::camera_ximea{
 	template < typename Component >
 	class ximea_cam_init{
 	public:
-		ximea_cam_init(Component const& component)
+		ximea_cam_init(Component const component)
 			: component_(component)
 			, handle_(open_ximea_cam(component("cam_id"_param)))
 			, cam_(make_ximea_cam(component, handle_)) {}
@@ -554,7 +554,7 @@ namespace disposer_module::camera_ximea{
 			component_configure(
 				make("format"_param, free_type_c< pixel_format >,
 					parser_fn([](
-						auto const& /*iop*/,
+						auto const /*module*/,
 						std::string_view data,
 						hana::basic_type< pixel_format >
 					){
@@ -580,49 +580,48 @@ namespace disposer_module::camera_ximea{
 				make("exposure_time_us"_param, free_type_c< std::size_t >,
 					default_value(10000))
 			),
-			component_init_fn([](auto const& component){
+			component_init_fn([](auto const component){
 				return ximea_cam_init(component);
 			}),
 			component_modules(
-				make("capture"_module, generate_fn([](auto& component){
-					return generate_module(
-						dimension_list{
-							dimension_c<
-								std::uint8_t,
-								std::uint16_t,
-								pixel::rgb8u
-							>
-						},
-						module_configure(
-							set_dimension_fn([&component]{
-								auto const format = component("format"_param);
-								switch(format){
-									case pixel_format::mono8: [[fallthrough]];
-									case pixel_format::raw8:
-										return solved_dimensions{
-											index_component< 0 >{0}};
-									case pixel_format::mono16: [[fallthrough]];
-									case pixel_format::raw16:
-										return solved_dimensions{
-											index_component< 0 >{1}};
-									case pixel_format::rgb8:
-										return solved_dimensions{
-											index_component< 0 >{2}};
-								}
+				make("capture"_module, generate_module(
+					dimension_list{
+						dimension_c<
+							std::uint8_t,
+							std::uint16_t,
+							pixel::rgb8u
+						>
+					},
+					module_configure(
+						set_dimension_fn([](auto const module){
+							auto const format =
+								module.component("format"_param);
+							switch(format){
+								case pixel_format::mono8: [[fallthrough]];
+								case pixel_format::raw8:
+									return solved_dimensions{
+										index_component< 0 >{0}};
+								case pixel_format::mono16: [[fallthrough]];
+								case pixel_format::raw16:
+									return solved_dimensions{
+										index_component< 0 >{1}};
+								case pixel_format::rgb8:
+									return solved_dimensions{
+										index_component< 0 >{2}};
+							}
 
-								throw std::runtime_error("unknown format");
-							}),
-							make("image"_out, wrapped_type_ref_c< bitmap, 0 >)
-						),
-						exec_fn([&component](auto& module){
-							module("image"_out).push(component.state()
-								.template get_image< typename decltype(
-										module.dimension(hana::size_c< 0 >)
-									)::type >());
+							throw std::runtime_error("unknown format");
 						}),
-						no_overtaking
-					);
-				}))
+						make("image"_out, wrapped_type_ref_c< bitmap, 0 >)
+					),
+					exec_fn([](auto module){
+						module("image"_out).push(module.component.state()
+							.template get_image< typename decltype(
+									module.dimension(hana::size_c< 0 >)
+								)::type >());
+					}),
+					no_overtaking
+				))
 			)
 		);
 

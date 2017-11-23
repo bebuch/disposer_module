@@ -27,7 +27,7 @@ namespace disposer_module::calibchange{
 				make("ip"_param, free_type_c< std::string >),
 				make("value"_param, free_type_c< std::uint16_t >)
 			),
-			exec_fn([](auto& module){
+			exec_fn([](auto module){
 				namespace asio = boost::asio;
 				using asio::ip::udp;
 

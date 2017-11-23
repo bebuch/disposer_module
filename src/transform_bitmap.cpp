@@ -115,7 +115,7 @@ namespace disposer_module::transform_bitmap{
 				make("format"_param,
 					free_type_c< std::optional< std::size_t > >,
 					parser_fn([](
-						auto const& /*iop*/,
+						auto const /*module*/,
 						std::string_view data,
 						hana::basic_type< std::optional< std::size_t > >
 					){
@@ -147,10 +147,10 @@ namespace disposer_module::transform_bitmap{
 							(iter - list.begin());
 					})),
 				make("image"_in, wrapped_type_ref_c< bitmap, 0 >),
-				set_dimension_fn([](auto const& module){
+				set_dimension_fn([](auto const module){
 					auto const optional_number = module("format"_param);
 					std::size_t const number =
-						[&module, &optional_number]()->std::size_t{
+						[module, &optional_number]()->std::size_t{
 							if(optional_number){
 								return *optional_number;
 							}else{
@@ -170,7 +170,7 @@ namespace disposer_module::transform_bitmap{
 				make("source_points"_param,
 					wrapped_type_ref_c< points_type, 1 >,
 					parser_fn([](
-						auto const& /*iop*/,
+						auto const /*module*/,
 						std::string_view data,
 						auto type
 					){
@@ -184,7 +184,7 @@ namespace disposer_module::transform_bitmap{
 				make("image"_out,
 					wrapped_type_ref_c< transformed_bitmap, 0, 1 >)
 			),
-			module_init_fn([](auto& module){
+			module_init_fn([](auto module){
 				auto t = module.dimension(hana::size_c< 1 >);
 				using pixel_type = typename decltype(t)::type;
 				using matrix_type = calc_type< pixel_type >;
@@ -213,7 +213,7 @@ namespace disposer_module::transform_bitmap{
 
 				return state< matrix_type >{invert(homography), target_contour};
 			}),
-			exec_fn([](auto& module){
+			exec_fn([](auto module){
 				auto t0 = module.dimension(hana::size_c< 0 >);
 				using source_pixel_type = typename decltype(t0)::type;
 				auto t1 = module.dimension(hana::size_c< 1 >);

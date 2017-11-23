@@ -27,7 +27,7 @@ namespace disposer_module::subbitmap{
 
 
 	template < typename Module, typename T >
-	bitmap< T > exec(Module const& module, bitmap< T > const& image){
+	bitmap< T > exec(Module const module, bitmap< T > const& image){
 		auto const x = module("x"_param);
 		auto const y = module("y"_param);
 		auto const w = module("width"_param);
@@ -90,7 +90,7 @@ namespace disposer_module::subbitmap{
 				make("image"_in, wrapped_type_ref_c< bitmap, 0 >),
 				make("image"_out, wrapped_type_ref_c< bitmap, 0 >)
 			),
-			exec_fn([](auto& module){
+			exec_fn([](auto module){
 				for(auto const& img: module("image"_in).references()){
 					module("image"_out).push(exec(module, img));
 				}

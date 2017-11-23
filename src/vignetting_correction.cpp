@@ -26,7 +26,7 @@ namespace disposer_module::vignetting_correction{
 
 	template < typename Module, typename T >
 	bitmap< T > exec(
-		Module const& module,
+		Module const module,
 		bitmap< T >&& image,
 		bitmap< float > const& factor_image
 	){
@@ -55,7 +55,7 @@ namespace disposer_module::vignetting_correction{
 				make("image"_out, wrapped_type_ref_c< bitmap, 0 >),
 				make("factor_image_filename"_param, free_type_c< std::string >),
 				make("max_value"_param, type_ref_c< 0 >,
-					default_value_fn([](auto const& iop, auto t){
+					default_value_fn([](auto const module, auto t){
 						using type = typename decltype(t)::type;
 						if constexpr(
 							std::is_integral_v< type > && sizeof(type) == 1
@@ -64,11 +64,11 @@ namespace disposer_module::vignetting_correction{
 						}
 					}))
 			),
-			module_init_fn([](auto const& module){
+			module_init_fn([](auto const module){
 				auto const path = module("factor_image_filename"_param);
 				return bmp::binary_read< float >(path);
 			}),
-			exec_fn([](auto& module){
+			exec_fn([](auto module){
 				auto const& factor_image = module.state();
 				for(auto&& img: module("image"_in).values()){
 					module("image"_out).push(

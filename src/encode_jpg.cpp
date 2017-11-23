@@ -89,7 +89,7 @@ namespace disposer_module::encode_jpg{
 					}),
 					default_value(90))
 			),
-			exec_fn([](auto& module){
+			exec_fn([](auto module){
 				for(auto const& img: module("image"_in).references()){
 					auto const quality = module("quality"_param);
 					module("data"_out).push(to_jpg_image(

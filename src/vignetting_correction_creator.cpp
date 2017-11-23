@@ -39,7 +39,7 @@ namespace disposer_module::vignetting_correction_creator{
 	}
 
 	template < typename Module, typename T >
-	bitmap< float > exec(Module const& module, bitmap< T > const& image){
+	bitmap< float > exec(Module const module, bitmap< T > const& image){
 		auto const max_v = module("max_value"_param);
 
 		T const max = module.log([](logsys::stdlogb& os, T const* max){
@@ -116,7 +116,7 @@ namespace disposer_module::vignetting_correction_creator{
 						}
 					}))
 			),
-			exec_fn([](auto& module){
+			exec_fn([](auto module){
 				for(auto const& img: module("image"_in).references()){
 					module("image"_out).push(exec(module, img));
 				}

@@ -111,19 +111,19 @@ namespace disposer_module::demosaic{
 						throw std::logic_error("must be greater 0");
 					})),
 				make("x_offset"_param, free_type_c< std::size_t >,
-					verify_value_fn([](auto const& value, auto const& iop){
-						if(value < iop("x_count"_param)) return;
+					verify_value_fn([](auto const& value, auto const module){
+						if(value < module("x_count"_param)) return;
 						throw std::logic_error("must be lesser x_count");
 					})),
 				make("y_offset"_param, free_type_c< std::size_t >,
-					verify_value_fn([](auto const& value, auto const& iop){
-						if(value < iop("y_count"_param)) return;
+					verify_value_fn([](auto const& value, auto const module){
+						if(value < module("y_count"_param)) return;
 						throw std::logic_error("must be lesser y_count");
 					})),
 				make("image"_in, wrapped_type_ref_c< bitmap, 0 >),
 				make("image"_out, wrapped_type_ref_c< bitmap, 0 >)
 			),
-			exec_fn([](auto& module){
+			exec_fn([](auto module){
 				for(auto const& img: module("image"_in).references()){
 					module("image"_out).push(exec(module, img));
 				}

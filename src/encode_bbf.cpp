@@ -77,7 +77,7 @@ namespace disposer_module::encode_bbf{
 				make("data"_out, free_type_c< std::string >),
 				make("endian"_param, free_type_c< boost::endian::order >,
 					parser_fn([](
-						auto const& /*iop*/,
+						auto const /*module*/,
 						std::string_view data,
 						hana::basic_type< boost::endian::order >
 					){
@@ -93,7 +93,7 @@ namespace disposer_module::encode_bbf{
 					default_value(boost::endian::order::native)
 				)
 			),
-			exec_fn([](auto& module){
+			exec_fn([](auto module){
 				for(auto const& img: module("image"_in).references()){
 					std::ostringstream os(std::ios::out | std::ios::binary);
 					::bmp::binary_write(img, os, module("endian"_param));

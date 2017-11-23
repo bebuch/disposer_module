@@ -43,7 +43,7 @@ namespace disposer_module::vector_disjoin{
 				make("list"_in, wrapped_type_ref_c< std::vector, 0 >),
 				make("data"_out, type_ref_c< 0 >)
 			),
-			exec_fn([](auto& module){
+			exec_fn([](auto module){
 				auto const count = module("count"_param);
 				for(auto&& list: module("list"_in).values()){
 					if(list.size() != count){

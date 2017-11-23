@@ -77,7 +77,7 @@ namespace disposer_module::http_server_component{
 	template < typename Component >
 	class live_chain{
 	public:
-		live_chain(Component& component, std::string const& chain)
+		live_chain(Component component, std::string const& chain)
 			: component_(component)
 			, chain_(chain)
 			, active_(true)
@@ -143,7 +143,7 @@ namespace disposer_module::http_server_component{
 	template < typename Component >
 	class control_service: public http::websocket::server::json_service{
 	public:
-		control_service(Component& component)
+		control_service(Component component)
 			: http::websocket::server::json_service(
 				[this](
 					boost::property_tree::ptree const& data,
@@ -295,7 +295,7 @@ namespace disposer_module::http_server_component{
 	class request_handler: public http::server::lambda_request_handler{
 	public:
 		request_handler(
-				Component& component,
+				Component component,
 				std::string const& http_root_path)
 			: http::server::lambda_request_handler(
 				[this](
@@ -378,7 +378,7 @@ namespace disposer_module::http_server_component{
 	class http_server{
 	public:
 		http_server(
-			Component& component,
+			Component component,
 			std::string const& root,
 			std::uint16_t port,
 			std::size_t thread_count
@@ -448,27 +448,24 @@ namespace disposer_module::http_server_component{
 					component("thread_count"_param));
 			}),
 			component_modules(
-				make("websocket"_module, generate_fn([](auto& component){
-					return generate_module(
-						module_configure(
-							make("data"_in, free_type_c< std::string >),
-							make("service_name"_param,
-								free_type_c< std::string >)
-						),
-						module_init_fn([&component](auto const& module){
-							return component.state()
-								.init(module("service_name"_param)).key;
-						}),
-						exec_fn([&component](auto& module){
-							auto list = module("data"_in).references();
-							if(list.empty()) return;
-							auto iter = list.end();
-							--iter;
-							component.state().send(module.state(), *iter);
-						}),
-						no_overtaking
-					);
-				}))
+				make("websocket"_module, generate_module(
+					module_configure(
+						make("data"_in, free_type_c< std::string >),
+						make("service_name"_param, free_type_c< std::string >)
+					),
+					module_init_fn([](auto module){
+						return module.component.state()
+							.init(module("service_name"_param)).key;
+					}),
+					exec_fn([](auto& module){
+						auto list = module("data"_in).references();
+						if(list.empty()) return;
+						auto iter = list.end();
+						--iter;
+						module.component.state().send(module.state(), *iter);
+					}),
+					no_overtaking
+				))
 			)
 		);
 

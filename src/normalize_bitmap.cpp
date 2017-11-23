@@ -47,7 +47,7 @@ namespace disposer_module::normalize_bitmap{
 				make("format"_param,
 					free_type_c< std::optional< std::size_t > >,
 					parser_fn([](
-						auto const& /*iop*/,
+						auto const /*module*/,
 						std::string_view data,
 						hana::basic_type< std::optional< std::size_t > >
 					){
@@ -79,10 +79,10 @@ namespace disposer_module::normalize_bitmap{
 							(iter - list.begin());
 					})),
 				make("image"_in, wrapped_type_ref_c< bitmap, 0 >),
-				set_dimension_fn([](auto const& module){
+				set_dimension_fn([](auto const module){
 					auto const optional_number = module("format"_param);
 					std::size_t const number =
-						[&module, &optional_number]()->std::size_t{
+						[module, &optional_number]()->std::size_t{
 							if(optional_number){
 								return *optional_number;
 							}else{
@@ -102,7 +102,7 @@ namespace disposer_module::normalize_bitmap{
 				make("max"_param, type_ref_c< 1 >),
 				make("image"_out, wrapped_type_ref_c< bitmap, 1 >)
 			),
-			exec_fn([](auto& module){
+			exec_fn([](auto module){
 				auto t_in = module.dimension(hana::size_c< 0 >);
 				auto t_out = module.dimension(hana::size_c< 1 >);
 				using type = typename decltype(t_out)::type;

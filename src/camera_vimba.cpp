@@ -32,7 +32,7 @@ namespace disposer_module::camera_infratec{
 	class FrameObserver: public AVT::VmbAPI::IFrameObserver{
 	public:
 		FrameObserver(
-			Component const& component,
+			Component const component,
 			AVT::VmbAPI::CameraPtr const& pCamera
 		)
 			: AVT::VmbAPI::IFrameObserver(pCamera)
@@ -122,7 +122,7 @@ namespace disposer_module::camera_infratec{
 	template < typename Component >
 	class cam_init{
 	public:
-		cam_init(Component const& component)
+		cam_init(Component const component)
 			: component_(component)
 			, system_(vimba_system::get())
 			, cam_(open_camera(*system_, component_("ip"_param).c_str()))
@@ -274,193 +274,187 @@ namespace disposer_module::camera_infratec{
 				make("width"_param, free_type_c< std::size_t >),
 				make("height"_param, free_type_c< std::size_t >)
 			),
-			component_init_fn([](auto const& component){
+			component_init_fn([](auto const component){
 				return cam_init(component);
 			}),
 			component_modules(
-				make("capture"_module, generate_fn([](auto& component){
-					return generate_module(
-						module_configure(
-							make("image"_out,
-								free_type_c< bitmap< std::uint16_t > >)
-						),
-						exec_fn([&component](auto& module){
-							module("image"_out)
-								.push(component.state().get_image());
-						}),
-						no_overtaking
-					);
-				})),
-				make("focus"_module, generate_fn([](auto& component){
-					return generate_module(
-						module_configure(
-							make("distance_in_m"_param,
-								free_type_c< double >,
-								verify_value_fn(
-									[component](double value){
-										auto& state = component.state();
-										if(
-											value >= state.distance.min &&
-											value <= state.distance.max
-										) return;
+				make("capture"_module, generate_module(
+					module_configure(
+						make("image"_out,
+							free_type_c< bitmap< std::uint16_t > >)
+					),
+					exec_fn([](auto module){
+						module("image"_out)
+							.push(module.component.state().get_image());
+					}),
+					no_overtaking
+				)),
+				make("focus"_module, generate_module(
+					module_configure(
+						make("distance_in_m"_param,
+							free_type_c< double >,
+							verify_value_fn(
+								[](double value, auto const module){
+									auto& state = module.component.state();
+									if(
+										value >= state.distance.min &&
+										value <= state.distance.max
+									) return;
 
-										throw std::out_of_range(
-											io_tools::make_string(
-											"distance is out of range "
-											"(value: ", value,
-											", min: ", state.distance.min,
-											", max: ", state.distance.max,
-											")"));
-									}))
-						),
-						exec_fn([&component](auto& module){
-							AVT::VmbAPI::FeaturePtr feature = nullptr;
+									throw std::out_of_range(
+										io_tools::make_string(
+										"distance is out of range "
+										"(value: ", value,
+										", min: ", state.distance.min,
+										", max: ", state.distance.max,
+										")"));
+								}))
+					),
+					exec_fn([](auto module){
+						AVT::VmbAPI::FeaturePtr feature = nullptr;
 
-							verify(component.state().cam()
-								->GetFeatureByName("FocDistM", feature));
-							verify(feature->SetValue(
-								module("distance_in_m"_param)));
-						}),
-						no_overtaking
-					);
-				})),
-				make("setting"_module, generate_fn([](auto& component){
-					return generate_module(
-						dimension_list{
-							dimension_c<
-								bool,
-								VmbInt64_t,
-								double,
-								std::string
-							>
-						},
-						module_configure(
-							make("name"_param, free_type_c< std::string >),
-							make("type"_param, free_type_c< std::size_t >,
-								parser_fn([](
-									auto const& /*iop*/,
-									std::string_view data,
-									hana::basic_type< std::size_t >
-								){
-									auto iter = std::find(type_list.begin(),
-										type_list.end(), data);
-									if(iter == type_list.end()){
-										std::ostringstream os;
-										os << "unknown value '" << data
-											<< "', allowed values are: "
-											<< type_list_string();
-										throw std::runtime_error(os.str());
-									}
-									return iter - type_list.begin();
-								})),
-							set_dimension_fn([](auto const& module){
-									std::size_t const number =
-										module("type"_param);
-									return solved_dimensions{
-										index_component< 0 >{number}};
-								}),
-							make("value"_param, type_ref_c< 0 >)),
-						module_init_fn([&component](auto& module){
-							settings_state state;
+						verify(module.component.state().cam()
+							->GetFeatureByName("FocDistM", feature));
+						verify(feature->SetValue(
+							module("distance_in_m"_param)));
+					}),
+					no_overtaking
+				)),
+				make("setting"_module, generate_module(
+					dimension_list{
+						dimension_c<
+							bool,
+							VmbInt64_t,
+							double,
+							std::string
+						>
+					},
+					module_configure(
+						make("name"_param, free_type_c< std::string >),
+						make("type"_param, free_type_c< std::size_t >,
+							parser_fn([](
+								auto const /*module*/,
+								std::string_view data,
+								hana::basic_type< std::size_t >
+							){
+								auto iter = std::find(type_list.begin(),
+									type_list.end(), data);
+								if(iter == type_list.end()){
+									std::ostringstream os;
+									os << "unknown value '" << data
+										<< "', allowed values are: "
+										<< type_list_string();
+									throw std::runtime_error(os.str());
+								}
+								return iter - type_list.begin();
+							})),
+						set_dimension_fn([](auto const module){
+								std::size_t const number =
+									module("type"_param);
+								return solved_dimensions{
+									index_component< 0 >{number}};
+							}),
+						make("value"_param, type_ref_c< 0 >)),
+					module_init_fn([](auto module){
+						settings_state state;
 
-							auto const name = "name"_param;
-							verify(component.state().cam()->GetFeatureByName(
-								module(name).c_str(), state.value_feature));
+						auto const name = "name"_param;
+						verify(module.component.state().cam()->GetFeatureByName(
+							module(name).c_str(), state.value_feature));
 
-							auto type = module.dimension(hana::size_c< 0 >);
-							auto const type_index = module("type"_param);
+						auto type = module.dimension(hana::size_c< 0 >);
+						auto const type_index = module("type"_param);
 
-							VmbFeatureDataType feature_type{};
-							verify(state.value_feature
-								->GetDataType(feature_type));
-							switch(feature_type){
-								case VmbFeatureDataUnknown:
+						VmbFeatureDataType feature_type{};
+						verify(state.value_feature
+							->GetDataType(feature_type));
+						switch(feature_type){
+							case VmbFeatureDataUnknown:
+								throw std::logic_error("feature '"
+									+ detail::to_std_string(name) +
+									"' has type 'unknown'"
+									" which is not suppored");
+							case VmbFeatureDataEnum:
+								throw std::logic_error("feature '"
+									+ detail::to_std_string(name) +
+									"' has type 'enum' which"
+									" is currently not suppored");
+							break;
+							case VmbFeatureDataInt:
+								if(type != hana::type_c< VmbInt64_t >){
 									throw std::logic_error("feature '"
 										+ detail::to_std_string(name) +
-										"' has type 'unknown'"
-										" which is not suppored");
-								case VmbFeatureDataEnum:
+										"' has type 'int',"
+										" but module expected type '"
+										+ std::string(type_list[type_index])
+										+ "'");
+								}
+							break;
+							case VmbFeatureDataFloat:
+								if(type != hana::type_c< double >){
 									throw std::logic_error("feature '"
 										+ detail::to_std_string(name) +
-										"' has type 'enum' which"
-										" is currently not suppored");
-								break;
-								case VmbFeatureDataInt:
-									if(type != hana::type_c< VmbInt64_t >){
-										throw std::logic_error("feature '"
-											+ detail::to_std_string(name) +
-											"' has type 'int',"
-											" but module expected type '"
-											+ std::string(type_list[type_index])
-											+ "'");
-									}
-								break;
-								case VmbFeatureDataFloat:
-									if(type != hana::type_c< double >){
-										throw std::logic_error("feature '"
-											+ detail::to_std_string(name) +
-											"' has type 'float',"
-											" but module expected type '"
-											+ std::string(type_list[type_index])
-											+ "'");
-									}
-								break;
-								case VmbFeatureDataString:
-									if(type != hana::type_c< std::string >){
-										throw std::logic_error("feature '"
-											+ detail::to_std_string(name) +
-											"' has type 'string',"
-											" but module expected type '"
-											+ std::string(type_list[type_index])
-											+ "'");
-									}
-								break;
-								case VmbFeatureDataBool:
-									if(type != hana::type_c< bool >){
-										throw std::logic_error("feature '"
-											+ detail::to_std_string(name) +
-											"' has type 'bool',"
-											" but module expected type '"
-											+ std::string(type_list[type_index])
-											+ "'");
-									}
-								break;
-								case VmbFeatureDataCommand:
+										"' has type 'float',"
+										" but module expected type '"
+										+ std::string(type_list[type_index])
+										+ "'");
+								}
+							break;
+							case VmbFeatureDataString:
+								if(type != hana::type_c< std::string >){
 									throw std::logic_error("feature '"
 										+ detail::to_std_string(name) +
-										"' has type 'command' which is"
-										" currently not suppored");
-								break;
-								case VmbFeatureDataRaw:
+										"' has type 'string',"
+										" but module expected type '"
+										+ std::string(type_list[type_index])
+										+ "'");
+								}
+							break;
+							case VmbFeatureDataBool:
+								if(type != hana::type_c< bool >){
 									throw std::logic_error("feature '"
 										+ detail::to_std_string(name) +
-										"' has type 'raw' which is currently"
-										" not suppored");
-								break;
-								case VmbFeatureDataNone:
-									throw std::logic_error("feature '"
-										+ detail::to_std_string(name) +
-										"' has type 'none' which is currently"
-										" not suppored");
-								break;
-							}
+										"' has type 'bool',"
+										" but module expected type '"
+										+ std::string(type_list[type_index])
+										+ "'");
+								}
+							break;
+							case VmbFeatureDataCommand:
+								throw std::logic_error("feature '"
+									+ detail::to_std_string(name) +
+									"' has type 'command' which is"
+									" currently not suppored");
+							break;
+							case VmbFeatureDataRaw:
+								throw std::logic_error("feature '"
+									+ detail::to_std_string(name) +
+									"' has type 'raw' which is currently"
+									" not suppored");
+							break;
+							case VmbFeatureDataNone:
+								throw std::logic_error("feature '"
+									+ detail::to_std_string(name) +
+									"' has type 'none' which is currently"
+									" not suppored");
+							break;
+						}
 
-							return state;
-						}),
-						exec_fn([](auto& module){
-							auto& state = module.state();
-							auto type = module.dimension(hana::size_c< 0 >);
-							if constexpr(type == hana::type_c< std::string >){
-								verify(state.value_feature->SetValue(
-									module("value"_param).c_str()));
-							}else{
-								verify(state.value_feature->SetValue(
-									module("value"_param)));
-							}
-						}),
-						no_overtaking
-					);
-				}))
+						return state;
+					}),
+					exec_fn([](auto module){
+						auto& state = module.state();
+						auto type = module.dimension(hana::size_c< 0 >);
+						if constexpr(type == hana::type_c< std::string >){
+							verify(state.value_feature->SetValue(
+								module("value"_param).c_str()));
+						}else{
+							verify(state.value_feature->SetValue(
+								module("value"_param)));
+						}
+					}),
+					no_overtaking
+				))
 			)
 		);
 

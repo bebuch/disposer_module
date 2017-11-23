@@ -98,7 +98,7 @@ namespace disposer_module::encode_png{
 				make("image"_in, wrapped_type_ref_c< bitmap, 0 >),
 				make("data"_out, free_type_c< std::string >)
 			),
-			exec_fn([](auto& module){
+			exec_fn([](auto module){
 				for(auto const& img: module("image"_in).references()){
 					std::ostringstream os(std::ios::out | std::ios::binary);
 					to_png_image(img).write_stream(os);

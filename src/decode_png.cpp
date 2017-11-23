@@ -89,7 +89,7 @@ namespace disposer_module::decode_png{
 				make("data"_in, free_type_c< std::string >),
 				make("format"_param, free_type_c< std::size_t >,
 					parser_fn([](
-						auto const& /*iop*/,
+						auto const /*module*/,
 						std::string_view data,
 						hana::basic_type< std::size_t >
 					){
@@ -117,13 +117,13 @@ namespace disposer_module::decode_png{
 						}
 						return iter - list.begin();
 					})),
-				set_dimension_fn([](auto const& module){
+				set_dimension_fn([](auto const module){
 					std::size_t const number = module("format"_param);
 					return solved_dimensions{index_component< 0 >{number}};
 				}),
 				make("image"_out, wrapped_type_ref_c< bitmap, 0 >)
 			),
-			exec_fn([](auto& module){
+			exec_fn([](auto module){
 				using type = typename
 					decltype(module.dimension(hana::size_c< 0 >))::type;
 

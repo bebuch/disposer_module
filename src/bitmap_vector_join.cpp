@@ -80,16 +80,16 @@ namespace disposer_module::bitmap_vector_join{
 		struct value_parser{
 			template < typename IOP_List, typename T >
 			T operator()(
-				IOP_List const& iop,
+				IOP_List const module,
 				std::string_view value,
 				hana::basic_type< T > type
 			)const{
-				return stream_parser_t{}(iop, value, type);
+				return stream_parser_t{}(module, value, type);
 			}
 
 			template < typename IOP_List, typename T >
 			pixel::basic_ga< T > operator()(
-				IOP_List const& /*iop*/,
+				IOP_List const /*module*/,
 				std::string_view value,
 				hana::basic_type< pixel::basic_ga< T > >
 			)const{
@@ -122,7 +122,7 @@ namespace disposer_module::bitmap_vector_join{
 
 			template < typename IOP_List, typename T >
 			pixel::basic_rgb< T > operator()(
-				IOP_List const& /*iop*/,
+				IOP_List const /*module*/,
 				std::string_view value,
 				hana::basic_type< pixel::basic_rgb< T > >
 			)const{
@@ -158,7 +158,7 @@ namespace disposer_module::bitmap_vector_join{
 
 			template < typename IOP_List, typename T >
 			pixel::basic_rgba< T > operator()(
-				IOP_List const& /*iop*/,
+				IOP_List const /*module*/,
 				std::string_view value,
 				hana::basic_type< pixel::basic_rgba< T > >
 			)const{
@@ -203,7 +203,7 @@ namespace disposer_module::bitmap_vector_join{
 	struct bitmap_vector_join_t{
 		template < typename Module, typename T >
 		bitmap< T > operator()(
-			Module const& module,
+			Module const module,
 			bitmap_vector< T > const& vectors
 		)const{
 			auto const ips = module("images_per_line"_param);
@@ -304,7 +304,7 @@ namespace disposer_module::bitmap_vector_join{
 				make("default_value"_param, type_ref_c< 0 >,
 					parser_fn(value_parser{}))
 			),
-			exec_fn([](auto& module){
+			exec_fn([](auto module){
 				for(auto const& img: module("images"_in).references()){
 					module("image"_out).push(bitmap_vector_join(module, img));
 				}

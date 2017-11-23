@@ -78,7 +78,7 @@ namespace disposer_module::load{
 
 	template < typename Module >
 	t1 load(
-		Module& module,
+		Module module,
 		ng1 const& name,
 		std::size_t id,
 		std::size_t subid
@@ -98,7 +98,7 @@ namespace disposer_module::load{
 
 	template < typename Module >
 	t2 load(
-		Module& module,
+		Module module,
 		ng2 const& name,
 		std::size_t id,
 		std::size_t subid,
@@ -124,7 +124,7 @@ namespace disposer_module::load{
 
 	template < typename Module >
 	t3 load(
-		Module& module,
+		Module module,
 		ng3 const& name,
 		std::size_t id,
 		std::size_t subid,
@@ -189,7 +189,7 @@ namespace disposer_module::load{
 			},
 			module_configure(
 				make("type"_param, free_type_c< data_type >,
-					parser_fn([](auto const& /*iop*/, std::string_view data,
+					parser_fn([](auto const /*module*/, std::string_view data,
 						hana::basic_type< data_type >
 					){
 						if(data == "file"){
@@ -221,7 +221,7 @@ namespace disposer_module::load{
 				make("subid_count"_param, free_type_c< std::size_t >,
 					default_value(1),
 					expect_greater_0),
-				set_dimension_fn([](auto const& module){
+				set_dimension_fn([](auto const module){
 					auto const type = module("type"_param);
 					switch(type){
 						case data_type::file:
@@ -250,55 +250,55 @@ namespace disposer_module::load{
 				make("name"_param,
 					wrapped_type_ref_c< to_name_generator_t, 0 >,
 					parser_fn([](
-						auto const& iop, std::string_view data, auto type
+						auto const module, std::string_view data, auto type
 					){
 						if constexpr(type == type_c< ng1 >){
 							return make_name_generator(
 								data,
 								{true, false},
 								std::make_pair("id"s,
-									format{iop("id_digits"_param),
-										iop("id_add"_param)}),
+									format{module("id_digits"_param),
+										module("id_add"_param)}),
 								std::make_pair("subid"s,
-									format{iop("subid_digits"_param),
-										iop("subid_add"_param)})
+									format{module("subid_digits"_param),
+										module("subid_add"_param)})
 							);
 						}else if constexpr(type == type_c< ng2 >){
 							return make_name_generator(
 								data,
 								{true, false, true},
 								std::make_pair("id"s,
-									format{iop("id_digits"_param),
-										iop("id_add"_param)}),
+									format{module("id_digits"_param),
+										module("id_add"_param)}),
 								std::make_pair("subid"s,
-									format{iop("subid_digits"_param),
-										iop("subid_add"_param)}),
+									format{module("subid_digits"_param),
+										module("subid_add"_param)}),
 								std::make_pair("i"s,
-									format{iop("i_digits"_param),
-										iop("i_add"_param)})
+									format{module("i_digits"_param),
+										module("i_add"_param)})
 							);
 						}else{
 							return make_name_generator(
 								data,
 								{true, false, true, true},
 								std::make_pair("id"s,
-									format{iop("id_digits"_param),
-										iop("id_add"_param)}),
+									format{module("id_digits"_param),
+										module("id_add"_param)}),
 								std::make_pair("subid"s,
-									format{iop("subid_digits"_param),
-										iop("subid_add"_param)}),
+									format{module("subid_digits"_param),
+										module("subid_add"_param)}),
 								std::make_pair("i"s,
-									format{iop("i_digits"_param),
-										iop("i_add"_param)}),
+									format{module("i_digits"_param),
+										module("i_add"_param)}),
 								std::make_pair("j"s,
-									format{iop("j_digits"_param),
-										iop("j_add"_param)})
+									format{module("j_digits"_param),
+										module("j_add"_param)})
 							);
 						}
 					})
 				)
 			),
-			exec_fn([](auto& module){
+			exec_fn([](auto module){
 				auto id = module.id();
 
 				auto fixed_id = module("fixed_id"_param);

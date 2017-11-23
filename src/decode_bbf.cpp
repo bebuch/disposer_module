@@ -131,7 +131,7 @@ namespace disposer_module::decode_bbf{
 // 						io_tools::range_to_string(list)
 // 					),
 					parser_fn([](
-						auto const& /*iop*/,
+						auto const /*module*/,
 						std::string_view data,
 						hana::basic_type< std::size_t >
 					){
@@ -144,7 +144,7 @@ namespace disposer_module::decode_bbf{
 						}
 						return iter - list.begin();
 					})),
-				set_dimension_fn([](auto const& module){
+				set_dimension_fn([](auto const module){
 					std::size_t const number = module("format"_param);
 					return solved_dimensions{index_component< 0 >{number}};
 				}),
@@ -152,7 +152,7 @@ namespace disposer_module::decode_bbf{
 // 					, description("the decoded image")
 				)
 			),
-			exec_fn([](auto& module){
+			exec_fn([](auto module){
 				using type = typename
 					decltype(module.dimension(hana::size_c< 0 >))::type;
 

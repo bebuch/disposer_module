@@ -91,13 +91,13 @@ namespace disposer_module::show_image{
 				make("image"_in, wrapped_type_ref_c< bitmap, 0 >),
 				make("window_title"_param, free_type_c< std::string >)
 			),
-			module_init_fn([](auto const& module){
+			module_init_fn([](auto const module){
 				using type = typename
 					decltype(module.dimension(hana::size_c< 0 >))::type;
 
 				return resources< type >(module("window_title"_param));
 			}),
-			exec_fn([](auto& module){
+			exec_fn([](auto module){
 				auto& state = module.state();
 				for(auto const& img: module("image"_in).references()){
 					state.set_image(img);

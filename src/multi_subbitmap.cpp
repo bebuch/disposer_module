@@ -37,7 +37,7 @@ namespace disposer_module::multi_subbitmap{
 	struct list_parser{
 		template < typename IOP_List >
 		std::vector< float > operator()(
-			IOP_List const& /*iop*/,
+			IOP_List const /*module*/,
 			std::string_view value,
 			hana::basic_type< std::vector< float > >
 		)const{
@@ -65,7 +65,7 @@ namespace disposer_module::multi_subbitmap{
 
 
 	template < typename Module, typename Bitmaps >
-	auto exec(Module const& module, Bitmaps const& images){
+	auto exec(Module const module, Bitmaps const& images){
 		auto const& xos = module("x_offsets"_param);
 		auto const& yos = module("y_offsets"_param);
 		auto const w = module("width"_param);
@@ -143,8 +143,8 @@ namespace disposer_module::multi_subbitmap{
 					})),
 				make("y_offsets"_param, free_type_c< std::vector< float > >,
 					parser_fn< list_parser >(),
-					verify_value_fn([](auto const& values, auto const& iop){
-						auto const& x_offsets = iop("x_offsets"_param);
+					verify_value_fn([](auto const& values, auto const module){
+						auto const& x_offsets = module("x_offsets"_param);
 						if(values.size() == x_offsets.size()) return;
 						throw std::logic_error(
 							"different element count as in x_offsets");
@@ -154,7 +154,7 @@ namespace disposer_module::multi_subbitmap{
 				make("images"_in, wrapped_type_ref_c< bitmap_vector, 0 >),
 				make("images"_out, wrapped_type_ref_c< bitmap_vector, 0 >),
 			),
-			exec_fn([](auto& module){
+			exec_fn([](auto module){
 				for(auto const& img: module("images"_in).references()){
 					module("images"_out).push(exec(module, img));
 				}

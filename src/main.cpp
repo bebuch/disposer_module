@@ -132,6 +132,14 @@ int main(int argc, char** argv){
 		[](logsys::stdlogb& os){ os << "load config file"; },
 		[&disposer, &config]{ disposer.load(config); })) return -1;
 
+	if(!logsys::exception_catching_log(
+		[](logsys::stdlogb& os){ os << "create components"; },
+		[&disposer]{ disposer.create_components(); })) return -1;
+
+	if(!logsys::exception_catching_log(
+		[](logsys::stdlogb& os){ os << "create chains"; },
+		[&disposer]{ disposer.create_chains(); })) return -1;
+
 	if(options["chain"].count() > 0){
 		logsys::exception_catching_log(
 			[](logsys::stdlogb& os){ os << "exec chains"; },

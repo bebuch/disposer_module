@@ -54,16 +54,20 @@ int main(int argc, char** argv){
 			"All N executions of a chain are stated instantly")
 		("chain", "Execute a chain", cxxopts::value< std::string >(), "Name")
 		("n,count", "Count of chain executions",
-			cxxopts::value< std::size_t >()->default_value("1"), "Count");
+			cxxopts::value< std::size_t >()->default_value("1"), "Count")
+		("module-help",
+			"Print the help text of all loaded modules and components");
 
 	try{
 		options.parse(argc, argv);
-		cxxopts::check_required(options, {"config"});
-		bool const server = options["server"].count() > 0;
-		bool const chain = options["chain"].count() > 0;
-		if(!server && !chain){
-			throw std::logic_error(
-				"Need at least option ‘server‘ or option ‘chain‘");
+		if(options["module-help"].count() == 0){
+			cxxopts::check_required(options, {"config"});
+			bool const server = options["server"].count() > 0;
+			bool const chain = options["chain"].count() > 0;
+			if(!server && !chain){
+				throw std::logic_error(
+					"Need at least option ‘server‘ or option ‘chain‘");
+			}
 		}
 	}catch(std::exception const& e){
 		std::cerr << e.what() << "\n\n";
@@ -125,6 +129,11 @@ int main(int argc, char** argv){
 			});
 		}
 	})) return 1;
+
+	if(options["module-help"].count() > 0){
+		std::cout << disposer.help();
+		return 0;
+	}
 
 	std::string const config = options["config"].as< std::string >();
 

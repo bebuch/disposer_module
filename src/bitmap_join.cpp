@@ -268,6 +268,7 @@ namespace disposer_module::bitmap_vector_join{
 
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = generate_module(
+			"joins two bitmaps of same data type to one bitmap",
 			dimension_list{
 				dimension_c<
 					std::int8_t,
@@ -314,6 +315,7 @@ namespace disposer_module::bitmap_vector_join{
 			},
 			module_configure(
 				make("orientation"_param, free_type_c< orientation >,
+					"join bitmaps horizontal or vertical",
 					parser_fn([](
 						auto const /*module*/,
 						std::string_view data,
@@ -337,10 +339,20 @@ namespace disposer_module::bitmap_vector_join{
 						return orientation(iter - list.begin());
 					}),
 					default_value(orientation::horizontal)),
-				make("image1"_in, wrapped_type_ref_c< bitmap, 0 >),
-				make("image2"_in, wrapped_type_ref_c< bitmap, 0 >),
-				make("image"_out, wrapped_type_ref_c< bitmap, 0 >),
+				make("image1"_in, wrapped_type_ref_c< bitmap, 0 >,
+					"first bitmap"),
+				make("image2"_in, wrapped_type_ref_c< bitmap, 0 >,
+					"second bitmap"),
+				make("image"_out, wrapped_type_ref_c< bitmap, 0 >,
+					"joined bitmap with size(image1.width + image2.width, "
+					"max(image1.height, image2.height)) for horizontal "
+					"orientation and size(max(image1.width, image2.width), "
+					"image1.height + image2.height) for vertical orientation"),
 				make("default_value"_param, type_ref_c< 0 >,
+					"if first and second bitmap don't have the same width "
+					"(horizontal orientation) or height "
+					"(vertical orientation), the remaining pixels in the "
+					"joined bitmap are filled with this value",
 					parser_fn(value_parser{}))
 			),
 			exec_fn([](auto module){

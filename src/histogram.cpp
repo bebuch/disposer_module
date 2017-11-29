@@ -26,27 +26,32 @@ namespace disposer_module::histogram{
 
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = generate_module(
+			"make a histogram of an image",
 			dimension_list{
 				dimension_c<
 					std::int8_t,
-					std::uint8_t,
 					std::int16_t,
-					std::uint16_t,
 					std::int32_t,
-					std::uint32_t,
 					std::int64_t,
+					std::uint8_t,
+					std::uint16_t,
+					std::uint32_t,
 					std::uint64_t,
 					float,
 					double
 				>
 			},
 			module_configure(
-				make("image"_in, wrapped_type_ref_c< bitmap, 0 >),
+				make("image"_in, wrapped_type_ref_c< bitmap, 0 >,
+					"the source image"),
 				make("histogram"_out,
-					free_type_c< std::vector< std::size_t > >),
+					free_type_c< std::vector< std::size_t > >,
+					"the resulting histogram data"),
 				make("cumulative"_param, free_type_c< bool >,
+					"true for cumulative histogram, false otherwise",
 					default_value(false)),
 				make("min"_param, type_ref_c< 0 >,
+					"values smaller than min are treated as if they are min",
 					default_value_fn([](auto, auto t){
 						using type = typename decltype(t)::type;
 						if constexpr(
@@ -56,6 +61,7 @@ namespace disposer_module::histogram{
 						}
 					})),
 				make("max"_param, type_ref_c< 0 >,
+					"values greater than max are treated as if they are max",
 					verify_value_fn([](auto const& max, auto const module){
 						if(module("min"_param) < max) return;
 						throw std::logic_error("max must be greater min");
@@ -68,7 +74,9 @@ namespace disposer_module::histogram{
 							return std::numeric_limits< type >::max();
 						}
 					})),
-				make("bin_count"_param, free_type_c< std::size_t >)
+				make("bin_count"_param, free_type_c< std::size_t >,
+					"count of histogram bins, the bins are evenly distributed "
+					"between min and max.")
 			),
 			exec_fn([](auto module){
 				for(auto const& img: module("image"_in).references()){

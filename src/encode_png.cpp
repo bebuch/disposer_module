@@ -36,20 +36,20 @@ namespace disposer_module::encode_png{
 
 	auto constexpr bitmap_to_png_type = hana::make_map(
 		make_type_pair< std::int8_t, png::gray_pixel >(),
-		make_type_pair< std::uint8_t, png::gray_pixel >(),
 		make_type_pair< std::int16_t, png::gray_pixel_16 >(),
+		make_type_pair< std::uint8_t, png::gray_pixel >(),
 		make_type_pair< std::uint16_t, png::gray_pixel_16 >(),
 		make_type_pair< pixel::ga8, png::ga_pixel >(),
-		make_type_pair< pixel::ga8u, png::ga_pixel >(),
 		make_type_pair< pixel::ga16, png::ga_pixel_16 >(),
+		make_type_pair< pixel::ga8u, png::ga_pixel >(),
 		make_type_pair< pixel::ga16u, png::ga_pixel_16 >(),
 		make_type_pair< pixel::rgb8, png::rgb_pixel >(),
-		make_type_pair< pixel::rgb8u, png::rgb_pixel >(),
 		make_type_pair< pixel::rgb16, png::rgb_pixel_16 >(),
+		make_type_pair< pixel::rgb8u, png::rgb_pixel >(),
 		make_type_pair< pixel::rgb16u, png::rgb_pixel_16 >(),
 		make_type_pair< pixel::rgba8, png::rgba_pixel >(),
-		make_type_pair< pixel::rgba8u, png::rgba_pixel >(),
 		make_type_pair< pixel::rgba16, png::rgba_pixel_16 >(),
+		make_type_pair< pixel::rgba8u, png::rgba_pixel >(),
 		make_type_pair< pixel::rgba16u, png::rgba_pixel_16 >()
 	);
 

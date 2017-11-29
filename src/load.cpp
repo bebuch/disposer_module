@@ -278,9 +278,9 @@ namespace disposer_module::load{
 					"happen that multiple data is processed with the same "
 					"exec ID, these runs are numbered with the sub ID\n"
 					"* ${i} does only exist if type is file_list or "
-					"file_list_list, it numbers the first vector\n"
+					"file_list_list, it numbers the (outer) vector\n"
 					"* ${j} does only exist if type is file_list_list, it "
-					"numbers the second vector\n",
+					"numbers the inner vector",
 					parser_fn([](
 						auto const module, std::string_view data, auto type
 					){

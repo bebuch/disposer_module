@@ -23,9 +23,14 @@ namespace disposer_module::calibchange{
 
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = generate_module(
+			"A BAD HACK: send binary packages to a InfraTec VarioCam HD "
+			"to set a calibration (handshake, set CalibSelect, "
+			"exec CalibChange)",
 			module_configure(
-				make("ip"_param, free_type_c< std::string >),
-				make("value"_param, free_type_c< std::uint16_t >)
+				make("ip"_param, free_type_c< std::string >,
+					"ID-Address of the camera"),
+				make("value"_param, free_type_c< std::uint16_t >,
+					"value of the CalibSelect feature")
 			),
 			exec_fn([](auto module){
 				namespace asio = boost::asio;

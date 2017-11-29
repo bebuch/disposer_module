@@ -27,6 +27,7 @@ namespace disposer_module::encode_bbf{
 
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = generate_module(
+			"encodes an image in BBF image format",
 			dimension_list{
 				dimension_c<
 					bool,
@@ -73,9 +74,14 @@ namespace disposer_module::encode_bbf{
 				>
 			},
 			module_configure(
-				make("image"_in, wrapped_type_ref_c< bitmap, 0 >),
-				make("data"_out, free_type_c< std::string >),
+				make("image"_in, wrapped_type_ref_c< bitmap, 0 >,
+					"the image to be encoded"),
+				make("data"_out, free_type_c< std::string >,
+					"the resulting encoded binary data"),
 				make("endian"_param, free_type_c< boost::endian::order >,
+					"endianness of the encoded data, endian of float data "
+					"must always be equal to the native endianness, valid "
+					"values are: little, big, native",
 					parser_fn([](
 						auto const /*module*/,
 						std::string_view data,

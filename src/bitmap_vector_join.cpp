@@ -249,6 +249,7 @@ namespace disposer_module::bitmap_vector_join{
 
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = generate_module(
+			"join a std::vector of bitmaps with the same size to one bitmap",
 			dimension_list{
 				dimension_c<
 					std::int8_t,
@@ -294,14 +295,22 @@ namespace disposer_module::bitmap_vector_join{
 				>
 			},
 			module_configure(
-				make("images"_in, wrapped_type_ref_c< bitmap_vector, 0 >),
-				make("image"_out, wrapped_type_ref_c< bitmap, 0 >),
+				make("images"_in, wrapped_type_ref_c< bitmap_vector, 0 >,
+					"vector of at least one bitmap, all bitmaps must have the "
+					"same size"),
+				make("image"_out, wrapped_type_ref_c< bitmap, 0 >,
+					"the joined bitmap, the original images are joined from "
+					"left to right and then from top to bottom"),
 				make("images_per_line"_param, free_type_c< std::size_t >,
+					"the maximum count of images from left to right",
 					verify_value_fn([](auto const value){
 						if(value > 0) return;
 						throw std::logic_error("must be greater 0");
 					})),
 				make("default_value"_param, type_ref_c< 0 >,
+					"if images containes more images as images_per_line and "
+					"the count is not divisible by images_per_line then some "
+					"pixels remain, they are filled with this value",
 					parser_fn(value_parser{}))
 			),
 			exec_fn([](auto module){

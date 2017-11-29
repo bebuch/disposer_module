@@ -74,6 +74,7 @@ namespace disposer_module::encode_png{
 
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = generate_module(
+			"encodes an image in PNG image format",
 			dimension_list{
 				dimension_c<
 					std::int8_t,
@@ -95,8 +96,10 @@ namespace disposer_module::encode_png{
 				>
 			},
 			module_configure(
-				make("image"_in, wrapped_type_ref_c< bitmap, 0 >),
-				make("data"_out, free_type_c< std::string >)
+				make("image"_in, wrapped_type_ref_c< bitmap, 0 >,
+					"the image to be encoded"),
+				make("data"_out, free_type_c< std::string >,
+					"the resulting encoded binary data")
 			),
 			exec_fn([](auto module){
 				for(auto const& img: module("image"_in).references()){

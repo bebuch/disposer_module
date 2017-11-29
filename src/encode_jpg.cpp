@@ -69,6 +69,7 @@ namespace disposer_module::encode_jpg{
 
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = generate_module(
+			"encodes an image in JPEG image format",
 			dimension_list{
 				dimension_c<
 					std::int8_t,
@@ -78,9 +79,12 @@ namespace disposer_module::encode_jpg{
 				>
 			},
 			module_configure(
-				make("image"_in, wrapped_type_ref_c< bitmap, 0 >),
-				make("data"_out, free_type_c< std::string >),
+				make("image"_in, wrapped_type_ref_c< bitmap, 0 >,
+					"the image to be encoded"),
+				make("data"_out, free_type_c< std::string >,
+					"the resulting encoded binary data"),
 				make("quality"_param, free_type_c< std::size_t >,
+					"quality of the encoded image in percent",
 					verify_value_fn([](std::size_t value){
 						if(value > 100){
 							throw std::logic_error(

@@ -10,6 +10,8 @@
 
 #include <bitmap/subbitmap.hpp>
 
+#include <io_tools/range_to_string.hpp>
+
 #include <disposer/component.hpp>
 
 #include <boost/dll.hpp>
@@ -269,19 +271,25 @@ namespace disposer_module::camera_infratec{
 
 	void init(std::string const& name, component_declarant& declarant){
 		auto init = generate_component(
+			"controller for InfraTec GigE-Vision cameras via AVT Vimba",
 			component_configure(
-				make("ip"_param, free_type_c< std::string >),
-				make("width"_param, free_type_c< std::size_t >),
-				make("height"_param, free_type_c< std::size_t >)
+				make("ip"_param, free_type_c< std::string >,
+					"IP-Address of the camera"),
+				make("width"_param, free_type_c< std::size_t >,
+					"expected image width while image acquisition"),
+				make("height"_param, free_type_c< std::size_t >,
+					"expected image height while image acquisition")
 			),
 			component_init_fn([](auto const component){
 				return cam_init(component);
 			}),
 			component_modules(
 				make("capture"_module, generate_module(
+					"capture an image from the camera",
 					module_configure(
 						make("image"_out,
-							free_type_c< bitmap< std::uint16_t > >)
+							free_type_c< bitmap< std::uint16_t > >,
+							"the captured image")
 					),
 					exec_fn([](auto module){
 						module("image"_out)
@@ -290,9 +298,10 @@ namespace disposer_module::camera_infratec{
 					no_overtaking
 				)),
 				make("focus"_module, generate_module(
+					"set camera focus",
 					module_configure(
-						make("distance_in_m"_param,
-							free_type_c< double >,
+						make("distance_in_m"_param, free_type_c< double >,
+							"the focus in meter",
 							verify_value_fn(
 								[](double value, auto const module){
 									auto& state = module.component.state();
@@ -321,6 +330,7 @@ namespace disposer_module::camera_infratec{
 					no_overtaking
 				)),
 				make("setting"_module, generate_module(
+					"set a feature to a value",
 					dimension_list{
 						dimension_c<
 							bool,
@@ -330,8 +340,11 @@ namespace disposer_module::camera_infratec{
 						>
 					},
 					module_configure(
-						make("name"_param, free_type_c< std::string >),
+						make("name"_param, free_type_c< std::string >,
+							"name of the feature"),
 						make("type"_param, free_type_c< std::size_t >,
+							"type of the feature, valid values are: "
+								+ io_tools::range_to_string(type_list),
 							parser_fn([](
 								auto const /*module*/,
 								std::string_view data,
@@ -354,7 +367,8 @@ namespace disposer_module::camera_infratec{
 								return solved_dimensions{
 									index_component< 0 >{number}};
 							}),
-						make("value"_param, type_ref_c< 0 >)),
+						make("value"_param, type_ref_c< 0 >,
+							"the value to be set")),
 					module_init_fn([](auto module){
 						settings_state state;
 

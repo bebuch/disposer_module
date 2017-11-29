@@ -11,6 +11,8 @@
 
 #include <disposer/module.hpp>
 
+#include <io_tools/range_to_string.hpp>
+
 #include <boost/dll.hpp>
 
 #include <boost/hana/at_key.hpp>
@@ -71,49 +73,62 @@ namespace disposer_module::decode_png{
 		return img;
 	}
 
+	constexpr std::array< std::string_view, 8 > list{{
+			"g8",
+			"g16",
+			"ga8",
+			"ga16",
+			"rgb8",
+			"rgb16",
+			"rgba8",
+			"rgba16"
+		}};
+
+	constexpr auto dim = dimension_c<
+			std::uint8_t,
+			std::uint16_t,
+			pixel::ga8u,
+			pixel::ga16u,
+			pixel::rgb8u,
+			pixel::rgb16u,
+			pixel::rgba8u,
+			pixel::rgba16u
+		>;
+
+	std::string format_description(){
+		std::ostringstream os;
+		std::size_t i = 0;
+		hana::for_each(dim.types, [&os, &i](auto t){
+				os << "\n* " << list[i] << " => "
+					<< ct_pretty_name< typename decltype(t)::type >();
+				++i;
+			});
+		return os.str();
+	}
+
+
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = generate_module(
+			"decodes an image from PNG image format.",
 			dimension_list{
-				dimension_c<
-					std::uint8_t,
-					std::uint16_t,
-					pixel::ga8u,
-					pixel::ga16u,
-					pixel::rgb8u,
-					pixel::rgb16u,
-					pixel::rgba8u,
-					pixel::rgba16u
-				>
+				dim
 			},
 			module_configure(
-				make("data"_in, free_type_c< std::string >),
+				make("data"_in, free_type_c< std::string >,
+					"PNG encoded binary data"),
 				make("format"_param, free_type_c< std::size_t >,
+					"set dimension 1 by value: " + format_description(),
 					parser_fn([](
 						auto const /*module*/,
 						std::string_view data,
 						hana::basic_type< std::size_t >
 					){
-						constexpr std::array< std::string_view, 8 > list{{
-								"g8",
-								"g16",
-								"ga8",
-								"ga16",
-								"rgb8",
-								"rgb16",
-								"rgba8",
-								"rgba16"
-							}};
 						auto iter = std::find(list.begin(), list.end(), data);
 						if(iter == list.end()){
-							std::ostringstream os;
-							os << "unknown value '" << data
-								<< "', allowed values are: ";
-							bool first = true;
-							for(auto name: list){
-								if(first){ first = false; }else{ os << ", "; }
-								os << name;
-							}
-							throw std::runtime_error(os.str());
+							throw std::runtime_error("unknown value '"
+								+ std::string(data)
+								+ "', valid values are: "
+								+ io_tools::range_to_string(list));
 						}
 						return iter - list.begin();
 					})),
@@ -121,7 +136,8 @@ namespace disposer_module::decode_png{
 					std::size_t const number = module("format"_param);
 					return solved_dimensions{index_component< 0 >{number}};
 				}),
-				make("image"_out, wrapped_type_ref_c< bitmap, 0 >)
+				make("image"_out, wrapped_type_ref_c< bitmap, 0 >,
+					"the decoded image")
 			),
 			exec_fn([](auto module){
 				using type = typename

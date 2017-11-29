@@ -551,8 +551,11 @@ namespace disposer_module::camera_ximea{
 
 	void init(std::string const& name, component_declarant& declarant){
 		auto init = generate_component(
+			"controller for Ximea mosaic cameras",
 			component_configure(
 				make("format"_param, free_type_c< pixel_format >,
+					"image data format, valid values are: "
+					"mono8, mono16, raw8, raw16, rgb8",
 					parser_fn([](
 						auto const /*module*/,
 						std::string_view data,
@@ -568,16 +571,23 @@ namespace disposer_module::camera_ximea{
 							"mono8, mono16, raw8, raw16 & rgb8");
 					})),
 				make("cam_id"_param, free_type_c< std::uint32_t >,
+					"ID of the camera",
 					default_value(0)),
 				make("use_camera_region"_param, free_type_c< bool >,
+					"use XI_PRM_REGION_SELECTOR to clip capture region",
 					default_value(false)),
 				make("x_offset"_param, free_type_c< std::size_t >,
+					"clip pixels left",
 					default_value(0)),
 				make("y_offset"_param, free_type_c< std::size_t >,
+					"clip pixels top",
 					default_value(0)),
-				make("width"_param, free_type_c< std::size_t >),
-				make("height"_param, free_type_c< std::size_t >),
+				make("width"_param, free_type_c< std::size_t >,
+					"clip pixels right"),
+				make("height"_param, free_type_c< std::size_t >,
+					"clip pixels bottom"),
 				make("exposure_time_us"_param, free_type_c< std::size_t >,
+					"exposure time in micro seconds",
 					default_value(10000))
 			),
 			component_init_fn([](auto const component){
@@ -585,6 +595,7 @@ namespace disposer_module::camera_ximea{
 			}),
 			component_modules(
 				make("capture"_module, generate_module(
+					"capture an image from the camera",
 					dimension_list{
 						dimension_c<
 							std::uint8_t,
@@ -612,7 +623,8 @@ namespace disposer_module::camera_ximea{
 
 							throw std::runtime_error("unknown format");
 						}),
-						make("image"_out, wrapped_type_ref_c< bitmap, 0 >)
+						make("image"_out, wrapped_type_ref_c< bitmap, 0 >,
+							"the captured image")
 					),
 					exec_fn([](auto module){
 						module("image"_out).push(module.component.state()

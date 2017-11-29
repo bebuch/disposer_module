@@ -567,7 +567,7 @@ namespace disposer_module::camera_ximea{
 						if(data == "raw8") return pixel_format::raw8;
 						if(data == "raw16") return pixel_format::raw16;
 						throw std::runtime_error("unknown value '"
-							+ std::string(data) + "', allowed values are: "
+							+ std::string(data) + "', valid values are: "
 							"mono8, mono16, raw8, raw16 & rgb8");
 					})),
 				make("cam_id"_param, free_type_c< std::uint32_t >,

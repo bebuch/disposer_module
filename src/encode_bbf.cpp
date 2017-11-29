@@ -86,7 +86,7 @@ namespace disposer_module::encode_bbf{
 						if(data == "big") return order::big;
 						if(data == "native") return order::native;
 						throw std::runtime_error("unknown value '"
-							+ std::string(data) + "', allowed values are: "
+							+ std::string(data) + "', valid values are: "
 							"little, big & native");
 
 					}),

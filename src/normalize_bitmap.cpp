@@ -67,7 +67,7 @@ namespace disposer_module::normalize_bitmap{
 						if(iter == list.end()){
 							std::ostringstream os;
 							os << "unknown value '" << data
-								<< "', allowed values are: ";
+								<< "', valid values are: ";
 							bool first = true;
 							for(auto name: list){
 								if(first){ first = false; }else{ os << ", "; }

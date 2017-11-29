@@ -355,7 +355,7 @@ namespace disposer_module::camera_infratec{
 								if(iter == type_list.end()){
 									std::ostringstream os;
 									os << "unknown value '" << data
-										<< "', allowed values are: "
+										<< "', valid values are: "
 										<< type_list_string();
 									throw std::runtime_error(os.str());
 								}

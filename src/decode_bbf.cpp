@@ -70,7 +70,7 @@ namespace disposer_module::decode_bbf{
 			"rgba64f"
 		}};
 
-	constexpr auto dim1_types = dimension_c<
+	constexpr auto dim = dimension_c<
 			bool,
 			std::int8_t,
 			std::int16_t,
@@ -117,7 +117,7 @@ namespace disposer_module::decode_bbf{
 	std::string format_description(){
 		std::ostringstream os;
 		std::size_t i = 0;
-		hana::for_each(dim1_types.types, [&os, &i](auto t){
+		hana::for_each(dim.types, [&os, &i](auto t){
 				os << "\n* " << list[i] << " => "
 					<< ct_pretty_name< typename decltype(t)::type >();
 				++i;
@@ -127,10 +127,10 @@ namespace disposer_module::decode_bbf{
 
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = generate_module(
-			"Decodes an image in BBF format.\n\n"
+			"decodes an image from BBF image format."
 				/*+ std::string(bmp::bbf_specification)*/,
 			dimension_list{
-				dim1_types
+				dim
 			},
 			module_configure(
 				make("data"_in, free_type_c< std::string >,
@@ -146,7 +146,7 @@ namespace disposer_module::decode_bbf{
 						if(iter == list.end()){
 							throw std::runtime_error("unknown value '"
 								+ std::string(data)
-								+ "', allowed values are: "
+								+ "', valid values are: "
 								+ io_tools::range_to_string(list));
 						}
 						return iter - list.begin();

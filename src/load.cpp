@@ -202,7 +202,7 @@ namespace disposer_module::load{
 							return data_type::file_list_list;
 						}
 						throw std::runtime_error("unknown value '"
-							+ std::string(data) + "', allowed values are: "
+							+ std::string(data) + "', valid values are: "
 							"file, file_list & file_list_list");
 					}),
 					default_value(data_type::file)),

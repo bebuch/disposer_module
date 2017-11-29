@@ -88,15 +88,17 @@ namespace disposer_module::channel_unbundle{
 
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = generate_module(
+			"unbundles the channels of a mosaic camera into a vector of "
+			"separate images",
 			dimension_list{
 				dimension_c<
 					std::int8_t,
-					std::uint8_t,
 					std::int16_t,
-					std::uint16_t,
 					std::int32_t,
-					std::uint32_t,
 					std::int64_t,
+					std::uint8_t,
+					std::uint16_t,
+					std::uint32_t,
 					std::uint64_t,
 					float,
 					double,
@@ -133,14 +135,18 @@ namespace disposer_module::channel_unbundle{
 				>
 			},
 			module_configure(
-				make("image"_in, wrapped_type_ref_c< bitmap, 0 >),
-				make("images"_out, wrapped_type_ref_c< bitmap_vector, 0 >),
+				make("image"_in, wrapped_type_ref_c< bitmap, 0 >,
+					"the mosaiced image"),
+				make("images"_out, wrapped_type_ref_c< bitmap_vector, 0 >,
+					"vector of the resulting channel images"),
 				make("x_count"_param, free_type_c< std::size_t >,
+					"channels in horizontal direction",
 					verify_value_fn([](auto const value){
 						if(value > 0) return;
 						throw std::logic_error("must be greater 0");
 					})),
 				make("y_count"_param, free_type_c< std::size_t >,
+					"channels in vertical direction",
 					verify_value_fn([](auto const value){
 						if(value > 0) return;
 						throw std::logic_error("must be greater 0");

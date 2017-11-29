@@ -109,7 +109,7 @@ namespace disposer_module::decode_png{
 
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = generate_module(
-			"decodes an image from PNG image format.",
+			"decodes an image from PNG image format",
 			dimension_list{
 				dim
 			},

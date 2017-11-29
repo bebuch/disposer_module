@@ -127,7 +127,7 @@ namespace disposer_module::decode_bbf{
 
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = generate_module(
-			"decodes an image from BBF image format."
+			"decodes an image from BBF image format"
 				/*+ std::string(bmp::bbf_specification)*/,
 			dimension_list{
 				dim

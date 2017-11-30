@@ -90,9 +90,9 @@ namespace disposer_module::multi_subbitmap{
 
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = generate_module(
-			// TODO: out of range?
 			"subpixel subbitmap (via bilinear interpolation) of every bitmap "
-			"in a vector of bitmaps with own x-y-offset for every bitmap",
+			"in a vector of bitmaps with own x-y-offset for every bitmap, "
+			"throw if subbitmap is out of range",
 			dimension_list{
 				dimension_c<
 					std::int8_t,

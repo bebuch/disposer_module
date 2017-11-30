@@ -8,6 +8,8 @@
 //-----------------------------------------------------------------------------
 #include <disposer/module.hpp>
 
+#include <io_tools/range_to_string.hpp>
+
 #include <bitmap/bitmap.hpp>
 
 #include <boost/dll.hpp>
@@ -24,7 +26,7 @@ namespace disposer_module::normalize_bitmap{
 	using bitmap = ::bmp::bitmap< T >;
 
 
-	constexpr auto types = dimension_c<
+	constexpr auto dim = dimension_c<
 			std::int8_t,
 			std::int16_t,
 			std::int32_t,
@@ -37,48 +39,60 @@ namespace disposer_module::normalize_bitmap{
 			double
 		>;
 
+	constexpr std::array< std::string_view, 10 > list{{
+			"int8",
+			"int16",
+			"int32",
+			"int64",
+			"uint8",
+			"uint16",
+			"uint32",
+			"uint64",
+			"float32",
+			"float64"
+		}};
+
+	std::string format_description(){
+		std::ostringstream os;
+		std::size_t i = 0;
+		hana::for_each(dim.types, [&os, &i](auto t){
+				os << "\n* " << list[i] << " => "
+					<< ct_pretty_name< typename decltype(t)::type >();
+				++i;
+			});
+		return os.str();
+	}
+
+
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = generate_module(
+			"rescales all values to a range between min and max, optionaly "
+			"the type of data can be changed via parameter format",
 			dimension_list{
-				types,
-				types
+				dim,
+				dim
 			},
 			module_configure(
 				make("format"_param,
 					free_type_c< std::optional< std::size_t > >,
+					"set dimension 2 by dimension 1 or by value:"
+						+ format_description(),
 					parser_fn([](
 						auto const /*module*/,
 						std::string_view data,
 						hana::basic_type< std::optional< std::size_t > >
 					){
-						constexpr std::array< std::string_view, 10 > list{{
-								"int8",
-								"int16",
-								"int32",
-								"int64",
-								"uint8",
-								"uint16",
-								"uint32",
-								"uint64",
-								"float32",
-								"float64"
-							}};
 						auto iter = std::find(list.begin(), list.end(), data);
 						if(iter == list.end()){
-							std::ostringstream os;
-							os << "unknown value '" << data
-								<< "', valid values are: ";
-							bool first = true;
-							for(auto name: list){
-								if(first){ first = false; }else{ os << ", "; }
-								os << name;
-							}
-							throw std::runtime_error(os.str());
+							throw std::runtime_error("unknown value '"
+								+ std::string(data)
+								+ "', valid values are: "
+								+ io_tools::range_to_string(list));
 						}
-						return std::optional< std::size_t >
-							(iter - list.begin());
+						return iter - list.begin();
 					})),
-				make("image"_in, wrapped_type_ref_c< bitmap, 0 >),
+				make("image"_in, wrapped_type_ref_c< bitmap, 0 >,
+					"original bitmap"),
 				set_dimension_fn([](auto const module){
 					auto const optional_number = module("format"_param);
 					std::size_t const number =
@@ -98,9 +112,12 @@ namespace disposer_module::normalize_bitmap{
 						}();
 					return solved_dimensions{index_component< 1 >{number}};
 				}),
-				make("min"_param, type_ref_c< 1 >),
-				make("max"_param, type_ref_c< 1 >),
-				make("image"_out, wrapped_type_ref_c< bitmap, 1 >)
+				make("min"_param, type_ref_c< 1 >,
+					"new minimal value"),
+				make("max"_param, type_ref_c< 1 >,
+					"new maximal value"),
+				make("image"_out, wrapped_type_ref_c< bitmap, 1 >,
+					"the normalized bitmap")
 			),
 			exec_fn([](auto module){
 				auto t_in = module.dimension(hana::size_c< 0 >);

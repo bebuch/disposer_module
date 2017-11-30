@@ -42,6 +42,7 @@ namespace disposer_module::vignetting_correction{
 
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = generate_module(
+			"multiplies the image with a reference image",
 			dimension_list{
 				dimension_c<
 					std::uint8_t,
@@ -51,10 +52,14 @@ namespace disposer_module::vignetting_correction{
 				>
 			},
 			module_configure(
-				make("image"_in, wrapped_type_ref_c< bitmap, 0 >),
-				make("image"_out, wrapped_type_ref_c< bitmap, 0 >),
-				make("factor_image_filename"_param, free_type_c< std::string >),
+				make("image"_in, wrapped_type_ref_c< bitmap, 0 >,
+					"original image"),
+				make("image"_out, wrapped_type_ref_c< bitmap, 0 >,
+					"result image"),
+				make("factor_image_filename"_param, free_type_c< std::string >,
+					"reference image"),
 				make("max_value"_param, type_ref_c< 0 >,
+					"overexposer value (e.g. 1023 for 10 bit images)",
 					default_value_fn([](auto const module, auto t){
 						using type = typename decltype(t)::type;
 						if constexpr(

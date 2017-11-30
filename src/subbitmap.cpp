@@ -38,6 +38,8 @@ namespace disposer_module::subbitmap{
 
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = generate_module(
+			"subpixel subbitmap (via bilinear interpolation), "
+			"throw if subbitmap is out of range",
 			dimension_list{
 				dimension_c<
 					std::int8_t,
@@ -83,12 +85,16 @@ namespace disposer_module::subbitmap{
 				>
 			},
 			module_configure(
-				make("x"_param, free_type_c< float >),
-				make("y"_param, free_type_c< float >),
-				make("width"_param, free_type_c< std::size_t >),
-				make("height"_param, free_type_c< std::size_t >),
-				make("image"_in, wrapped_type_ref_c< bitmap, 0 >),
-				make("image"_out, wrapped_type_ref_c< bitmap, 0 >)
+				make("x"_param, free_type_c< float >, "offset in x direction"),
+				make("y"_param, free_type_c< float >, "offset in y direction"),
+				make("width"_param, free_type_c< std::size_t >,
+					"width of the target bitmaps (1 unsigned int value)"),
+				make("height"_param, free_type_c< std::size_t >,
+					"height of the target bitmaps (1 unsigned int value)"),
+				make("image"_in, wrapped_type_ref_c< bitmap, 0 >,
+					"original bitmap"),
+				make("image"_out, wrapped_type_ref_c< bitmap, 0 >,
+					"target bitmap")
 			),
 			exec_fn([](auto module){
 				for(auto const& img: module("image"_in).references()){

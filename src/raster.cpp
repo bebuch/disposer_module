@@ -55,15 +55,16 @@ namespace disposer_module::demosaic{
 
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = generate_module(
+			"rasterizes a bitmap",
 			dimension_list{
 				dimension_c<
 					std::int8_t,
-					std::uint8_t,
 					std::int16_t,
-					std::uint16_t,
 					std::int32_t,
-					std::uint32_t,
 					std::int64_t,
+					std::uint8_t,
+					std::uint16_t,
+					std::uint32_t,
 					std::uint64_t,
 					float,
 					double,
@@ -101,27 +102,33 @@ namespace disposer_module::demosaic{
 			},
 			module_configure(
 				make("x_count"_param, free_type_c< std::size_t >,
+					"count of pixels that are skipped in x direction",
 					verify_value_fn([](auto const& value){
 						if(value > 0) return;
 						throw std::logic_error("must be greater 0");
 					})),
 				make("y_count"_param, free_type_c< std::size_t >,
+					"count of pixels that are skipped in y direction",
 					verify_value_fn([](auto const& value){
 						if(value > 0) return;
 						throw std::logic_error("must be greater 0");
 					})),
 				make("x_offset"_param, free_type_c< std::size_t >,
+					"count of pixels that are skipped in x direction at start",
 					verify_value_fn([](auto const& value, auto const module){
 						if(value < module("x_count"_param)) return;
 						throw std::logic_error("must be lesser x_count");
 					})),
 				make("y_offset"_param, free_type_c< std::size_t >,
+					"count of pixels that are skipped in y direction at start",
 					verify_value_fn([](auto const& value, auto const module){
 						if(value < module("y_count"_param)) return;
 						throw std::logic_error("must be lesser y_count");
 					})),
-				make("image"_in, wrapped_type_ref_c< bitmap, 0 >),
-				make("image"_out, wrapped_type_ref_c< bitmap, 0 >)
+				make("image"_in, wrapped_type_ref_c< bitmap, 0 >,
+					"original bitmap"),
+				make("image"_out, wrapped_type_ref_c< bitmap, 0 >,
+					"rasterizesed bitmap")
 			),
 			exec_fn([](auto module){
 				for(auto const& img: module("image"_in).references()){

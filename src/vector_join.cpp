@@ -19,6 +19,7 @@ namespace disposer_module::vector_join{
 
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = generate_module(
+			"combines individual data sets into a vector.",
 			dimension_list{
 				dimension_c<
 					std::string,
@@ -35,13 +36,16 @@ namespace disposer_module::vector_join{
 				>
 			},
 			module_configure(
-				make("data"_in, type_ref_c< 0 >),
-				make("list"_out, wrapped_type_ref_c< std::vector, 0 >),
 				make("count"_param, free_type_c< std::size_t >,
+					"count of data sets that should be combined",
 					verify_value_fn([](auto const& value){
 						if(value > 0) return;
 						throw std::logic_error("must be greater 0");
-					}))
+					})),
+				make("data"_in, type_ref_c< 0 >,
+					"a single data set"),
+				make("list"_out, wrapped_type_ref_c< std::vector, 0 >,
+					"the generated vector of data sets")
 			),
 			module_init_fn([](auto module){
 				using type = typename

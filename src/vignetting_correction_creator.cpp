@@ -87,6 +87,9 @@ namespace disposer_module::vignetting_correction_creator{
 
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = generate_module(
+			"creates a vignetting correction image based on an image of a "
+			"diffuse reflective white surface, the base image must not "
+			"contain overexposer or underexposer",
 			dimension_list{
 				dimension_c<
 					std::uint8_t,
@@ -97,6 +100,8 @@ namespace disposer_module::vignetting_correction_creator{
 			},
 			module_configure(
 				make("reference"_param, free_type_c< float >,
+					"percent value that affects the brightness after "
+					"correction",
 					verify_value_fn([](std::size_t value){
 						if(value > 100 || value < 1){
 							throw std::logic_error(
@@ -104,9 +109,12 @@ namespace disposer_module::vignetting_correction_creator{
 						}
 					}),
 					default_value(99)),
-				make("image"_in, wrapped_type_ref_c< bitmap, 0 >),
-				make("image"_out, free_type_c< bitmap< float > >),
+				make("image"_in, wrapped_type_ref_c< bitmap, 0 >,
+					"image of a diffuse reflective white surface"),
+				make("image"_out, free_type_c< bitmap< float > >,
+					"created vignetting correction image"),
 				make("max_value"_param, type_ref_c< 0 >,
+					"underexposer value (e.g. 1023 for 10 bit images)",
 					default_value_fn([](auto, auto t){
 						using type = typename decltype(t)::type;
 						if constexpr(

@@ -114,7 +114,7 @@ namespace disposer_module::vignetting_correction_creator{
 				make("image"_out, free_type_c< bitmap< float > >,
 					"created vignetting correction image"),
 				make("max_value"_param, type_ref_c< 0 >,
-					"underexposer value (e.g. 1023 for 10 bit images)",
+					"overexposer value (e.g. 1023 for 10 bit images)",
 					default_value_fn([](auto, auto t){
 						using type = typename decltype(t)::type;
 						if constexpr(

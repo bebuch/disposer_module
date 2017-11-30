@@ -75,7 +75,7 @@ namespace disposer_module::normalize_bitmap{
 			module_configure(
 				make("format"_param,
 					free_type_c< std::optional< std::size_t > >,
-					"set dimension 2 by dimension 1 or by value:"
+					"set dimension 2 by dimension 1 (default) or by value:"
 						+ format_description(),
 					parser_fn([](
 						auto const /*module*/,

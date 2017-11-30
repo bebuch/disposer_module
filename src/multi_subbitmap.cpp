@@ -90,15 +90,18 @@ namespace disposer_module::multi_subbitmap{
 
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = generate_module(
+			// TODO: out of range?
+			"subpixel subbitmap (via bilinear interpolation) of every bitmap "
+			"in a vector of bitmaps with own x-y-offset for every bitmap",
 			dimension_list{
 				dimension_c<
 					std::int8_t,
-					std::uint8_t,
 					std::int16_t,
-					std::uint16_t,
 					std::int32_t,
-					std::uint32_t,
 					std::int64_t,
+					std::uint8_t,
+					std::uint16_t,
+					std::uint32_t,
 					std::uint64_t,
 					float,
 					double,
@@ -136,12 +139,17 @@ namespace disposer_module::multi_subbitmap{
 			},
 			module_configure(
 				make("x_offsets"_param, free_type_c< std::vector< float > >,
+					"comma separated list of float numbers as x offset "
+					"for the corresponding bitmap in the vector",
 					parser_fn< list_parser >(),
 					verify_value_fn([](auto const& values){
 						if(!values.empty()) return;
 						throw std::logic_error("Need at least one x value");
 					})),
 				make("y_offsets"_param, free_type_c< std::vector< float > >,
+					"comma separated list of float numbers as y offset "
+					"for the corresponding bitmap in the vector "
+					"(must have the same count of numbers as x_offset)",
 					parser_fn< list_parser >(),
 					verify_value_fn([](auto const& values, auto const module){
 						auto const& x_offsets = module("x_offsets"_param);
@@ -149,10 +157,14 @@ namespace disposer_module::multi_subbitmap{
 						throw std::logic_error(
 							"different element count as in x_offsets");
 					})),
-				make("width"_param, free_type_c< std::size_t >),
-				make("height"_param, free_type_c< std::size_t >),
-				make("images"_in, wrapped_type_ref_c< bitmap_vector, 0 >),
-				make("images"_out, wrapped_type_ref_c< bitmap_vector, 0 >),
+				make("width"_param, free_type_c< std::size_t >,
+					"width of the target bitmaps (1 unsigned int value)"),
+				make("height"_param, free_type_c< std::size_t >,
+					"height of the target bitmaps (1 unsigned int value)"),
+				make("images"_in, wrapped_type_ref_c< bitmap_vector, 0 >,
+					"original bitmaps"),
+				make("images"_out, wrapped_type_ref_c< bitmap_vector, 0 >,
+					"target bitmaps")
 			),
 			exec_fn([](auto module){
 				for(auto const& img: module("images"_in).references()){

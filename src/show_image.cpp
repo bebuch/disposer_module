@@ -80,6 +80,7 @@ namespace disposer_module::show_image{
 
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = generate_module(
+			"draw a bitmap in a window",
 			dimension_list{
 				dimension_c<
 					std::uint8_t,
@@ -88,8 +89,10 @@ namespace disposer_module::show_image{
 				>
 			},
 			module_configure(
-				make("image"_in, wrapped_type_ref_c< bitmap, 0 >),
-				make("window_title"_param, free_type_c< std::string >)
+				make("image"_in, wrapped_type_ref_c< bitmap, 0 >,
+					"the bitmap to be drawn"),
+				make("window_title"_param, free_type_c< std::string >,
+					"title of the draw window")
 			),
 			module_init_fn([](auto const module){
 				using type = typename

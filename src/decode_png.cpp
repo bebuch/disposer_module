@@ -117,7 +117,7 @@ namespace disposer_module::decode_png{
 				make("data"_in, free_type_c< std::string >,
 					"PNG encoded binary data"),
 				make("format"_param, free_type_c< std::size_t >,
-					"set dimension 1 by value: " + format_description(),
+					"set dimension 1 by value:" + format_description(),
 					parser_fn([](
 						auto const /*module*/,
 						std::string_view data,

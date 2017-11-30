@@ -206,7 +206,7 @@ namespace disposer_module::load{
 			},
 			module_configure(
 				make("type"_param, free_type_c< std::size_t >,
-					"set dimension 1 by value: " + format_description(),
+					"set dimension 1 by value:" + format_description(),
 					parser_fn([](
 						auto const /*module*/,
 						std::string_view data,

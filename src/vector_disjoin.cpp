@@ -19,6 +19,7 @@ namespace disposer_module::vector_disjoin{
 
 	void init(std::string const& name, module_declarant& disposer){
 		auto init = generate_module(
+			"splits a vector into single data sets",
 			dimension_list{
 				dimension_c<
 					std::string,
@@ -36,12 +37,15 @@ namespace disposer_module::vector_disjoin{
 			},
 			module_configure(
 				make("count"_param, free_type_c< std::size_t >,
+					"expected count of data sets in the vector",
 					verify_value_fn([](auto const& value){
 						if(value > 0) return;
 						throw std::logic_error("must be greater 0");
 					})),
-				make("list"_in, wrapped_type_ref_c< std::vector, 0 >),
-				make("data"_out, type_ref_c< 0 >)
+				make("list"_in, wrapped_type_ref_c< std::vector, 0 >,
+					"a vector of count data sets"),
+				make("data"_out, type_ref_c< 0 >,
+					"the separated data set")
 			),
 			exec_fn([](auto module){
 				auto const count = module("count"_param);

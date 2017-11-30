@@ -427,17 +427,24 @@ namespace disposer_module::http_server_component{
 		using namespace disposer;
 
 		auto init = generate_component(
+			"the web server has a web socket named 'controller' which can be "
+			"used to enable and disable the execution of a chains at regular "
+			"intervals",
 			component_configure(
-				make("root"_param, free_type_c< std::string >),
+				make("root"_param, free_type_c< std::string >,
+					"path to the http server root directory"),
 				make("port"_param, free_type_c< std::uint16_t >,
+					"port of the server",
 					default_value(8000)),
 				make("thread_count"_param, free_type_c< std::size_t >,
+					"thread count to process http and websocket requests",
 					default_value(2),
 					verify_value_fn([](std::size_t value){
 						if(value > 0) return;
 						throw std::logic_error("must be greater or equal 1");
 					})),
 				make("min_interval_in_ms"_param, free_type_c< std::uint32_t >,
+					"time between exec calls on live chains",
 					default_value(50))
 			),
 			component_init_fn([](auto component){
@@ -449,9 +456,13 @@ namespace disposer_module::http_server_component{
 			}),
 			component_modules(
 				make("websocket"_module, generate_module(
+					"send data via websocket to all connected clients",
 					module_configure(
-						make("data"_in, free_type_c< std::string >),
-						make("service_name"_param, free_type_c< std::string >)
+						make("data"_in, free_type_c< std::string >,
+							"data to be send (only last entry is send if "
+							"there are more then one per exec)"),
+						make("service_name"_param, free_type_c< std::string >,
+							"name of the websocket service")
 					),
 					module_init_fn([](auto module){
 						return module.component.state()

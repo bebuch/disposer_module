@@ -53,6 +53,7 @@ namespace disposer_module::normalize_bitmap{
 		}};
 
 	std::string format_description(){
+		static_assert(dim.type_count == list.size());
 		std::ostringstream os;
 		std::size_t i = 0;
 		hana::for_each(dim.types, [&os, &i](auto t){

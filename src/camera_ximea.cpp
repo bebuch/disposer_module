@@ -557,9 +557,9 @@ namespace disposer_module::camera_ximea{
 					"image data format, valid values are: "
 					"mono8, mono16, raw8, raw16, rgb8",
 					parser_fn([](
-						auto const /*module*/,
 						std::string_view data,
-						hana::basic_type< pixel_format >
+						hana::basic_type< pixel_format >,
+						auto const /*module*/
 					){
 						if(data == "mono8") return pixel_format::mono8;
 						if(data == "mono16") return pixel_format::mono16;

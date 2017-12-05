@@ -79,9 +79,9 @@ namespace disposer_module::normalize_bitmap{
 					"set dimension 2 by dimension 1 (default) or by value:"
 						+ format_description(),
 					parser_fn([](
-						auto const /*module*/,
 						std::string_view data,
-						hana::basic_type< std::optional< std::size_t > >
+						hana::basic_type< std::optional< std::size_t > >,
+						auto const /*module*/
 					){
 						auto iter = std::find(list.begin(), list.end(), data);
 						if(iter == list.end()){

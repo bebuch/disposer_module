@@ -346,9 +346,9 @@ namespace disposer_module::camera_infratec{
 							"type of the feature, valid values are: "
 								+ io_tools::range_to_string(type_list),
 							parser_fn([](
-								auto const /*module*/,
 								std::string_view data,
-								hana::basic_type< std::size_t >
+								hana::basic_type< std::size_t >,
+								auto const /*module*/
 							){
 								auto iter = std::find(type_list.begin(),
 									type_list.end(), data);

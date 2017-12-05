@@ -209,9 +209,9 @@ namespace disposer_module::load{
 				make("type"_param, free_type_c< std::size_t >,
 					"set dimension 1 by value:" + format_description(),
 					parser_fn([](
-						auto const /*module*/,
 						std::string_view data,
-						hana::basic_type< std::size_t >
+						hana::basic_type< std::size_t >,
+						auto const /*module*/
 					){
 						auto iter = std::find(list.begin(), list.end(), data);
 						if(iter == list.end()){
@@ -283,7 +283,7 @@ namespace disposer_module::load{
 					"* ${j} does only exist if type is file_list_list, it "
 					"numbers the inner vector",
 					parser_fn([](
-						auto const module, std::string_view data, auto type
+						std::string_view data, auto type, auto const module
 					){
 						if constexpr(type == type_c< ng1 >){
 							return make_name_generator(

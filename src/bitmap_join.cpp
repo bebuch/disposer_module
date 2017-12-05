@@ -77,18 +77,18 @@ namespace disposer_module::bitmap_vector_join{
 		struct value_parser{
 			template < typename IOP_List, typename T >
 			T operator()(
-				IOP_List const& module,
 				std::string_view value,
-				hana::basic_type< T > type
+				hana::basic_type< T > type,
+				IOP_List const& module
 			)const{
-				return stream_parser_t{}(module, value, type);
+				return stream_parser_t{}(value, type, module);
 			}
 
 			template < typename IOP_List, typename T >
 			pixel::basic_ga< T > operator()(
-				IOP_List const& /*module*/,
 				std::string_view value,
-				hana::basic_type< pixel::basic_ga< T > >
+				hana::basic_type< pixel::basic_ga< T > >,
+				IOP_List const& /*module*/
 			)const{
 				namespace x3 = boost::spirit::x3;
 
@@ -119,9 +119,9 @@ namespace disposer_module::bitmap_vector_join{
 
 			template < typename IOP_List, typename T >
 			pixel::basic_rgb< T > operator()(
-				IOP_List const& /*module*/,
 				std::string_view value,
-				hana::basic_type< pixel::basic_rgb< T > >
+				hana::basic_type< pixel::basic_rgb< T > >,
+				IOP_List const& /*module*/
 			)const{
 				namespace x3 = boost::spirit::x3;
 
@@ -155,9 +155,9 @@ namespace disposer_module::bitmap_vector_join{
 
 			template < typename IOP_List, typename T >
 			pixel::basic_rgba< T > operator()(
-				IOP_List const& /*module*/,
 				std::string_view value,
-				hana::basic_type< pixel::basic_rgba< T > >
+				hana::basic_type< pixel::basic_rgba< T > >,
+				IOP_List const& /*module*/
 			)const{
 				namespace x3 = boost::spirit::x3;
 
@@ -317,9 +317,9 @@ namespace disposer_module::bitmap_vector_join{
 				make("orientation"_param, free_type_c< orientation >,
 					"join bitmaps horizontal or vertical",
 					parser_fn([](
-						auto const /*module*/,
 						std::string_view data,
-						hana::basic_type< orientation >
+						hana::basic_type< orientation >,
+						auto const /*module*/
 					){
 						constexpr std::array< std::string_view, 2 > list{{
 								"horizontal", "vertical"

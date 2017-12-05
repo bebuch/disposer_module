@@ -139,9 +139,9 @@ namespace disposer_module::decode_bbf{
 				make("format"_param, free_type_c< std::size_t >,
 					"set dimension 1 by value:" + format_description(),
 					parser_fn([](
-						auto const /*module*/,
 						std::string_view data,
-						hana::basic_type< std::size_t >
+						hana::basic_type< std::size_t >,
+						auto const /*module*/
 					){
 						auto iter = std::find(list.begin(), list.end(), data);
 						if(iter == list.end()){

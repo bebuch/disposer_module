@@ -35,12 +35,7 @@ namespace disposer_module::multi_subbitmap{
 
 
 	struct list_parser{
-		template < typename IOP_List >
-		std::vector< float > operator()(
-			std::string_view value,
-			hana::basic_type< std::vector< float > >,
-			IOP_List const /*module*/
-		)const{
+		std::vector< float > operator()(std::string_view value)const{
 			namespace x3 = boost::spirit::x3;
 			using x3::float_;
 			using x3::phrase_parse;

@@ -556,11 +556,7 @@ namespace disposer_module::camera_ximea{
 				make("format"_param, free_type_c< pixel_format >,
 					"image data format, valid values are: "
 					"mono8, mono16, raw8, raw16, rgb8",
-					parser_fn([](
-						std::string_view data,
-						hana::basic_type< pixel_format >,
-						auto const /*module*/
-					){
+					parser_fn([](std::string_view data){
 						if(data == "mono8") return pixel_format::mono8;
 						if(data == "mono16") return pixel_format::mono16;
 						if(data == "rgb8") return pixel_format::rgb8;

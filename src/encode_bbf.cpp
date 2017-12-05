@@ -82,11 +82,7 @@ namespace disposer_module::encode_bbf{
 					"endianness of the encoded data, endian of float data "
 					"must always be equal to the native endianness, valid "
 					"values are: little, big, native",
-					parser_fn([](
-						std::string_view data,
-						hana::basic_type< boost::endian::order >,
-						auto const /*module*/
-					){
+					parser_fn([](std::string_view data){
 						using boost::endian::order;
 						if(data == "little") return order::little;
 						if(data == "big") return order::big;

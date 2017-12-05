@@ -148,11 +148,7 @@ namespace disposer_module::transform_bitmap{
 					free_type_c< std::optional< std::size_t > >,
 					"set dimension 2 by dimension 1 (default) or by value:"
 						+ format_description(),
-					parser_fn([](
-						std::string_view data,
-						hana::basic_type< std::optional< std::size_t > >,
-						auto const /*module*/
-					){
+					parser_fn([](std::string_view data){
 						auto iter = std::find(list.begin(), list.end(), data);
 						if(iter == list.end()){
 							throw std::runtime_error("unknown value '"
@@ -194,8 +190,7 @@ namespace disposer_module::transform_bitmap{
 					"* p4 => bottom right point",
 					parser_fn([](
 						std::string_view data,
-						auto type,
-						auto const /*module*/
+						auto const type
 					){
 						using io_tools::std_array::operator>>;
 						std::istringstream is((std::string(data)));

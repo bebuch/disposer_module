@@ -78,20 +78,18 @@ namespace disposer_module::bitmap_vector_join{
 
 
 		struct value_parser{
-			template < typename IOP_List, typename T >
+			template < typename T >
 			T operator()(
 				std::string_view value,
-				hana::basic_type< T > type,
-				IOP_List const module
+				hana::basic_type< T > type
 			)const{
-				return stream_parser_t{}(value, type, module);
+				return stream_parser_t{}(value, type);
 			}
 
-			template < typename IOP_List, typename T >
+			template < typename T >
 			pixel::basic_ga< T > operator()(
 				std::string_view value,
-				hana::basic_type< pixel::basic_ga< T > >,
-				IOP_List const /*module*/
+				hana::basic_type< pixel::basic_ga< T > >
 			)const{
 				namespace x3 = boost::spirit::x3;
 
@@ -120,11 +118,10 @@ namespace disposer_module::bitmap_vector_join{
 				return px;
 			}
 
-			template < typename IOP_List, typename T >
+			template < typename T >
 			pixel::basic_rgb< T > operator()(
 				std::string_view value,
-				hana::basic_type< pixel::basic_rgb< T > >,
-				IOP_List const /*module*/
+				hana::basic_type< pixel::basic_rgb< T > >
 			)const{
 				namespace x3 = boost::spirit::x3;
 
@@ -156,11 +153,10 @@ namespace disposer_module::bitmap_vector_join{
 				return px;
 			}
 
-			template < typename IOP_List, typename T >
+			template < typename T >
 			pixel::basic_rgba< T > operator()(
 				std::string_view value,
-				hana::basic_type< pixel::basic_rgba< T > >,
-				IOP_List const /*module*/
+				hana::basic_type< pixel::basic_rgba< T > >
 			)const{
 				namespace x3 = boost::spirit::x3;
 

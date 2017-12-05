@@ -254,7 +254,9 @@ namespace disposer_module::save{
 					"time at the component creation in the format "
 					"YYYYMMDD_hhmmss",
 					parser_fn([](
-						std::string_view data, auto type, auto const module
+						std::string_view data,
+						auto const type,
+						auto const module
 					){
 						if constexpr(type == type_c< ng1 >){
 							return make_name_generator(

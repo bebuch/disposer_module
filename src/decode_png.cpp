@@ -119,11 +119,7 @@ namespace disposer_module::decode_png{
 					"PNG encoded binary data"),
 				make("format"_param, free_type_c< std::size_t >,
 					"set dimension 1 by value:" + format_description(),
-					parser_fn([](
-						std::string_view data,
-						hana::basic_type< std::size_t >,
-						auto const /*module*/
-					){
+					parser_fn([](std::string_view data){
 						auto iter = std::find(list.begin(), list.end(), data);
 						if(iter == list.end()){
 							throw std::runtime_error("unknown value '"

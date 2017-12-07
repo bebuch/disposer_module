@@ -60,7 +60,7 @@ namespace disposer_module::vignetting_correction{
 					"reference image"),
 				make("max_value"_param, type_ref_c< 0 >,
 					"overexposer value (e.g. 1023 for 10 bit images)",
-					default_value_fn([](auto const module, auto t){
+					default_value_fn([](auto t){
 						using type = typename decltype(t)::type;
 						if constexpr(
 							std::is_integral_v< type > && sizeof(type) == 1

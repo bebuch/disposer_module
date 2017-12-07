@@ -52,7 +52,7 @@ namespace disposer_module::histogram{
 					default_value(false)),
 				make("min"_param, type_ref_c< 0 >,
 					"values smaller than min are treated as if they are min",
-					default_value_fn([](auto, auto t){
+					default_value_fn([](auto t){
 						using type = typename decltype(t)::type;
 						if constexpr(
 							std::is_integral_v< type > && sizeof(type) == 1
@@ -66,7 +66,7 @@ namespace disposer_module::histogram{
 						if(module("min"_param) < max) return;
 						throw std::logic_error("max must be greater min");
 					}),
-					default_value_fn([](auto, auto t){
+					default_value_fn([](auto t){
 						using type = typename decltype(t)::type;
 						if constexpr(
 							std::is_integral_v< type > && sizeof(type) == 1

@@ -55,12 +55,24 @@ int main(int argc, char** argv){
 		("chain", "Execute a chain", cxxopts::value< std::string >(), "Name")
 		("n,count", "Count of chain executions",
 			cxxopts::value< std::size_t >()->default_value("1"), "Count")
-		("module-help",
+		("list-components", "Print all component names")
+		("list-modules", "Print all module names")
+		("component-help", "Print the help text of the given component",
+			cxxopts::value< std::vector< std::string > >(), "Component Name")
+		("module-help", "Print the help text of the given module",
+			cxxopts::value< std::vector< std::string > >(), "Module Name")
+		("components-and-modules-help",
 			"Print the help text of all loaded modules and components");
 
 	try{
 		options.parse(argc, argv);
-		if(options["module-help"].count() == 0){
+		if(
+			options["list-components"].count() == 0 &&
+			options["list-modules"].count() == 0 &&
+			options["component-help"].count() == 0 &&
+			options["module-help"].count() == 0 &&
+			options["components-and-modules-help"].count() == 0
+		){
 			cxxopts::check_required(options, {"config"});
 			bool const server = options["server"].count() > 0;
 			bool const chain = options["chain"].count() > 0;
@@ -130,8 +142,55 @@ int main(int argc, char** argv){
 		}
 	})) return 1;
 
-	if(options["module-help"].count() > 0){
-		std::cout << disposer.help();
+	if(options["components-and-modules-help"].count() > 0){
+		logsys::exception_catching_log(
+			[](logsys::stdlogb& os){ os << "print help"; },
+			[&disposer]{
+				std::cout << disposer.help();
+			});
+
+		return 0;
+	}else if(
+		options["list-components"].count() > 0 ||
+		options["list-modules"].count() > 0
+	){
+		if(options["list-components"].count() > 0){
+			auto components = disposer.component_names();
+			std::cout << "  * Components:\n";
+			for(auto const& component: components){
+				std::cout << "    * " << component << '\n';
+			}
+		}
+
+		if(options["list-modules"].count() > 0){
+			auto modules = disposer.module_names();
+			std::cout << "  * Modules:\n";
+			for(auto const& module: modules){
+				std::cout << "    * " << module << '\n';
+			}
+		}
+
+		return 0;
+	}else if(
+		options["component-help"].count() > 0 ||
+		options["module-help"].count() > 0
+	){
+		logsys::exception_catching_log(
+			[](logsys::stdlogb& os){ os << "print help"; },
+			[&disposer, &options]{
+				for(auto component: options["component-help"]
+					.as< std::vector< std::string > >()
+				){
+					std::cout << disposer.component_help(component);
+				}
+
+				for(auto module: options["module-help"]
+					.as< std::vector< std::string > >()
+				){
+					std::cout << disposer.module_help(module);
+				}
+			});
+
 		return 0;
 	}
 

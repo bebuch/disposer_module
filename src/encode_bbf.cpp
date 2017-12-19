@@ -13,6 +13,23 @@
 #include <boost/dll.hpp>
 
 
+
+namespace boost::endian{
+
+
+	std::string to_string(order const o){
+		switch(o){
+			case order::little: return "little";
+			case order::big: return "big";
+			default: throw std::logic_error(
+				"boost::endian::order has unknown value");
+		}
+	}
+
+
+}
+
+
 namespace disposer_module::encode_bbf{
 
 

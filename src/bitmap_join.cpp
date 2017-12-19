@@ -190,11 +190,19 @@ namespace disposer_module::bitmap_vector_join{
 		};
 
 
-		enum class orientation{
-			horizontal = 0, vertical = 1
-		};
+	}
 
 
+	enum class orientation{
+		horizontal = 0, vertical = 1
+	};
+
+	std::string to_string(orientation const o){
+		switch(o){
+			case orientation::horizontal: return "horizontal";
+			case orientation::vertical: return "vertical";
+			default: throw std::logic_error("orientation has unknown value");
+		}
 	}
 
 

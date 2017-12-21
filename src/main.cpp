@@ -146,7 +146,7 @@ int main(int argc, char** argv){
 		logsys::exception_catching_log(
 			[](logsys::stdlogb& os){ os << "print help"; },
 			[&disposer]{
-				std::cout << disposer.help();
+				std::cout << disposer.directory().help();
 			});
 
 		return 0;
@@ -155,7 +155,7 @@ int main(int argc, char** argv){
 		options["list-modules"].count() > 0
 	){
 		if(options["list-components"].count() > 0){
-			auto components = disposer.component_names();
+			auto components = disposer.directory().component_names();
 			std::cout << "  * Components:\n";
 			for(auto const& component: components){
 				std::cout << "    * " << component << '\n';
@@ -163,7 +163,7 @@ int main(int argc, char** argv){
 		}
 
 		if(options["list-modules"].count() > 0){
-			auto modules = disposer.module_names();
+			auto modules = disposer.directory().module_names();
 			std::cout << "  * Modules:\n";
 			for(auto const& module: modules){
 				std::cout << "    * " << module << '\n';
@@ -181,13 +181,13 @@ int main(int argc, char** argv){
 				for(auto component: options["component-help"]
 					.as< std::vector< std::string > >()
 				){
-					std::cout << disposer.component_help(component);
+					std::cout << disposer.directory().component_help(component);
 				}
 
 				for(auto module: options["module-help"]
 					.as< std::vector< std::string > >()
 				){
-					std::cout << disposer.module_help(module);
+					std::cout << disposer.directory().module_help(module);
 				}
 			});
 

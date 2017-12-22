@@ -94,11 +94,11 @@ int main(int argc, char** argv){
 
 	// modules must be deleted last, to access the destructors in shared libs
 	std::list< boost::dll::shared_library > libraries;
-	::disposer::disposer disposer;
+	disposer::system system;
 
 	if(!logsys::exception_catching_log([](
 		logsys::stdlogb& os){ os << "loading modules"; },
-	[&disposer, &libraries]{
+	[&system, &libraries]{
 		auto program_dir = boost::dll::program_location().remove_filename();
 		std::cout << "Search for DLLs in '" << program_dir << "'" << std::endl;
 
@@ -121,17 +121,17 @@ int main(int argc, char** argv){
 					library.get_alias<
 							void(
 								std::string const&,
-								::disposer::component_declarant&
+								disposer::component_declarant&
 							)
 						>("init_component")(lib_name,
-							disposer.component_declarant());
+							system.component_declarant());
 				}else if(library.has("init")){
 					library.get_alias<
 							void(
 								std::string const&,
-								::disposer::module_declarant&
+								disposer::module_declarant&
 							)
-						>("init")(lib_name, disposer.module_declarant());
+						>("init")(lib_name, system.module_declarant());
 				}else{
 					logsys::log([&lib_name](logsys::stdlogb& os){
 						os << "shared library '" << lib_name
@@ -145,8 +145,8 @@ int main(int argc, char** argv){
 	if(options["components-and-modules-help"].count() > 0){
 		logsys::exception_catching_log(
 			[](logsys::stdlogb& os){ os << "print help"; },
-			[&disposer]{
-				std::cout << disposer.directory().help();
+			[&system]{
+				std::cout << system.directory().help();
 			});
 
 		return 0;
@@ -155,7 +155,7 @@ int main(int argc, char** argv){
 		options["list-modules"].count() > 0
 	){
 		if(options["list-components"].count() > 0){
-			auto components = disposer.directory().component_names();
+			auto components = system.directory().component_names();
 			std::cout << "  * Components:\n";
 			for(auto const& component: components){
 				std::cout << "    * " << component << '\n';
@@ -163,7 +163,7 @@ int main(int argc, char** argv){
 		}
 
 		if(options["list-modules"].count() > 0){
-			auto modules = disposer.directory().module_names();
+			auto modules = system.directory().module_names();
 			std::cout << "  * Modules:\n";
 			for(auto const& module: modules){
 				std::cout << "    * " << module << '\n';
@@ -177,17 +177,17 @@ int main(int argc, char** argv){
 	){
 		logsys::exception_catching_log(
 			[](logsys::stdlogb& os){ os << "print help"; },
-			[&disposer, &options]{
+			[&system, &options]{
 				for(auto component: options["component-help"]
 					.as< std::vector< std::string > >()
 				){
-					std::cout << disposer.directory().component_help(component);
+					std::cout << system.directory().component_help(component);
 				}
 
 				for(auto module: options["module-help"]
 					.as< std::vector< std::string > >()
 				){
-					std::cout << disposer.directory().module_help(module);
+					std::cout << system.directory().module_help(module);
 				}
 			});
 
@@ -198,29 +198,29 @@ int main(int argc, char** argv){
 
 	if(!logsys::exception_catching_log(
 		[](logsys::stdlogb& os){ os << "load config file"; },
-		[&disposer, &config]{ disposer.load(config); })) return -1;
+		[&system, &config]{ system.load(config); })) return -1;
 
 	if(!logsys::exception_catching_log(
 		[](logsys::stdlogb& os){ os << "create components"; },
-		[&disposer]{ disposer.create_components(); })) return -1;
+		[&system]{ system.create_components(); })) return -1;
 
 	if(!logsys::exception_catching_log(
 		[](logsys::stdlogb& os){ os << "create chains"; },
-		[&disposer]{ disposer.create_chains(); })) return -1;
+		[&system]{ system.create_chains(); })) return -1;
 
 	if(options["chain"].count() > 0){
 		logsys::exception_catching_log(
 			[](logsys::stdlogb& os){ os << "exec chains"; },
-		[&disposer, &options]{
+		[&system, &options]{
 			auto const multithreading = options["multithreading"].count() > 0;
 			auto const exec_chain = options["chain"].as< std::string >();
 			auto const exec_count = options["count"].as< std::size_t >();
 
-			auto& chain = disposer.get_chain(exec_chain);
+			auto& chain = system.get_chain(exec_chain);
 
 			if(!multithreading){
 				// single thread version
-				::disposer::chain_enable_guard enable(chain);
+				disposer::chain_enable_guard enable(chain);
 				for(std::size_t i = 0; i < exec_count; ++i){
 					chain.exec();
 				}
@@ -229,7 +229,7 @@ int main(int argc, char** argv){
 				std::vector< std::future< void > > tasks;
 				tasks.reserve(exec_count);
 
-				::disposer::chain_enable_guard enable(chain);
+				disposer::chain_enable_guard enable(chain);
 				for(std::size_t i = 0; i < exec_count; ++i){
 					tasks.push_back(std::async([&chain]{ chain.exec(); }));
 				}

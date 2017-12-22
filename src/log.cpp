@@ -52,7 +52,7 @@ namespace logsys{
 
 
 	std::function< std::unique_ptr< stdlogb >() > stdlogb::factory_object(
-		[](){ return std::make_unique< ::disposer_module::stdlog >(); }
+		[](){ return std::make_unique< disposer_module::stdlog >(); }
 	);
 
 

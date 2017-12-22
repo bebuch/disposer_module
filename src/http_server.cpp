@@ -93,7 +93,7 @@ namespace disposer_module::http_server_component{
 								std::chrono::milliseconds(min_interval_in_ms);
 
 							auto& chain =
-								component_.disposer().get_chain(chain_);
+								component_.system().get_chain(chain_);
 							disposer::chain_enable_guard enable(chain);
 							while(active_){
 								component_.exception_catching_log(

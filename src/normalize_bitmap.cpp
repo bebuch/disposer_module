@@ -65,7 +65,7 @@ namespace disposer_module::normalize_bitmap{
 	}
 
 
-	void init(std::string const& name, module_declarant& disposer){
+	void init(std::string const& name, declarant& disposer){
 		auto init = generate_module(
 			"rescales all values to a range between min and max, optionaly "
 			"the type of data can be changed via parameter format",

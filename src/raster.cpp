@@ -53,7 +53,7 @@ namespace disposer_module::demosaic{
 	}
 
 
-	void init(std::string const& name, module_declarant& disposer){
+	void init(std::string const& name, declarant& disposer){
 		auto init = generate_module(
 			"rasterizes a bitmap",
 			dimension_list{

@@ -86,7 +86,7 @@ namespace disposer_module::channel_unbundle{
 	constexpr auto channel_unbundle = channel_unbundle_t();
 
 
-	void init(std::string const& name, module_declarant& disposer){
+	void init(std::string const& name, declarant& disposer){
 		auto init = generate_module(
 			"unbundles the channels of a mosaic camera into a vector of "
 			"separate images",

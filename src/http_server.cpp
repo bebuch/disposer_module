@@ -421,7 +421,7 @@ namespace disposer_module::http_server_component{
 
 	void init_component(
 		std::string const& name,
-		disposer::component_declarant& declarant
+		disposer::declarant& declarant
 	){
 		using namespace std::literals::string_literals;
 		using namespace disposer;

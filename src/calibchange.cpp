@@ -21,7 +21,7 @@ namespace disposer_module::calibchange{
 	namespace hana = boost::hana;
 
 
-	void init(std::string const& name, module_declarant& disposer){
+	void init(std::string const& name, declarant& disposer){
 		auto init = generate_module(
 			"A BAD HACK: send binary packages to a InfraTec VarioCam HD "
 			"to set a calibration (handshake, set CalibSelect, "

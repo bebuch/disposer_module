@@ -270,7 +270,7 @@ namespace disposer_module::bitmap_vector_join{
 	constexpr auto bitmap_join = bitmap_join_t();
 
 
-	void init(std::string const& name, module_declarant& disposer){
+	void init(std::string const& name, declarant& disposer){
 		auto init = generate_module(
 			"joins two bitmaps of same data type to one bitmap",
 			dimension_list{

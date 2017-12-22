@@ -78,7 +78,7 @@ namespace disposer_module::show_image{
 	};
 
 
-	void init(std::string const& name, module_declarant& disposer){
+	void init(std::string const& name, declarant& disposer){
 		auto init = generate_module(
 			"draw a bitmap in a window",
 			dimension_list{

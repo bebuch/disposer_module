@@ -40,7 +40,7 @@ namespace disposer_module::vignetting_correction{
 	}
 
 
-	void init(std::string const& name, module_declarant& disposer){
+	void init(std::string const& name, declarant& disposer){
 		auto init = generate_module(
 			"multiplies the image with a reference image",
 			dimension_list{

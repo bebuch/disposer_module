@@ -17,7 +17,7 @@ namespace disposer_module::vector_disjoin{
 	using bitmap = ::bmp::bitmap< T >;
 
 
-	void init(std::string const& name, module_declarant& disposer){
+	void init(std::string const& name, declarant& disposer){
 		auto init = generate_module(
 			"splits a vector into single data sets",
 			dimension_list{

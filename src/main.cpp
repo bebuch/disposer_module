@@ -121,17 +121,17 @@ int main(int argc, char** argv){
 					library.get_alias<
 							void(
 								std::string const&,
-								disposer::component_declarant&
+								disposer::declarant&
 							)
 						>("init_component")(lib_name,
-							system.component_declarant());
+							system.directory().declarant());
 				}else if(library.has("init")){
 					library.get_alias<
 							void(
 								std::string const&,
-								disposer::module_declarant&
+								disposer::declarant&
 							)
-						>("init")(lib_name, system.module_declarant());
+						>("init")(lib_name, system.directory().declarant());
 				}else{
 					logsys::log([&lib_name](logsys::stdlogb& os){
 						os << "shared library '" << lib_name

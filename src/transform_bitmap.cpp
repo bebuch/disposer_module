@@ -130,7 +130,7 @@ namespace disposer_module::transform_bitmap{
 	}
 
 
-	void init(std::string const& name, module_declarant& disposer){
+	void init(std::string const& name, declarant& disposer){
 		auto init = generate_module(
 			"perspective transform by 4 free points and an target rect",
 			dimension_list{

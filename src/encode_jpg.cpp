@@ -67,7 +67,7 @@ namespace disposer_module::encode_jpg{
 	}
 
 
-	void init(std::string const& name, module_declarant& disposer){
+	void init(std::string const& name, declarant& disposer){
 		auto init = generate_module(
 			"encodes an image in JPEG image format",
 			dimension_list{

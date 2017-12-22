@@ -72,7 +72,7 @@ namespace disposer_module::encode_png{
 		return png_image;
 	}
 
-	void init(std::string const& name, module_declarant& disposer){
+	void init(std::string const& name, declarant& disposer){
 		auto init = generate_module(
 			"encodes an image in PNG image format",
 			dimension_list{

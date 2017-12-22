@@ -24,7 +24,7 @@ namespace disposer_module::histogram{
 	using bitmap = ::bmp::bitmap< T >;
 
 
-	void init(std::string const& name, module_declarant& disposer){
+	void init(std::string const& name, declarant& disposer){
 		auto init = generate_module(
 			"make a histogram of an image",
 			dimension_list{

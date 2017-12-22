@@ -17,7 +17,7 @@ namespace disposer_module::vector_join{
 	using bitmap = ::bmp::bitmap< T >;
 
 
-	void init(std::string const& name, module_declarant& disposer){
+	void init(std::string const& name, declarant& disposer){
 		auto init = generate_module(
 			"combines individual data sets into a vector.",
 			dimension_list{

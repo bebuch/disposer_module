@@ -83,7 +83,7 @@ namespace disposer_module::multi_subbitmap{
 		return result;
 	}
 
-	void init(std::string const& name, module_declarant& disposer){
+	void init(std::string const& name, declarant& disposer){
 		auto init = generate_module(
 			"subpixel subbitmap (via bilinear interpolation) of every bitmap "
 			"in a vector of bitmaps with own x-y-offset for every bitmap, "

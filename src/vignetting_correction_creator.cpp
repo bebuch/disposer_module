@@ -85,7 +85,7 @@ namespace disposer_module::vignetting_correction_creator{
 	}
 
 
-	void init(std::string const& name, module_declarant& disposer){
+	void init(std::string const& name, declarant& disposer){
 		auto init = generate_module(
 			"creates a vignetting correction image based on an image of a "
 			"diffuse reflective white surface, the base image must not "

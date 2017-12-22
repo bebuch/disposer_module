@@ -191,7 +191,7 @@ namespace disposer_module::load{
 	}
 
 
-	void init(std::string const& name, module_declarant& disposer){
+	void init(std::string const& name, declarant& disposer){
 		auto expect_greater_0 =
 			verify_value_fn([](std::size_t value){
 				if(value == 0){

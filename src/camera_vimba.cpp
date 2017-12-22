@@ -269,7 +269,7 @@ namespace disposer_module::camera_infratec{
 		AVT::VmbAPI::FeaturePtr value_feature = nullptr;
 	};
 
-	void init(std::string const& name, component_declarant& declarant){
+	void init(std::string const& name, declarant& declarant){
 		auto init = generate_component(
 			"controller for InfraTec GigE-Vision cameras via AVT Vimba",
 			component_configure(

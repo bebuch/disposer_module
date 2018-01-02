@@ -73,15 +73,15 @@ namespace disposer_module{
 			auto end = pattern.end();
 			x3::ascii::space_type space;
 
-			std::vector< std::variant< std::string, variable_string > >
-				parts;
+			std::vector< std::variant< std::string, variable_string > > parts;
 
 			bool match = phrase_parse(iter, end, x3::no_skip[
 				*(string | variable)
 			], space, parts);
 
 			if(!match || iter != end){
-				throw std::runtime_error("Syntax error");
+				throw std::runtime_error(
+					"Syntax error in name_generator pattern");
 			}
 
 			struct visitor{
@@ -111,7 +111,7 @@ namespace disposer_module{
 
 			std::vector< text_or_variable_index_t > result;
 			result.reserve(variables.size());
-			for(auto& data: parts){
+			for(auto const& data: parts){
 				result.push_back(std::visit(v, data));
 			}
 
@@ -211,7 +211,7 @@ namespace disposer_module{
 		static A solve(R(F::*)(A)const volatile);
 
 	public:
-		using type = decltype(solve(&F::operator())) ;
+		using type = decltype(argument::solve(&F::operator()));
 	};
 
 	template < typename R, typename A >

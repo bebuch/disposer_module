@@ -7,11 +7,14 @@
 // file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 //-----------------------------------------------------------------------------
 #include "log.hpp"
+#include "name_generator.hpp"
 
 #include <disposer/disposer.hpp>
 
 #include <logsys/log.hpp>
 #include <logsys/stdlogb.hpp>
+
+#include <io_tools/time_to_dir_string.hpp>
 
 #include <cxxopts.hpp>
 
@@ -26,14 +29,21 @@
 #include <csignal>
 
 
+std::string const program_start_time = io_tools::time_to_dir_string();
+
 void signal_handler(int signum){
 	std::signal(signum, SIG_DFL);
+	{
+		std::ofstream os(program_start_time + "_stacktrace.dump");
+		if(os) os << boost::stacktrace::stacktrace();
+	}
 	std::cerr << boost::stacktrace::stacktrace();
 	std::raise(SIGABRT);
 }
 
 
 int main(int argc, char** argv){
+	using namespace std::literals::string_literals;
 	using namespace std::literals::string_view_literals;
 	namespace fs = boost::filesystem;
 
@@ -46,8 +56,11 @@ int main(int argc, char** argv){
 	options.add_options()
 		("c,config", "Configuration file", cxxopts::value< std::string >(),
 			"config.ini")
-		("l,log", "Your log file",
-			cxxopts::value< std::string >()->default_value("disposer.log"),
+		("l,log", "Filename of the logfile; use ${date_time} as placeholder, "
+			"depending on your operating system you might have to mask "
+			"$ as \\$",
+			cxxopts::value< std::string >()
+				->default_value("${date_time}_disposer.log"),
 			"disposer.log")
 		("no-log", "Don't create a log file")
 		("s,server", "Run until the enter key is pressed")
@@ -63,7 +76,7 @@ int main(int argc, char** argv){
 		("module-help", "Print the help text of the given module",
 			cxxopts::value< std::vector< std::string > >(), "Module Name")
 		("components-and-modules-help",
-			"Print the help text of all loaded modules and components");
+			"Print the help text of all modules and components");
 
 	try{
 		options.parse(argc, argv);
@@ -92,8 +105,19 @@ int main(int argc, char** argv){
 	// defines the livetime of the logfile
 	std::shared_ptr< std::ostream > logfile;
 	if(options["no-log"].count() == 0){
-		auto const log_filename = options["log"].as< std::string >();
-		logfile = std::make_shared< std::ofstream >(log_filename);
+		auto const filename_pattern = options["log"].as< std::string >();
+		std::cout << "pattern: " << filename_pattern << std::endl;
+		auto generator = disposer_module::make_name_generator(
+			filename_pattern, {false},
+			std::make_pair("date_time"s,
+				[](std::string const& str){ return str; }));
+
+		auto const filename = generator(program_start_time);
+		std::cout << filename << std::endl;
+		logfile = std::make_shared< std::ofstream >(filename);
+		if(!*logfile){
+			throw std::runtime_error("Can not open log-file: " + filename);
+		}
 
 		// add the log file to the log system
 		disposer_module::stdlog::weak_file_ptr = logfile;

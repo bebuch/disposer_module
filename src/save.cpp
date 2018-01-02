@@ -187,7 +187,7 @@ namespace disposer_module::save{
 	};
 
 	struct state{
-		std::string date_time;
+		std::string const date_time;
 	};
 
 
@@ -308,8 +308,11 @@ namespace disposer_module::save{
 				)
 			),
 			module_init_fn([](auto const module){
-				return state{io_tools::time_to_dir_string(
-					std::chrono::system_clock::now())};
+				state s{io_tools::time_to_dir_string()};
+				module.log([&s](logsys::stdlogb& os){
+						os << "variable date_time is: " << s.date_time;
+					});
+				return s;
 			}),
 			exec_fn([](auto module){
 				std::size_t subid = 0;

@@ -220,17 +220,7 @@ int main(int argc, char** argv){
 
 	std::string const config = options["config"].as< std::string >();
 
-	if(!logsys::exception_catching_log(
-		[](logsys::stdlogb& os){ os << "load config file"; },
-		[&system, &config]{ system.load(config); })) return -1;
-
-	if(!logsys::exception_catching_log(
-		[](logsys::stdlogb& os){ os << "create components"; },
-		[&system]{ system.create_components(); })) return -1;
-
-	if(!logsys::exception_catching_log(
-		[](logsys::stdlogb& os){ os << "create chains"; },
-		[&system]{ system.create_chains(); })) return -1;
+	if(!system.load_config_file(config)) return -1;
 
 	if(options["chain"].count() > 0){
 		logsys::exception_catching_log(

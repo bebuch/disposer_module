@@ -419,7 +419,7 @@ namespace disposer_module::http_server_component{
 	};
 
 
-	void init_component(
+	void init(
 		std::string const& name,
 		disposer::declarant& declarant
 	){
@@ -483,7 +483,7 @@ namespace disposer_module::http_server_component{
 		init(name, declarant);
 	}
 
-	BOOST_DLL_AUTO_ALIAS(init_component)
+	BOOST_DLL_AUTO_ALIAS(init)
 
 
 }

@@ -149,15 +149,7 @@ int main(int argc, char** argv){
 				auto& library = libraries.emplace_back(file.path().string(),
 					boost::dll::load_mode::rtld_deepbind);
 
-				if(library.has("init_component")){
-					library.get_alias<
-							void(
-								std::string const&,
-								disposer::declarant&
-							)
-						>("init_component")(lib_name,
-							system.directory().declarant());
-				}else if(library.has("init")){
+				if(library.has("init")){
 					library.get_alias<
 							void(
 								std::string const&,

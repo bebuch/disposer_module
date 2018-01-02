@@ -1,4 +1,4 @@
 # ignore bin directory
 bin
 data
-test/*.log
+**/*.log

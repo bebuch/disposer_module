@@ -49,6 +49,7 @@ int main(int argc, char** argv){
 		("l,log", "Your log file",
 			cxxopts::value< std::string >()->default_value("disposer.log"),
 			"disposer.log")
+		("no-log", "Don't create a log file")
 		("s,server", "Run until the enter key is pressed")
 		("m,multithreading",
 			"All N executions of a chain are stated instantly")
@@ -87,10 +88,17 @@ int main(int argc, char** argv){
 		return -1;
 	}
 
-	// add a log file to the log system
-	auto const log_filename = options["log"].as< std::string >();
-	auto log_file(std::make_shared< std::ofstream >(log_filename));
-	disposer_module::stdlog::file_ptr = log_file;
+
+	// defines the livetime of the logfile
+	std::shared_ptr< std::ostream > logfile;
+	if(options["no-log"].count() == 0){
+		auto const log_filename = options["log"].as< std::string >();
+		logfile = std::make_shared< std::ofstream >(log_filename);
+
+		// add the log file to the log system
+		disposer_module::stdlog::weak_file_ptr = logfile;
+
+	}
 
 	// modules must be deleted last, to access the destructors in shared libs
 	std::list< boost::dll::shared_library > libraries;

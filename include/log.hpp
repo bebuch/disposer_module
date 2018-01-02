@@ -16,7 +16,7 @@ namespace disposer_module{
 
 
 	struct stdlog: ::logsys::stdlogd{
-		static std::weak_ptr< std::ostream > file_ptr;
+		static std::weak_ptr< std::ostream > weak_file_ptr;
 
 		void exec()const noexcept override;
 	};

@@ -14,13 +14,13 @@
 namespace disposer_module{
 
 
-	std::weak_ptr< std::ostream > stdlog::file_ptr{};
+	std::weak_ptr< std::ostream > stdlog::weak_file_ptr{};
 
 	void stdlog::exec()const noexcept try{
 		using boost::algorithm::replace_all;
 		auto line = io_tools::mask_non_print(os_.str()) + "\n";
 
-		if(auto file = file_ptr.lock()){
+		if(auto file = weak_file_ptr.lock()){
 			*file << line;
 		}
 

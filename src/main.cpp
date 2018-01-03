@@ -106,14 +106,12 @@ int main(int argc, char** argv){
 	std::shared_ptr< std::ostream > logfile;
 	if(options["no-log"].count() == 0){
 		auto const filename_pattern = options["log"].as< std::string >();
-		std::cout << "pattern: " << filename_pattern << std::endl;
 		auto generator = disposer_module::make_name_generator(
 			filename_pattern, {false},
 			std::make_pair("date_time"s,
 				[](std::string const& str){ return str; }));
 
 		auto const filename = generator(program_start_time);
-		std::cout << filename << std::endl;
 		logfile = std::make_shared< std::ofstream >(filename);
 		if(!*logfile){
 			throw std::runtime_error("Can not open log-file: " + filename);
@@ -220,7 +218,11 @@ int main(int argc, char** argv){
 
 	std::string const config = options["config"].as< std::string >();
 
-	if(!system.load_config_file(config)) return -1;
+	if(!logsys::exception_catching_log(
+		[](logsys::stdlogb& os){ os << "loading config"; },
+		[&system, &config]{
+			system.load_config_file(config);
+		})) return -1;
 
 	if(options["chain"].count() > 0){
 		logsys::exception_catching_log(

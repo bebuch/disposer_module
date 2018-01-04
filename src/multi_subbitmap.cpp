@@ -72,7 +72,11 @@ namespace disposer_module::multi_subbitmap{
 
 		Bitmaps result;
 		result.reserve(images.size());
-		for(auto const& [image, xo, yo]: ranges::view::zip(images, xos, yos)){
+		// TODO: use structured bindungs as soon as clang fixed BUG 34749
+		for(auto const& tuple: ranges::view::zip(images, xos, yos)){
+			auto const& image = std::get< 0 >(tuple);
+			auto const& xo = std::get< 1 >(tuple);
+			auto const& yo = std::get< 2 >(tuple);
 			module.log([xo, yo](logsys::stdlogb& os){
 				os << "x = " << xo << ", y = " << yo;
 			}, [&]{

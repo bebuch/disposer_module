@@ -232,11 +232,10 @@ int main(int argc, char** argv){
 			auto const exec_chain = options["chain"].as< std::string >();
 			auto const exec_count = options["count"].as< std::size_t >();
 
-			auto& chain = system.get_chain(exec_chain);
+			auto chain = system.enable_chain(exec_chain);
 
 			if(!multithreading){
 				// single thread version
-				disposer::chain_enable_guard enable(chain);
 				for(std::size_t i = 0; i < exec_count; ++i){
 					chain.exec();
 				}
@@ -245,7 +244,6 @@ int main(int argc, char** argv){
 				std::vector< std::future< void > > tasks;
 				tasks.reserve(exec_count);
 
-				disposer::chain_enable_guard enable(chain);
 				for(std::size_t i = 0; i < exec_count; ++i){
 					tasks.push_back(std::async([&chain]{ chain.exec(); }));
 				}

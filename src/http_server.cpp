@@ -465,7 +465,7 @@ namespace disposer_module::http_server_component{
 					),
 					module_init_fn([](auto module){
 						return module.component.state()
-							.init(module("service_name"_param)).key;
+							.unique_init(module("service_name"_param));
 					}),
 					exec_fn([](auto& module){
 						auto list = module("data"_in).references();

@@ -21,6 +21,8 @@ namespace disposer_module{
 		auto line = io_tools::mask_non_print(os_.str()) + "\n";
 
 		if(auto file = weak_file_ptr.lock()){
+			static std::mutex mutex;
+			std::lock_guard lock(mutex);
 			*file << line;
 		}
 
@@ -32,6 +34,8 @@ namespace disposer_module{
 		replace_all(line, "EXCEPTION WHILE LOGGING:",
 			"\033[1;31mEXCEPTION WHILE LOGGING:\033[0m");
 
+		static std::mutex mutex;
+		std::lock_guard lock(mutex);
 		std::clog << line;
 	}catch(std::exception const& e){
 		std::cerr << "terminate with exception in stdlog.exec(): "

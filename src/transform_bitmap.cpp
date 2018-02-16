@@ -208,13 +208,13 @@ namespace disposer_module::transform_bitmap{
 				using pixel_type = typename decltype(t)::type;
 				using matrix_type = calc_type< pixel_type >;
 
-				auto source_points = module("source_points"_param);
+				auto const source_points = module("source_points"_param);
 				auto const source_size = module("source_size"_param);
 				auto const target_size = module("target_size"_param);
-				points_type< pixel_type > target_points{{
+				points_type< matrix_type > target_points{{
 					{0, 0},
-					{target_size.width(), 0},
-					{0, target_size.height()},
+					{static_cast< matrix_type >(target_size.width()), 0},
+					{0, static_cast< matrix_type >(target_size.height())},
 					bmp::to_point< matrix_type >(target_size)
 				}};
 

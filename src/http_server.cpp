@@ -173,10 +173,11 @@ namespace disposer_module::http_server_component{
 							for(auto const& [dummy, data]: commands){
 								(void)dummy;
 
+								// TODO: remove template keyword, GCC Bug 84469
 								auto const chain_opt =
-									data.get_optional< std::string >("chain");
+									data.template get_optional< std::string >("chain");
 								auto const live_opt =
-									data.get_optional< bool >("live");
+									data.template get_optional< bool >("live");
 
 								if(!chain_opt || !live_opt) continue;
 								auto const chain = *chain_opt;

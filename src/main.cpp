@@ -51,9 +51,9 @@ int main(int argc, char** argv){
 	std::signal(SIGSEGV, signal_handler);
 	std::signal(SIGABRT, signal_handler);
 
-	cxxopts::Options options(argv[0], "disposer module system");
+	cxxopts::Options option_config(argv[0], "disposer module system");
 
-	options.add_options()
+	option_config.add_options()
 		("c,config", "Configuration file", cxxopts::value< std::string >(),
 			"config.ini")
 		("l,log", "Filename of the logfile; use ${date_time} as placeholder, "
@@ -78,28 +78,30 @@ int main(int argc, char** argv){
 		("components-and-modules-help",
 			"Print the help text of all modules and components");
 
-	try{
-		options.parse(argc, argv);
-		if(
-			options["list-components"].count() == 0 &&
-			options["list-modules"].count() == 0 &&
-			options["component-help"].count() == 0 &&
-			options["module-help"].count() == 0 &&
-			options["components-and-modules-help"].count() == 0
-		){
-			cxxopts::check_required(options, {"config"});
-			bool const server = options["server"].count() > 0;
-			bool const chain = options["chain"].count() > 0;
-			if(!server && !chain){
-				throw std::logic_error(
-					"Need at least option ‘server‘ or option ‘chain‘");
+	auto options = [&]{
+			try{
+				auto options = option_config.parse(argc, argv);
+				if(
+					options["list-components"].count() == 0 &&
+					options["list-modules"].count() == 0 &&
+					options["component-help"].count() == 0 &&
+					options["module-help"].count() == 0 &&
+					options["components-and-modules-help"].count() == 0
+				){
+					bool const server = options["server"].count() > 0;
+					bool const chain = options["chain"].count() > 0;
+					if(!server && !chain){
+						throw std::logic_error(
+							"Need at least option ‘server‘ or option ‘chain‘");
+					}
+				}
+				return options;
+			}catch(std::exception const& e){
+				std::cerr << e.what() << "\n\n";
+				std::cout << option_config.help();
+				std::exit(-1);
 			}
-		}
-	}catch(std::exception const& e){
-		std::cerr << e.what() << "\n\n";
-		std::cout << options.help();
-		return -1;
-	}
+		}();
 
 
 	// defines the livetime of the logfile

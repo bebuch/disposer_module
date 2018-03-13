@@ -88,6 +88,9 @@ int main(int argc, char** argv){
 					options["module-help"].count() == 0 &&
 					options["components-and-modules-help"].count() == 0
 				){
+					if(options["config"].count() == 0){
+						throw std::logic_error("Need option ‘config‘");
+					}
 					bool const server = options["server"].count() > 0;
 					bool const chain = options["chain"].count() > 0;
 					if(!server && !chain){
@@ -121,7 +124,6 @@ int main(int argc, char** argv){
 
 		// add the log file to the log system
 		disposer_module::stdlog::weak_file_ptr = logfile;
-
 	}
 
 	// modules must be deleted last, to access the destructors in shared libs

@@ -7,9 +7,10 @@ local bitmap = ../bitmap ;
 local range-v3 = ../range-v3 ;
 local tar = ../tar ;
 local big = ../big ;
-local http = ../http ;
+local webservice = ../webservice ;
 local logsys = ../logsys ;
 local cxxopts = ../cxxopts ;
+local json = ../nlohmann/json ;
 
 local vimba = /home/bebuch/media/libraries/src/Vimba_2_1 ;
 
@@ -22,8 +23,8 @@ use-project /logsys
 	: $(logsys)
 	;
 
-use-project /http
-	: $(http)
+use-project /webservice
+	: $(webservice)
 	;
 
 use-project /disposer
@@ -106,7 +107,7 @@ exe disposer_module
 	/boost//system
 	/boost//filesystem
 	/boost//thread
-	/http//http
+	/webservice//webservice
 	:
 	<include>$(bitmap)/include
 	<include>$(cxxopts)/include
@@ -117,9 +118,10 @@ lib http_server
 	http_server.cpp
 	/disposer_module//log
 	/disposer//disposer
-	/http//http
+	/webservice//webservice
 	:
 	<include>$(bitmap)/include
+	<include>$(json)/single_include
 	;
 
 lib vector_join

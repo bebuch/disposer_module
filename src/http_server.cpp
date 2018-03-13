@@ -9,17 +9,15 @@
 #include <disposer/component.hpp>
 #include <disposer/module.hpp>
 
-#include <http/server_server.hpp>
-#include <http/server_file_request_handler.hpp>
-#include <http/server_lambda_request_handler.hpp>
-#include <http/websocket_server_request_handler.hpp>
-#include <http/websocket_server_json_service.hpp>
+#include <webservice/server.hpp>
+#include <webservice/json_ws_service.hpp>
+#include <webservice/ws_service_handler.hpp>
+#include <webservice/file_request_handler.hpp>
 
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/json_parser.hpp>
 #include <boost/dll.hpp>
 
 #include <shared_mutex>
+#include <thread>
 #include <chrono>
 
 
@@ -30,47 +28,62 @@ namespace disposer_module::http_server_component{
 	namespace hana = boost::hana;
 
 
-	class live_service: public http::websocket::server::json_service{
+	class live_service: public webservice::basic_ws_service< std::string >{
 	public:
-		live_service(std::string const& ready_signal):
-			http::websocket::server::json_service(
-				[this](
-					boost::property_tree::ptree const& data,
-					http::server::connection_ptr const& con
-				){
-					try{
-						if(!data.get< bool >(ready_signal_)) return;
-						std::shared_lock lock(mutex_);
-						ready_.at(con) = true;
-					}catch(...){}
-				},
-				http::websocket::server::data_callback_fn(),
-				[this](http::server::connection_ptr const& con){
-					std::unique_lock lock(mutex_);
-					ready_.emplace(con, false);
-				},
-				[this](http::server::connection_ptr const& con){
-					std::unique_lock lock(mutex_);
-					ready_.erase(con);
-				}
-			),
-			ready_signal_(ready_signal) {}
+		live_service(std::string name)
+			: name(std::move(name)) {}
 
-		void send(std::string const& data){
-			std::shared_lock lock(mutex_);
-			for(auto& pair: ready_){
-				if(!pair.second) continue;
-				pair.second = false;
-				send_binary(data, pair.first);
+		void on_open(std::uintptr_t identifier)override{
+			std::unique_lock lock(mutex_);
+			ready_.emplace(identifier, false);
+		}
+
+		void on_close(std::uintptr_t identifier)override{
+			std::unique_lock lock(mutex_);
+			ready_.erase(identifier);
+		}
+
+		void on_text(
+			std::uintptr_t identifier,
+			std::string&& text
+		)override{
+			if(text != "ready"){
+				throw std::runtime_error(
+					"live_service '" + name + "' message is not 'ready' but '"
+					+ text + "'");
 			}
+			std::shared_lock lock(mutex_);
+			ready_[identifier] = true;
+		}
+
+		void on_binary(
+			std::uintptr_t identifier,
+			std::string&& text
+		)override{
+			throw std::runtime_error(
+				"live_service '" + name
+				+ "' received unexpected binary message: '" + text + "'");
+		}
+
+		void send(std::string data){
+			std::set< std::uintptr_t > ready_sessions;
+			{
+				std::shared_lock lock(mutex_);
+				for(auto& [identifier, ready]: ready_){
+					if(!ready) continue;
+					ready = false;
+					ready_sessions.insert(ready_sessions.end(), identifier);
+				}
+			}
+			send_text(ready_sessions, std::move(data));
 		}
 
 
-	private:
-		std::string const ready_signal_;
+		std::string const name;
 
+	private:
 		std::shared_mutex mutex_;
-		std::map< http::server::connection_ptr, bool > ready_;
+		std::map< std::uintptr_t, std::atomic< bool > > ready_;
 	};
 
 
@@ -81,7 +94,7 @@ namespace disposer_module::http_server_component{
 			: component_(component)
 			, chain_(chain)
 			, active_(true)
-			, thread_([this]{
+			, thread_([this]()noexcept{
 				while(active_){
 					component_.exception_catching_log(
 						[](logsys::stdlogb& os){
@@ -123,299 +136,170 @@ namespace disposer_module::http_server_component{
 		live_chain(live_chain const&) = delete;
 		live_chain(live_chain&&) = delete;
 
-		void shutdown_hint(){
-			active_ = false;
-		}
-
 		~live_chain(){
-			shutdown_hint();
+			active_ = false;
 			thread_.join();
 		}
 
 	private:
 		Component component_;
-		std::string chain_;
+		std::string const chain_;
 		std::atomic< bool > active_;
 		std::thread thread_;
 	};
 
+
 	template < typename Component >
-	class control_service: public http::websocket::server::json_service{
+	class control_service
+		: public webservice::basic_json_ws_service< std::string >{
 	public:
 		control_service(Component component)
-			: http::websocket::server::json_service(
-				[this](
-					boost::property_tree::ptree const& data,
-					http::server::connection_ptr const& /*con*/
-				){
-					auto success = component_.exception_catching_log(
-						[&data](logsys::stdlogb& os){
-							os << "json message: ";
-							try{
-								std::ostringstream stringified;
-								write_json(stringified, data);
-								os << stringified.str();
-							}catch(...){
-								os << "ERROR: print data failed";
-							}
-						},
-						[this, &data]{
-							auto const commands_opt
-								= data.get_child_optional("commands");
-							auto const token_opt
-								= data.get_optional< std::string >("token");
+			: component_(component) {}
 
-							if(!commands_opt || !token_opt) return;
-							auto const commands = *commands_opt;
-							auto const token = *token_opt;
-
-							std::lock_guard< std::mutex > lock(mutex_);
-							for(auto const& [dummy, data]: commands){
-								(void)dummy;
-
-								// TODO: remove template keyword, GCC Bug 84469
-								auto const chain_opt =
-									data.template get_optional< std::string >("chain");
-								auto const live_opt =
-									data.template get_optional< bool >("live");
-
-								if(!chain_opt || !live_opt) continue;
-								auto const chain = *chain_opt;
-								auto const live = *live_opt;
-
-								if(live){
-									active_chains_.try_emplace(
-										chain, component_, chain);
-								}else{
-									active_chains_.erase(chain);
-								}
-							}
-
-							boost::property_tree::ptree answer;
-							answer.put("token", token);
-							send(answer);
-						});
-
-					if(!success){
-						component_.exception_catching_log(
-							[](logsys::stdlogb& os){
-								os << "Send error message";
-							},
-							[&data]{
-								std::string message =
-									"Execution of command failed";
-
-								try{
-									std::ostringstream stringified;
-									write_json(stringified, data);
-									message += " (" + stringified.str() + ")";
-								}catch(...){}
-
-								boost::property_tree::ptree answer;
-								answer.put("error", message);
-								return answer;
-							});
-					}
-				},
-				http::websocket::server::data_callback_fn(),
-				[this](http::server::connection_ptr const& con){
-					std::lock_guard< std::mutex > lock(mutex_);
-					controller_.emplace(con);
-
-					boost::property_tree::ptree chains;
+		void on_open(std::uintptr_t identifier)override{
+			send_text(identifier, nlohmann::json{"chains", [this]{
+					nlohmann::json chains;
+					std::shared_lock lock(mutex_);
 					for(auto const& [name, chain]: active_chains_){
 						(void)chain;
-						boost::property_tree::ptree n;
-						n.put("", name);
-						chains.push_back(std::make_pair("", std::move(n)));
+						chains.push_back(name);
+					}
+					return chains;
+				}()});
+		}
+
+		void on_text(
+			std::uintptr_t identifier,
+			nlohmann::json&& data
+		)override{
+			auto answer = component_.exception_catching_log(
+				[&data](logsys::stdlogb& os){
+					os << "json message: ";
+					try{
+						os << data.dump();
+					}catch(...){
+						os << "ERROR: JSON serialization failed";
+					}
+				},
+				[this, &data]{
+					auto const token = data.at("token").get< std::string >();
+					auto const commands = data.at("commands");
+
+					std::unique_lock lock(mutex_);
+					for(auto const& data: commands){
+						auto const chain =
+							data.at("chain").get< std::string >();
+						auto const live =
+							data.at("live").get< bool >();
+
+						if(live){
+							active_chains_.try_emplace(
+								chain, component_, chain);
+						}else{
+							active_chains_.erase(chain);
+						}
 					}
 
-					boost::property_tree::ptree active_chains;
-					active_chains.put_child("chains", std::move(chains));
-					send(active_chains);
+					return nlohmann::json{"token", token};
+				});
+
+			component_.exception_catching_log(
+				[](logsys::stdlogb& os){
+					os << "Send error message";
 				},
-				[this](http::server::connection_ptr const& con){
-					std::lock_guard< std::mutex > lock(mutex_);
-					controller_.erase(con);
-				}
-			),
-			component_(component) {}
-
-		~control_service(){
-			shutdown();
+				[this, identifier, &answer, &data]{
+					if(answer){
+						send_text(identifier, *answer);
+					}else{
+						std::string message = "Execution of command failed";
+						try{
+							message += " (" + data.dump() + ")";
+						}catch(...){
+							message += " (ERROR: JSON serialization failed)";
+						}
+						send_text(identifier, nlohmann::json{"error", message});
+					}
+				});
 		}
 
-		void shutdown()noexcept{
-			std::lock_guard< std::mutex > lock(mutex_);
-
-			// tell all threads to get done (not necessary, only speed up)
-			for(auto& [name, chain]: active_chains_){
-				(void)name;
-				chain.shutdown_hint();
-			}
-
-			active_chains_.clear();
+		void on_binary(
+			std::uintptr_t /*identifier*/,
+			std::string&& text
+		)override{
+			throw std::runtime_error(
+				"control_service received unexpected binary message: '"
+				+ text + "'");
 		}
+
 
 	private:
-		void send(boost::property_tree::ptree const& data){
-			for(auto& controller: controller_){
-				send_json(data, controller);
-			}
-		}
-
 		Component component_;
 
-		std::mutex mutex_;
-
-		std::set< http::server::connection_ptr > controller_;
+		std::shared_mutex mutex_;
 
 		std::map< std::string, live_chain< Component > > active_chains_;
 	};
 
 
-	class websocket_identifier{
-	private:
-		websocket_identifier(std::string const& name)
-			: name(name) {}
-
-		std::string const& name;
-
+	class server{
+	public:
 		template < typename Component >
-		friend class request_handler;
-	};
+		server(Component component)
+			: server(
+					std::make_unique< webservice::ws_service_handler >(),
+					component
+				) {}
 
-	struct http_server_init_t{
-		websocket_identifier key;
-		bool success;
-	};
+		server(server&&) = default;
 
 
-	template < typename Component >
-	class request_handler: public http::server::lambda_request_handler{
-	public:
-		request_handler(
-				Component component,
-				std::string const& http_root_path)
-			: http::server::lambda_request_handler(
-				[this](
-					http::server::connection_ptr con,
-					http::request const& req,
-					http::reply& rep
-				){
-					return
-						websocket_handler_.handle_request(con, req, rep) ||
-						http_file_handler_.handle_request(con, req, rep);
-				},
-				[this]{
-					control_service_.shutdown();
-					websocket_handler_.shutdown();
+		auto add_live_service(std::string service_name){
+			if(service_name.empty() || service_name[0] != '/'){
+				service_name = "/" + service_name;
+			}
+
+			struct live{
+				live_service& service;
+				webservice::ws_service_handler& handler;
+
+				~live(){
+					try{
+						handler.erase_service(service.name);
+					}catch(...){
+						assert(false);
+					}
 				}
-			)
-			, http_file_handler_(http_root_path)
-			, control_service_(component)
-		{
-			auto success = websocket_handler_.register_service(
-				"controller", control_service_);
+			};
 
-			if(!success){
-				throw std::runtime_error("controller service already exist");
-			}
-		}
-
-		http_server_init_t init(std::string const& service_name){
-			std::unique_lock lock(mutex_);
-			auto [iter, success] = websocket_services_.try_emplace(
-				service_name, "ready");
-
-			if(success){
-				websocket_handler_.register_service(service_name, iter->second);
-			}
-
-			return http_server_init_t{iter->first, success};
-		}
-
-		websocket_identifier unique_init(std::string const& service_name){
-			auto [key, success] = init(service_name);
-
-			if(success) return key;
-
-			throw std::runtime_error("service name already exist: "
-				+ service_name);
-		}
-
-		void uninit(websocket_identifier key){
-			std::unique_lock lock(mutex_);
-			websocket_handler_.shutdown_service(key.name);
-			websocket_services_.erase(key.name);
-		}
-
-		void send(websocket_identifier key, std::string const& data){
-			std::shared_lock lock(mutex_);
-			websocket_services_.at(key.name).send(data);
+			auto service = std::make_unique< live_service >(service_name);
+			live result{*service, ws_handler_};
+			ws_handler_.add_service(service_name, std::move(service));
+			return result;
 		}
 
 
 	private:
-		/// \brief Protects websocket_services_
-		std::shared_mutex mutex_;
-
-		/// \brief Handler for normal HTTP-File-Requests
-		http::server::file_request_handler http_file_handler_;
-
-		/// \brief Handler for Websocket-Requests
-		http::websocket::server::request_handler websocket_handler_;
-
-		/// \brief WebSocket live services
-		std::map< std::string, live_service > websocket_services_;
-
-		/// \brief WebSocket service for disposer control messages
-		control_service< Component > control_service_;
-	};
-
-
-	template < typename Component >
-	class http_server{
-	public:
-		http_server(
-			Component component,
-			std::string const& root,
-			std::uint16_t port,
-			std::size_t thread_count
+		template < typename Component >
+		server(
+			std::unique_ptr< webservice::ws_service_handler >&& ws_handler,
+			Component component
 		)
-			: handler_(component, root)
-			, server_(std::to_string(port), handler_, thread_count) {}
-
-		http_server(http_server&&) = default;
-
-		~http_server(){
-			shutdown();
+			: ws_handler_(*ws_handler.get())
+			, server_(
+				std::make_unique< webservice::file_request_handler >(
+						component("root"_param)),
+				std::move(ws_handler),
+				std::make_unique< webservice::error_handler >(),
+				boost::asio::ip::make_address(component("address"_param)),
+				component("port"_param),
+				component("thread_count"_param))
+		{
+			ws_handler_.add_service("/",
+				std::make_unique< control_service< Component > >(component));
 		}
 
-		void shutdown(){
-			handler_.shutdown();
-		}
-
-		http_server_init_t init(std::string const& service_name){
-			return handler_.init(service_name);
-		}
-
-		websocket_identifier unique_init(std::string const& service_name){
-			return handler_.unique_init(service_name);
-		}
-
-		void uninit(websocket_identifier key){
-			return handler_.uninit(key);
-		}
-
-		void send(websocket_identifier key, std::string const& data){
-			return handler_.send(key, data);
-		}
-
-
-	private:
-		request_handler< Component > handler_;
-		http::server::server server_;
+		webservice::ws_service_handler& ws_handler_;
+		webservice::server server_;
 	};
 
 
@@ -433,13 +317,16 @@ namespace disposer_module::http_server_component{
 			component_configure(
 				make("root"_param, free_type_c< std::string >,
 					"path to the http server root directory"),
+				make("address"_param, free_type_c< std::string >,
+					"address of the server",
+					default_value("0::0")),
 				make("port"_param, free_type_c< std::uint16_t >,
 					"port of the server",
 					default_value(8000)),
-				make("thread_count"_param, free_type_c< std::size_t >,
+				make("thread_count"_param, free_type_c< std::uint8_t >,
 					"thread count to process http and websocket requests",
 					default_value(2),
-					verify_value_fn([](std::size_t value){
+					verify_value_fn([](std::uint8_t value){
 						if(value > 0) return;
 						throw std::logic_error("must be greater or equal 1");
 					})),
@@ -448,11 +335,7 @@ namespace disposer_module::http_server_component{
 					default_value(50))
 			),
 			component_init_fn([](auto component){
-				return http_server< decltype(component) >(
-					component,
-					component("root"_param),
-					component("port"_param),
-					component("thread_count"_param));
+				return server(component);
 			}),
 			component_modules(
 				make("websocket"_module, generate_module(
@@ -466,14 +349,14 @@ namespace disposer_module::http_server_component{
 					),
 					module_init_fn([](auto module){
 						return module.component.state()
-							.unique_init(module("service_name"_param));
+							.add_live_service(module("service_name"_param));
 					}),
 					exec_fn([](auto& module){
 						auto list = module("data"_in).references();
 						if(list.empty()) return;
 						auto iter = list.end();
 						--iter;
-						module.component.state().send(module.state(), *iter);
+						module.state().service.send(*iter);
 					}),
 					no_overtaking
 				))

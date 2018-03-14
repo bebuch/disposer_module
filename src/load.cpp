@@ -285,7 +285,7 @@ namespace disposer_module::load{
 					){
 						if constexpr(type == type_c< ng1 >){
 							return make_name_generator(
-								data,
+								std::string(data),
 								{true, false},
 								std::make_pair("id"s,
 									format{module("id_digits"_param),
@@ -296,7 +296,7 @@ namespace disposer_module::load{
 							);
 						}else if constexpr(type == type_c< ng2 >){
 							return make_name_generator(
-								data,
+								std::string(data),
 								{true, false, true},
 								std::make_pair("id"s,
 									format{module("id_digits"_param),
@@ -310,7 +310,7 @@ namespace disposer_module::load{
 							);
 						}else{
 							return make_name_generator(
-								data,
+								std::string(data),
 								{true, false, true, true},
 								std::make_pair("id"s,
 									format{module("id_digits"_param),

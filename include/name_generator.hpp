@@ -66,7 +66,7 @@ namespace disposer_module{
 
 		inline std::vector< text_or_variable_index_t >
 		parse_pattern(
-			std::string_view pattern,
+			std::string const& pattern,
 			std::vector< std::string > const& variables
 		){
 			auto iter = pattern.begin();
@@ -126,17 +126,17 @@ namespace disposer_module{
 	class name_generator{
 	public:
 		name_generator(
-			std::string_view pattern,
+			std::string pattern,
 			std::pair<
 				std::string,
 				std::function< std::string(T const&) >
 			>&& ... variables
-		):
-			pattern_(impl::name_generator::parse_pattern(pattern, {
-				std::move(variables.first) ...
-			})),
-			functions_{std::move(variables.second) ...}
-			{}
+		)
+			: raw_pattern_(std::move(pattern))
+			, pattern_(impl::name_generator::parse_pattern(raw_pattern_, {
+					std::move(variables.first) ...
+				}))
+			, functions_{std::move(variables.second) ...} {}
 
 		std::string operator()(T const& ... values)const{
 			return get(std::index_sequence_for< T ... >(), values ...);
@@ -155,6 +155,11 @@ namespace disposer_module{
 		std::vector< text_or_variable_index_t > const& pattern()const{
 			return pattern_;
 		}
+
+		std::string const& raw_pattern()const{
+			return raw_pattern_;
+		}
+
 
 	private:
 		struct visitor{
@@ -186,11 +191,19 @@ namespace disposer_module{
 			return os.str();
 		}
 
+		std::string raw_pattern_;
 		std::vector< text_or_variable_index_t > pattern_;
 		std::tuple< std::function< std::string(T const&) > ... > functions_;
-
-
 	};
+
+
+	template < typename ... T >
+	std::ostream& operator<<(
+		std::ostream& os,
+		name_generator< T ... > const& generator
+	){
+		return os << generator.raw_pattern();
+	}
 
 
 	// TODO: replace by boost function types
@@ -236,7 +249,7 @@ namespace disposer_module{
 
 	template < typename ... T >
 	auto make_name_generator(
-		std::string_view pattern,
+		std::string pattern,
 		std::array< bool, sizeof...(T) > const& must_have,
 		std::pair< std::string, T >&& ... variables
 	){
@@ -258,7 +271,7 @@ namespace disposer_module{
 			if(must_have[i] && use_count[i] == 0){
 				throw std::runtime_error(
 					"Variable '" + variable[i] + "' must be used in " +
-					std::string(pattern)
+					pattern
 				);
 			}
 		}
@@ -268,12 +281,12 @@ namespace disposer_module{
 
 	template < typename ... T >
 	auto make_name_generator(
-		std::string_view pattern,
+		std::string pattern,
 		std::pair< std::string, T >&& ... variables
 	){
 		std::array< bool, sizeof...(T) > must_have;
 		must_have.fill(true);
-		return make_name_generator(pattern, must_have,
+		return make_name_generator(std::move(pattern), must_have,
 			std::move(variables) ...);
 	}
 

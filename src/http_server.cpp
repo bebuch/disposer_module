@@ -28,60 +28,119 @@ namespace disposer_module::http_server_component{
 	namespace hana = boost::hana;
 
 
+	template < typename Module >
 	class live_service: public webservice::basic_ws_service< std::string >{
 	public:
-		live_service(std::string name)
-			: name(std::move(name)) {}
+		live_service(Module module)
+			: name(module("service_name"_param))
+			, module_(module) {}
 
 		void on_open(std::uintptr_t identifier)override{
-			std::unique_lock lock(mutex_);
-			ready_.emplace(identifier, false);
+			module_.log(
+				[this, identifier](logsys::stdlogb& os){
+					os << "live service " << name << " on_open identifier("
+						<< identifier << ")";
+				}, [this, identifier]{
+					std::unique_lock lock(mutex_);
+					ready_.emplace(identifier, false);
+				});
 		}
 
 		void on_close(std::uintptr_t identifier)override{
-			std::unique_lock lock(mutex_);
-			ready_.erase(identifier);
+			module_.log(
+				[this, identifier](logsys::stdlogb& os){
+					os << "live service " << name << " on_close identifier("
+						<< identifier << ")";
+				}, [this, identifier]{
+					std::unique_lock lock(mutex_);
+					ready_.erase(identifier);
+				});
 		}
 
 		void on_text(
 			std::uintptr_t identifier,
 			std::string&& text
 		)override{
-			if(text != "ready"){
-				throw std::runtime_error(
-					"live_service '" + name + "' message is not 'ready' but '"
-					+ text + "'");
-			}
-			std::shared_lock lock(mutex_);
-			ready_[identifier] = true;
+			module_.log(
+				[this, identifier](logsys::stdlogb& os){
+					os << "live service " << name << " on_text identifier("
+						<< identifier << ")";
+				}, [this, identifier, &text]{
+					if(text != "ready"){
+						throw std::runtime_error(
+							"live_service '" + name +
+							"' message is not 'ready' but '" + text + "'");
+					}
+					std::shared_lock lock(mutex_);
+					ready_[identifier] = true;
+				});
 		}
 
 		void on_binary(
 			std::uintptr_t identifier,
 			std::string&& text
 		)override{
-			throw std::runtime_error(
-				"live_service '" + name
-				+ "' received unexpected binary message: '" + text + "'");
+			module_.log(
+				[this, identifier](logsys::stdlogb& os){
+					os << "live service " << name << " on_close identifier("
+						<< identifier << ")";
+				}, [this, identifier, &text]{
+					throw std::runtime_error(
+						"live_service '" + name
+						+ "' received unexpected binary message: '" + text
+						+ "'");
+				});
 		}
 
 		void send(std::string data){
-			std::set< std::uintptr_t > ready_sessions;
-			{
-				std::shared_lock lock(mutex_);
-				for(auto& [identifier, ready]: ready_){
-					if(!ready) continue;
-					ready = false;
-					ready_sessions.insert(ready_sessions.end(), identifier);
-				}
-			}
-			send_text(ready_sessions, std::move(data));
+			module_.log(
+				[this](logsys::stdlogb& os){
+					os << "live service " << name << " send binary";
+				}, [this, &data]{
+					std::set< std::uintptr_t > ready_sessions;
+					{
+						std::shared_lock lock(mutex_);
+						for(auto& [identifier, ready]: ready_){
+							if(!ready) continue;
+							ready = false;
+							ready_sessions.insert(
+								ready_sessions.end(), identifier);
+						}
+					}
+					send_text(ready_sessions, std::move(data));
+				});
+		}
+
+		void on_error(
+			std::uintptr_t identifier,
+			webservice::ws_handler_location location,
+			boost::system::error_code ec
+		)override{
+			module_.log(
+				[identifier, location, ec](logsys::stdlogb& os){
+					os << "live service identifier(" << identifier
+						<< ") location(" << to_string_view(location)
+						<< "); error code: " << ec.message() << " (Warning)";
+				});
+		}
+
+		void on_exception(
+			std::uintptr_t identifier,
+			std::exception_ptr error
+		)noexcept override{
+			module_.exception_catching_log(
+				[identifier](logsys::stdlogb& os){
+					os << "live service identifier(" << identifier << ")";
+				}, [error]{
+					std::rethrow_exception(error);
+				});
 		}
 
 
 		std::string const name;
 
 	private:
+		Module module_;
 		std::shared_mutex mutex_;
 		std::map< std::uintptr_t, std::atomic< bool > > ready_;
 	};
@@ -156,16 +215,32 @@ namespace disposer_module::http_server_component{
 		control_service(Component component)
 			: component_(component) {}
 
+
+	private:
 		void on_open(std::uintptr_t identifier)override{
-			send_text(identifier, nlohmann::json{"chains", [this]{
-					nlohmann::json chains;
-					std::shared_lock lock(mutex_);
-					for(auto const& [name, chain]: active_chains_){
-						(void)chain;
-						chains.push_back(name);
-					}
-					return chains;
-				}()});
+			component_.log(
+				[identifier](logsys::stdlogb& os){
+					os << "control service on_open identifier("
+						<< identifier << ")";
+				}, [this, identifier]{
+					send_text(identifier, nlohmann::json{"chains", [this]{
+							nlohmann::json chains;
+							std::shared_lock lock(mutex_);
+							for(auto const& [name, chain]: active_chains_){
+								(void)chain;
+								chains.push_back(name);
+							}
+							return chains;
+						}()});
+				});
+		}
+
+		void on_close(std::uintptr_t identifier)override{
+			component_.log(
+				[identifier](logsys::stdlogb& os){
+					os << "control service on_close identifier("
+						<< identifier << ")";
+				});
 		}
 
 		void on_text(
@@ -173,13 +248,15 @@ namespace disposer_module::http_server_component{
 			nlohmann::json&& data
 		)override{
 			auto answer = component_.exception_catching_log(
-				[&data](logsys::stdlogb& os){
-					os << "json message: ";
+				[identifier, &data](logsys::stdlogb& os){
+					os << "control service on_text identifier("
+						<< identifier << "); message(";
 					try{
 						os << data.dump();
 					}catch(...){
 						os << "ERROR: JSON serialization failed";
 					}
+					os << ")";
 				},
 				[this, &data]{
 					auto const token = data.at("token").get< std::string >();
@@ -204,8 +281,20 @@ namespace disposer_module::http_server_component{
 				});
 
 			component_.exception_catching_log(
-				[](logsys::stdlogb& os){
-					os << "Send error message";
+				[identifier, &answer](logsys::stdlogb& os){
+					os << "control service on_text identifier("
+						<< identifier << "); ";
+					if(answer){
+						os << "send answer(";
+						try{
+							os << answer->dump();
+						}catch(...){
+							os << "ERROR: JSON serialization failed";
+						}
+						os << ")";
+					}else{
+						os << "send error message";
+					}
 				},
 				[this, identifier, &answer, &data]{
 					if(answer){
@@ -223,16 +312,45 @@ namespace disposer_module::http_server_component{
 		}
 
 		void on_binary(
-			std::uintptr_t /*identifier*/,
+			std::uintptr_t identifier,
 			std::string&& text
 		)override{
-			throw std::runtime_error(
-				"control_service received unexpected binary message: '"
-				+ text + "'");
+			component_.log(
+				[identifier](logsys::stdlogb& os){
+					os << "control service on_binary identifier("
+						<< identifier << ")";
+				}, [&text]{
+					throw std::runtime_error(
+						"received unexpected binary message: '" + text + "'");
+				});
+		}
+
+		void on_error(
+			std::uintptr_t identifier,
+			webservice::ws_handler_location location,
+			boost::system::error_code ec
+		)override{
+			component_.log(
+				[identifier, location, ec](logsys::stdlogb& os){
+					os << "control service identifier(" << identifier
+						<< ") location(" << to_string_view(location)
+						<< "); error code: " << ec.message() << " (Warning)";
+				});
+		}
+
+		void on_exception(
+			std::uintptr_t identifier,
+			std::exception_ptr error
+		)noexcept override{
+			component_.exception_catching_log(
+				[identifier](logsys::stdlogb& os){
+					os << "control service identifier(" << identifier << ")";
+				}, [error]{
+					std::rethrow_exception(error);
+				});
 		}
 
 
-	private:
 		Component component_;
 
 		std::shared_mutex mutex_;
@@ -241,26 +359,150 @@ namespace disposer_module::http_server_component{
 	};
 
 
+	template < typename Component >
+	class ws_service_handler: public webservice::ws_service_handler{
+	public:
+		ws_service_handler(Component component)
+			: component_(component) {}
+
+
+	private:
+		void on_error(
+			webservice::ws_server_session* session,
+			std::string const& resource,
+			webservice::ws_handler_location location,
+			boost::system::error_code ec
+		)override{
+			auto const identifier = reinterpret_cast< std::intptr_t >(session);
+			component_.log(
+				[identifier, &resource, location, ec](logsys::stdlogb& os){
+					os << "service handler identifier(" << identifier
+						<< ") resource(" << resource << ") location("
+						<< to_string_view(location) << "); error code: "
+						<< ec.message() << "(Warning)";
+				});
+		}
+
+		void on_exception(
+			webservice::ws_server_session* session,
+			std::string const& resource,
+			std::exception_ptr error
+		)noexcept override{
+			auto const identifier = reinterpret_cast< std::intptr_t >(session);
+			component_.exception_catching_log(
+				[identifier, &resource](logsys::stdlogb& os){
+					os << "service handler identifier(" << identifier
+						<< ") resource(" << resource << ")";
+				}, [error]{
+					std::rethrow_exception(error);
+				});
+		}
+
+
+		Component component_;
+	};
+
+
+	template < typename Component >
+	class error_handler: public webservice::error_handler{
+	public:
+		error_handler(Component component)
+			: component_(component) {}
+
+
+	private:
+		void on_error(boost::system::error_code ec)override{
+			component_.log(
+				[ec](logsys::stdlogb& os){
+					os << "server thread error code: " << ec.message()
+						<< "(Warning)";
+				});
+		}
+
+		void on_exception(std::exception_ptr error)noexcept override{
+			component_.exception_catching_log(
+				[](logsys::stdlogb& os){
+					os << "server thread";
+				}, [error]{
+					std::rethrow_exception(error);
+				});
+		}
+
+
+		Component component_;
+	};
+
+
+	template < typename Component >
+	class file_request_handler: public webservice::file_request_handler{
+	public:
+		file_request_handler(Component component)
+			: webservice::file_request_handler(component("root"_param))
+			, component_(component) {}
+
+		void operator()(
+			webservice::http_request&& req,
+			webservice::http_response&& send
+		)override{
+			component_.log(
+				[this, resource = req.target()](logsys::stdlogb& os){
+					os << "http file handler get (" << resource << ")";
+				}, [this, &req, &send]{
+					webservice::file_request_handler::operator()(
+						std::move(req), std::move(send));
+				});
+		}
+
+	private:
+		void on_error(
+			webservice::http_request_location location,
+			boost::system::error_code ec
+		)override{
+			component_.log(
+				[ec, location](logsys::stdlogb& os){
+					os << "http file handler location("
+						<< to_string_view(location)
+						<< ") error code: " << ec.message() << "(Warning)";
+				});
+		}
+
+		void on_exception(std::exception_ptr error)noexcept override{
+			component_.exception_catching_log(
+				[](logsys::stdlogb& os){
+					os << "http file handler";
+				}, [error]{
+					std::rethrow_exception(error);
+				});
+		}
+
+
+		Component component_;
+	};
+
+
+	template < typename Component >
 	class server{
 	public:
-		template < typename Component >
 		server(Component component)
 			: server(
-					std::make_unique< webservice::ws_service_handler >(),
+					std::make_unique< ws_service_handler< Component > >(
+						component),
 					component
 				) {}
 
 		server(server&&) = default;
 
 
-		auto add_live_service(std::string service_name){
+		template < typename Module >
+		auto add_live_service(Module module){
+			std::string service_name = module("service_name"_param);
 			if(service_name.empty() || service_name[0] != '/'){
 				service_name = "/" + service_name;
 			}
 
 			struct live{
-				live_service& service;
-				webservice::ws_service_handler& handler;
+				live_service< Module >& service;
+				ws_service_handler< Component >& handler;
 
 				~live(){
 					try{
@@ -271,7 +513,7 @@ namespace disposer_module::http_server_component{
 				}
 			};
 
-			auto service = std::make_unique< live_service >(service_name);
+			auto service = std::make_unique< live_service< Module > >(module);
 			live result{*service, ws_handler_};
 			ws_handler_.add_service(service_name, std::move(service));
 			return result;
@@ -279,17 +521,16 @@ namespace disposer_module::http_server_component{
 
 
 	private:
-		template < typename Component >
 		server(
-			std::unique_ptr< webservice::ws_service_handler >&& ws_handler,
+			std::unique_ptr< ws_service_handler< Component > >&& ws_handler,
 			Component component
 		)
 			: ws_handler_(*ws_handler.get())
 			, server_(
-				std::make_unique< webservice::file_request_handler >(
-						component("root"_param)),
+				std::make_unique< file_request_handler< Component > >(
+					component),
 				std::move(ws_handler),
-				std::make_unique< webservice::error_handler >(),
+				std::make_unique< error_handler< Component > >(component),
 				boost::asio::ip::make_address(component("address"_param)),
 				component("port"_param),
 				component("thread_count"_param))
@@ -298,7 +539,7 @@ namespace disposer_module::http_server_component{
 				std::make_unique< control_service< Component > >(component));
 		}
 
-		webservice::ws_service_handler& ws_handler_;
+		ws_service_handler< Component >& ws_handler_;
 		webservice::server server_;
 	};
 
@@ -335,7 +576,7 @@ namespace disposer_module::http_server_component{
 					default_value(50))
 			),
 			component_init_fn([](auto component){
-				return server(component);
+				return server< decltype(component) >(component);
 			}),
 			component_modules(
 				make("websocket"_module, generate_module(
@@ -349,7 +590,7 @@ namespace disposer_module::http_server_component{
 					),
 					module_init_fn([](auto module){
 						return module.component.state()
-							.add_live_service(module("service_name"_param));
+							.add_live_service(module);
 					}),
 					exec_fn([](auto& module){
 						auto list = module("data"_in).references();

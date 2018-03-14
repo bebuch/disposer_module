@@ -37,11 +37,12 @@ file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 		var image = document.getElementById("image");
 		var live_connection = false;
 		var live_image = function(service_name){
+			console.log("connect to live service '" + service_name + "'");
 			var socket = new WebSocket('ws://' + window.location.host + '/'
 				+ service_name);
 			socket.binaryType = 'arraybuffer';
 			socket.onmessage = function(evt){
-				console.log("onmessage");
+				console.log("live onmessage");
 				if(evt.data instanceof ArrayBuffer){
 					var length = evt.data.byteLength;
 					var blob = new Blob([evt.data],{type:'image/jpeg'});
@@ -54,21 +55,21 @@ file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 						ctx.drawImage(img, 0, 0);
 					}
 					img.src = url;
-					socket.send(JSON.stringify({'ready': true}));
+					socket.send('ready');
 				}else if(typeof(evt.data) === 'string'){
-					console.log("onmessage string: " + evt.data);
+					console.log("live onmessage string: " + evt.data);
 				}
 			};
 			socket.onopen = function(event){
-				console.log("onopen: " + JSON.stringify(event));
-				socket.send(JSON.stringify({'ready': true}));
+				console.log("live onopen: " + JSON.stringify(event));
+				socket.send('ready');
 			};
 			socket.onerror = function(event){
 				live_connection = false;
-				console.log("onerror: " + JSON.stringify(event));
+				console.log("live onerror: " + JSON.stringify(event));
 			};
 			socket.onclose = function(event){
-				console.log("onclose: " + JSON.stringify(event));
+				console.log("live onclose: " + JSON.stringify(event));
 			};
 			return socket;
 		};
@@ -85,12 +86,11 @@ file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 			});
 		};
 
-		live_connection = live_image('scheduler');
-		var command_socket = new WebSocket('ws://' + window.location.host + '/controller');
+		var command_socket = new WebSocket('ws://' + window.location.host + '/');
 		command_socket.onmessage = function(evt){
-			console.log("onmessage");
+			console.log("control onmessage");
 			if(typeof(evt.data) === 'string'){
-				console.log("onmessage string: " + evt.data);
+				console.log("control onmessage string: " + evt.data);
 				var data = JSON.parse(evt.data);
 
 				if(data.hasOwnProperty('token')){
@@ -119,13 +119,13 @@ file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 			}
 		};
 		command_socket.onopen = function(event){
-			console.log("onopen: " + JSON.stringify(event));
+			console.log("control onopen: " + JSON.stringify(event));
 		};
 		command_socket.onerror = function(event){
-			console.log("onerror: " + JSON.stringify(event));
+			console.log("control onerror: " + JSON.stringify(event));
 		};
 		command_socket.onclose = function(event){
-			console.log("onclose: " + JSON.stringify(event));
+			console.log("control onclose: " + JSON.stringify(event));
 		};
 
 

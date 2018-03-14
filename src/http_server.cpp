@@ -62,9 +62,9 @@ namespace disposer_module::http_server_component{
 			std::string&& text
 		)override{
 			module_.log(
-				[this, identifier](logsys::stdlogb& os){
+				[this, identifier, &text](logsys::stdlogb& os){
 					os << "live service " << name << " on_text identifier("
-						<< identifier << ")";
+						<< identifier << "); message(" << text << ")";
 				}, [this, identifier, &text]{
 					if(text != "ready"){
 						throw std::runtime_error(
@@ -93,11 +93,22 @@ namespace disposer_module::http_server_component{
 		}
 
 		void send(std::string data){
+			std::set< std::uintptr_t > ready_sessions;
 			module_.log(
-				[this](logsys::stdlogb& os){
-					os << "live service " << name << " send binary";
-				}, [this, &data]{
-					std::set< std::uintptr_t > ready_sessions;
+				[this, &ready_sessions](logsys::stdlogb& os){
+					os << "live service " << name
+						<< " send binary to sessions(";
+					bool first = true;
+					for(auto identifier: ready_sessions){
+						if(!first){
+							os << ", ";
+						}else{
+							first = false;
+						}
+						os << identifier;
+					}
+					os << ")";
+				}, [this, &data, &ready_sessions]{
 					{
 						std::shared_lock lock(mutex_);
 						for(auto& [identifier, ready]: ready_){
@@ -107,7 +118,7 @@ namespace disposer_module::http_server_component{
 								ready_sessions.end(), identifier);
 						}
 					}
-					send_text(ready_sessions, std::move(data));
+					send_binary(ready_sessions, std::move(data));
 				});
 		}
 
@@ -120,7 +131,7 @@ namespace disposer_module::http_server_component{
 				[identifier, location, ec](logsys::stdlogb& os){
 					os << "live service identifier(" << identifier
 						<< ") location(" << to_string_view(location)
-						<< "); error code: " << ec.message() << " (Warning)";
+						<< "); error code: " << ec.message() << " (WARNING)";
 				});
 		}
 
@@ -277,7 +288,7 @@ namespace disposer_module::http_server_component{
 						}
 					}
 
-					return nlohmann::json{"token", token};
+					return nlohmann::json{{"token", token}};
 				});
 
 			component_.exception_catching_log(
@@ -306,7 +317,7 @@ namespace disposer_module::http_server_component{
 						}catch(...){
 							message += " (ERROR: JSON serialization failed)";
 						}
-						send_text(identifier, nlohmann::json{"error", message});
+						send_text(identifier, nlohmann::json{{"error", message}});
 					}
 				});
 		}
@@ -334,7 +345,7 @@ namespace disposer_module::http_server_component{
 				[identifier, location, ec](logsys::stdlogb& os){
 					os << "control service identifier(" << identifier
 						<< ") location(" << to_string_view(location)
-						<< "); error code: " << ec.message() << " (Warning)";
+						<< "); error code: " << ec.message() << " (WARNING)";
 				});
 		}
 
@@ -379,7 +390,7 @@ namespace disposer_module::http_server_component{
 					os << "service handler identifier(" << identifier
 						<< ") resource(" << resource << ") location("
 						<< to_string_view(location) << "); error code: "
-						<< ec.message() << "(Warning)";
+						<< ec.message() << "(WARNING)";
 				});
 		}
 
@@ -415,7 +426,7 @@ namespace disposer_module::http_server_component{
 			component_.log(
 				[ec](logsys::stdlogb& os){
 					os << "server thread error code: " << ec.message()
-						<< "(Warning)";
+						<< "(WARNING)";
 				});
 		}
 
@@ -462,7 +473,7 @@ namespace disposer_module::http_server_component{
 				[ec, location](logsys::stdlogb& os){
 					os << "http file handler location("
 						<< to_string_view(location)
-						<< ") error code: " << ec.message() << "(Warning)";
+						<< ") error code: " << ec.message() << "(WARNING)";
 				});
 		}
 
@@ -496,27 +507,55 @@ namespace disposer_module::http_server_component{
 		template < typename Module >
 		auto add_live_service(Module module){
 			std::string service_name = module("service_name"_param);
-			if(service_name.empty() || service_name[0] != '/'){
-				service_name = "/" + service_name;
-			}
-
-			struct live{
-				live_service< Module >& service;
-				ws_service_handler< Component >& handler;
-
-				~live(){
-					try{
-						handler.erase_service(service.name);
-					}catch(...){
-						assert(false);
+			return component_.log(
+				[&service_name](logsys::stdlogb& os){
+					os << "add WebSocket service(" << service_name << ")";
+				}, [this, module, &service_name]{
+					if(service_name.empty() || service_name[0] != '/'){
+						service_name = "/" + service_name;
 					}
-				}
-			};
 
-			auto service = std::make_unique< live_service< Module > >(module);
-			live result{*service, ws_handler_};
-			ws_handler_.add_service(service_name, std::move(service));
-			return result;
+					class live{
+					public:
+						live(
+							live_service< Module >& service,
+							std::string service_name,
+							ws_service_handler< Component >& handler,
+							Component component
+						)
+							: service(service)
+							, service_name_(std::move(service_name))
+							, handler_(handler)
+							, component_(component) {}
+
+						live(live const&) = delete;
+
+						~live(){
+							component_.exception_catching_log(
+								[this](logsys::stdlogb& os){
+									os << "erase WebSocket service("
+										<< service_name_ << ")";
+								}, [this]{
+									handler_.erase_service(service_name_);
+								});
+						}
+
+						live_service< Module >& service;
+
+					private:
+						std::string service_name_;
+						ws_service_handler< Component >& handler_;
+						Component component_;
+					};
+
+					auto service =
+						std::make_unique< live_service< Module > >(module);
+					auto result = std::make_unique< live >(
+						*service, service_name, ws_handler_, component_);
+					ws_handler_.add_service(
+						std::move(service_name), std::move(service));
+					return result;
+				});
 		}
 
 
@@ -525,7 +564,8 @@ namespace disposer_module::http_server_component{
 			std::unique_ptr< ws_service_handler< Component > >&& ws_handler,
 			Component component
 		)
-			: ws_handler_(*ws_handler.get())
+			: component_(component)
+			, ws_handler_(*ws_handler.get())
 			, server_(
 				std::make_unique< file_request_handler< Component > >(
 					component),
@@ -535,10 +575,16 @@ namespace disposer_module::http_server_component{
 				component("port"_param),
 				component("thread_count"_param))
 		{
-			ws_handler_.add_service("/",
-				std::make_unique< control_service< Component > >(component));
+			component_.log(
+				[](logsys::stdlogb& os){
+					os << "add WebSocket control service on root(/)";
+				}, [this]{
+					ws_handler_.add_service("/", std::make_unique<
+						control_service< Component > >(component_));
+				});
 		}
 
+		Component component_;
 		ws_service_handler< Component >& ws_handler_;
 		webservice::server server_;
 	};
@@ -597,7 +643,7 @@ namespace disposer_module::http_server_component{
 						if(list.empty()) return;
 						auto iter = list.end();
 						--iter;
-						module.state().service.send(*iter);
+						module.state()->service.send(*iter);
 					}),
 					no_overtaking
 				))

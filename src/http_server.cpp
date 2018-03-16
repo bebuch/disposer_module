@@ -28,6 +28,17 @@ namespace disposer_module::http_server_component{
 	namespace hana = boost::hana;
 
 
+	template < typename T, typename KeyT >
+	std::optional< T > get_optional(nlohmann::json const& json, KeyT&& key){
+		auto iter = json.find(key);
+		if(iter != json.end()){
+			return iter->template get< T >();
+		}else{
+			return {};
+		}
+	}
+
+
 	template < typename Module >
 	class live_service: public webservice::basic_ws_service< std::string >{
 	public:
@@ -160,48 +171,11 @@ namespace disposer_module::http_server_component{
 	template < typename Component >
 	class live_chain{
 	public:
-		live_chain(Component component, std::string const& chain)
+		live_chain(Component component, std::string chain)
 			: component_(component)
-			, chain_(chain)
+			, chain_(std::move(chain))
 			, active_(true)
-			, thread_([this]()noexcept{
-				while(active_){
-					component_.exception_catching_log(
-						[](logsys::stdlogb& os){
-							os << "server live exec";
-						}, [this]{
-							auto const min_interval_in_ms =
-								component_("min_interval_in_ms"_param);
-							auto const interval =
-								std::chrono::milliseconds(min_interval_in_ms);
-
-							auto chain =
-								component_.system().enable_chain(chain_);
-							while(active_){
-								component_.exception_catching_log(
-									[](logsys::stdlogb& os){
-										os << "server live exec loop";
-									}, [this, &chain, interval]{
-										while(active_){
-											auto const start = std::chrono
-												::high_resolution_clock::now();
-											chain.exec();
-											auto const end = std::chrono
-												::high_resolution_clock::now();
-											std::chrono::duration< double,
-												std::milli > const diff
-													= end - start;
-											if(diff < interval){
-												if(!active_) break;
-												std::this_thread::sleep_for(
-													interval - diff);
-											}
-										}
-									});
-							}
-						});
-				}
-			}) {}
+			, thread_([this]()noexcept{ main_loop(); }) {}
 
 		live_chain(live_chain const&) = delete;
 		live_chain(live_chain&&) = delete;
@@ -211,7 +185,50 @@ namespace disposer_module::http_server_component{
 			thread_.join();
 		}
 
+
 	private:
+		void main_loop()noexcept{
+			while(active_){
+				component_.exception_catching_log(
+					[](logsys::stdlogb& os){
+						os << "server live exec";
+					}, [this]{
+						chain_loop();
+					});
+			}
+		}
+
+		void chain_loop(){
+			auto chain = component_.system().enable_chain(chain_);
+			while(active_){
+				component_.exception_catching_log(
+					[](logsys::stdlogb& os){
+						os << "server live exec loop";
+					}, [this, &chain]{
+						exec_loop(chain);
+					});
+			}
+		}
+
+		void exec_loop(disposer::enabled_chain& chain){
+			auto const interval = std::chrono::milliseconds(
+				component_("min_interval_in_ms"_param));
+
+			while(active_){
+				auto const start = std::chrono::high_resolution_clock::now();
+				chain.exec();
+				auto const end = std::chrono::high_resolution_clock::now();
+				std::chrono::duration< double, std::milli > const diff =
+					end - start;
+
+				if(diff < interval){
+					if(!active_) break;
+					std::this_thread::sleep_for(interval - diff);
+				}
+			}
+		}
+
+
 		Component component_;
 		std::string const chain_;
 		std::atomic< bool > active_;
@@ -277,14 +294,32 @@ namespace disposer_module::http_server_component{
 					for(auto const& data: commands){
 						auto const chain =
 							data.at("chain").get< std::string >();
-						auto const live =
-							data.at("live").get< bool >();
+						auto const live = get_optional< bool >(data, "live");
+						auto const exec = get_optional< int >(data, "exec");
+
+						if(live && exec){
+							throw std::logic_error("json message chain "
+								"with both live and exec");
+						}
 
 						if(live){
-							active_chains_.try_emplace(
-								chain, component_, chain);
+							if(*live){
+								active_chains_.try_emplace(
+									chain, component_, chain);
+							}else{
+								active_chains_.erase(chain);
+							}
+						}else if(exec){
+							auto exec_count = *exec;
+							if(exec_count < 1){
+								throw std::logic_error("json message chain "
+									"exec is less than 1 (" +
+									std::to_string(exec_count) + ")");
+							}
+							// TODO
 						}else{
-							active_chains_.erase(chain);
+							throw std::logic_error("json message chain "
+								"without live and exec");
 						}
 					}
 

@@ -95,7 +95,7 @@ namespace disposer_module::http_server_component{
 				[this, identifier](logsys::stdlogb& os){
 					os << "live service " << name << " on_close identifier("
 						<< identifier << ")";
-				}, [this, identifier, &text]{
+				}, [this, &text]{
 					throw std::runtime_error(
 						"live_service '" + name
 						+ "' received unexpected binary message: '" + text
@@ -169,79 +169,148 @@ namespace disposer_module::http_server_component{
 
 
 	template < typename Component >
-	class live_chain{
+	class running_chains
+		: public webservice::basic_json_ws_service< std::string >{
 	public:
-		live_chain(Component component, std::string chain)
+		running_chains(Component component, webservice::server& server)
 			: component_(component)
-			, chain_(std::move(chain))
-			, active_(true)
-			, thread_([this]()noexcept{ main_loop(); }) {}
+			, server_(server)
+			, interval_(component_("min_interval_in_ms"_param)) {}
 
-		live_chain(live_chain const&) = delete;
-		live_chain(live_chain&&) = delete;
 
-		~live_chain(){
-			active_ = false;
-			thread_.join();
+		~running_chains(){
+			shutdown_ = true;
+			for(;;){
+				std::unique_lock lock(mutex_);
+				if(chains_.empty()){
+					break;
+				}
+				server_.run_one();
+			}
 		}
 
+
+		void add(
+			std::string const& chain,
+			std::optional< std::size_t > exec_count = {}
+		){
+			if(shutdown_){
+				throw std::logic_error("can not active chain(" + chain
+					+ ") while shutdown");
+			}
+
+			std::unique_lock lock(mutex_);
+			if(chains_.find(chain) != chains_.end()){
+				throw std::logic_error("chain(" + chain
+					+ ") is already running");
+			}
+			chains_.try_emplace(
+				chain,
+				component_.system().enable_chain(chain),
+				exec_count);
+
+			send_text(nlohmann::json::object({{"run-chain", chain}}));
+
+			if(chains_.size() == 1){
+				async([this]{
+					run();
+				});
+			}
+		}
+
+		void erase(std::string const& chain){
+			std::unique_lock lock(mutex_);
+			lockless_erase(chain);
+		}
+
+		void run(){
+			if(shutdown_){
+				return;
+			}
+
+			auto const now = std::chrono::high_resolution_clock::now();
+			std::chrono::duration< double, std::milli > diff = now - last_exec_;
+			// TODO: This is a hack, async should better be called via timer
+			std::this_thread::sleep_for(interval_ - diff);
+
+			std::shared_lock lock(mutex_);
+			last_exec_ = std::chrono::high_resolution_clock::now();
+			for(auto& pair: chains_){
+				component_.exception_catching_log(
+					[&pair](logsys::stdlogb& os){
+						os << "server live exec chain(" << pair.first << ")";
+					}, [this, &pair]{
+						auto& [chain, count, counter] = pair.second;
+						++counter;
+						chain.exec();
+						if(count && counter >= *count){
+							lockless_erase(pair.first);
+						}
+					});
+			}
+
+			if(!chains_.empty()){
+				async([this]{
+					run();
+				});
+			}
+		}
+
+
+	protected:
+		Component component_;
+		webservice::server& server_;
+
+		void send_running_chains(std::intptr_t identifier){
+			send_text(identifier, nlohmann::json::object({{"running-chains",
+				[this]{
+					auto chains = nlohmann::json::array();
+					std::shared_lock lock(mutex_);
+					for(auto const& [name, chain]: chains_){
+						(void)chain;
+						chains.push_back(name);
+					}
+					return chains;
+				}()}}));
+		}
 
 	private:
-		void main_loop()noexcept{
-			while(active_){
-				component_.exception_catching_log(
-					[](logsys::stdlogb& os){
-						os << "server live exec";
-					}, [this]{
-						chain_loop();
-					});
+		void lockless_erase(std::string const& chain){
+			if(chains_.erase(chain) == 0){
+				throw std::logic_error("chain(" + chain + ") is not running");
 			}
+			send_text(nlohmann::json::object({{"stop-chain", chain}}));
 		}
 
-		void chain_loop(){
-			auto chain = component_.system().enable_chain(chain_);
-			while(active_){
-				component_.exception_catching_log(
-					[](logsys::stdlogb& os){
-						os << "server live exec loop";
-					}, [this, &chain]{
-						exec_loop(chain);
-					});
-			}
-		}
+		struct running_chains_data{
+			running_chains_data(
+				disposer::enabled_chain&& chain,
+				std::optional< std::size_t > exec_count
+			)
+				: chain(std::move(chain))
+				, exec_count(exec_count) {}
 
-		void exec_loop(disposer::enabled_chain& chain){
-			auto const interval = std::chrono::milliseconds(
-				component_("min_interval_in_ms"_param));
+			disposer::enabled_chain chain;
+			std::optional< std::size_t > exec_count;
+			std::size_t exec_counter = 0;
+		};
 
-			while(active_){
-				auto const start = std::chrono::high_resolution_clock::now();
-				chain.exec();
-				auto const end = std::chrono::high_resolution_clock::now();
-				std::chrono::duration< double, std::milli > const diff =
-					end - start;
-
-				if(diff < interval){
-					if(!active_) break;
-					std::this_thread::sleep_for(interval - diff);
-				}
-			}
-		}
-
-
-		Component component_;
-		std::string const chain_;
-		std::atomic< bool > active_;
-		std::thread thread_;
+		std::chrono::milliseconds const interval_;
+		std::chrono::high_resolution_clock::time_point last_exec_;
+		std::atomic< bool > shutdown_{false};
+		std::shared_mutex mutex_;
+		std::map< std::string, running_chains_data > chains_;
 	};
 
 
 	template < typename Component >
-	class control_service
-		: public webservice::basic_json_ws_service< std::string >{
+	class control_service: public running_chains< Component >{
 	public:
-		control_service(Component component)
-			: component_(component) {}
+		using running_chains< Component >::running_chains;
+
+
+	protected:
+		using running_chains< Component >::component_;
 
 
 	private:
@@ -251,15 +320,7 @@ namespace disposer_module::http_server_component{
 					os << "control service on_open identifier("
 						<< identifier << ")";
 				}, [this, identifier]{
-					send_text(identifier, nlohmann::json{"chains", [this]{
-							nlohmann::json chains;
-							std::shared_lock lock(mutex_);
-							for(auto const& [name, chain]: active_chains_){
-								(void)chain;
-								chains.push_back(name);
-							}
-							return chains;
-						}()});
+					this->send_running_chains(identifier);
 				});
 		}
 
@@ -275,7 +336,7 @@ namespace disposer_module::http_server_component{
 			std::uintptr_t identifier,
 			nlohmann::json&& data
 		)override{
-			auto answer = component_.exception_catching_log(
+			component_.exception_catching_log(
 				[identifier, &data](logsys::stdlogb& os){
 					os << "control service on_text identifier("
 						<< identifier << "); message(";
@@ -287,72 +348,37 @@ namespace disposer_module::http_server_component{
 					os << ")";
 				},
 				[this, &data]{
-					auto const token = data.at("token").get< std::string >();
-					auto const commands = data.at("commands");
+					auto const chain =
+						data.at("chain").get< std::string >();
+					auto const live = get_optional< bool >(data, "live");
+					auto const exec = get_optional< int >(data, "exec");
 
-					std::unique_lock lock(mutex_);
-					for(auto const& data: commands){
-						auto const chain =
-							data.at("chain").get< std::string >();
-						auto const live = get_optional< bool >(data, "live");
-						auto const exec = get_optional< int >(data, "exec");
+					if(live && exec){
+						throw std::logic_error("json message chain "
+							"with both live and exec");
+					}
 
-						if(live && exec){
-							throw std::logic_error("json message chain "
-								"with both live and exec");
-						}
-
-						if(live){
-							if(*live){
-								active_chains_.try_emplace(
-									chain, component_, chain);
-							}else{
-								active_chains_.erase(chain);
-							}
-						}else if(exec){
-							auto exec_count = *exec;
-							if(exec_count < 1){
-								throw std::logic_error("json message chain "
-									"exec is less than 1 (" +
-									std::to_string(exec_count) + ")");
-							}
-							// TODO
+					if(live){
+						std::unique_lock lock(mutex_);
+						if(*live){
+							this->add(chain);
 						}else{
+							this->erase(chain);
+						}
+					}else if(exec){
+						auto exec_count = *exec;
+						if(exec_count < 1){
 							throw std::logic_error("json message chain "
-								"without live and exec");
+								"exec is less than 1 (" +
+								std::to_string(exec_count) + ")");
 						}
-					}
 
-					return nlohmann::json{{"token", token}};
-				});
-
-			component_.exception_catching_log(
-				[identifier, &answer](logsys::stdlogb& os){
-					os << "control service on_text identifier("
-						<< identifier << "); ";
-					if(answer){
-						os << "send answer(";
-						try{
-							os << answer->dump();
-						}catch(...){
-							os << "ERROR: JSON serialization failed";
-						}
-						os << ")";
+						std::unique_lock lock(mutex_);
+						this->add(
+							chain, static_cast< std::size_t >(exec_count));
 					}else{
-						os << "send error message";
-					}
-				},
-				[this, identifier, &answer, &data]{
-					if(answer){
-						send_text(identifier, *answer);
-					}else{
-						std::string message = "Execution of command failed";
-						try{
-							message += " (" + data.dump() + ")";
-						}catch(...){
-							message += " (ERROR: JSON serialization failed)";
-						}
-						send_text(identifier, nlohmann::json{{"error", message}});
+						throw std::logic_error("json message chain "
+							"without live and exec");
 					}
 				});
 		}
@@ -397,11 +423,7 @@ namespace disposer_module::http_server_component{
 		}
 
 
-		Component component_;
-
 		std::shared_mutex mutex_;
-
-		std::map< std::string, live_chain< Component > > active_chains_;
 	};
 
 
@@ -491,7 +513,7 @@ namespace disposer_module::http_server_component{
 			webservice::http_response&& send
 		)override{
 			component_.log(
-				[this, resource = req.target()](logsys::stdlogb& os){
+				[resource = req.target()](logsys::stdlogb& os){
 					os << "http file handler get (" << resource << ")";
 				}, [this, &req, &send]{
 					webservice::file_request_handler::operator()(
@@ -615,7 +637,7 @@ namespace disposer_module::http_server_component{
 					os << "add WebSocket control service on root(/)";
 				}, [this]{
 					ws_handler_.add_service("/", std::make_unique<
-						control_service< Component > >(component_));
+						control_service< Component > >(component_, server_));
 				});
 		}
 

@@ -16,15 +16,15 @@ file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 	<form>
 		<fieldset style="display:inline-block;text-align:left;border:none;">
 			<label style="display:inline-block;border:1px solid black;padding:0.5em;margin:0.2em 0;">
-				<input type="radio" name="state" value="none" id="state_none" checked="checked">
+				<input type="radio" name="state" value="none" id="none" checked="checked">
 				Aus
 			</label>
 			<label style="display:inline-block;border:1px solid black;padding:0.5em;margin:0.2em 0;">
-				<input type="radio" name="state" value="show" id="state_show">
+				<input type="radio" name="state" value="show_live" id="show_live">
 				Live
 			</label>
 			<label style="display:inline-block;border:1px solid black;padding:0.5em;margin:0.2em 0;">
-				<input type="radio" name="state" value="save" id="state_save">
+				<input type="radio" name="state" value="save_live" id="save_live">
 				Live mit speichern
 			</label>
 		</fieldset>
@@ -93,26 +93,42 @@ file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 				console.log("control onmessage string: " + evt.data);
 				var data = JSON.parse(evt.data);
 
-				if(data.hasOwnProperty('token')){
+				if(data.hasOwnProperty('running-chains')){
 					disable_change_events();
-					document.getElementById("state_" + data.token).checked = true;
-					enable_change_events();
-
-					if(data.token != 'none'){
-						live_connection = live_image('scheduler');
-					}
-				}else if(data.hasOwnProperty('chains')){
-					disable_change_events();
-					if(typeof(data.chains) === 'string' && data.chains === ''){
-						document.getElementById("state_none").checked = true;
-					}else if(Object.prototype.toString.call(data.chains) === '[object Array]'){
-						if(data.chains.includes("show_live")){
-							document.getElementById("state_show").checked = true;
-						}else if(data.chains.includes("save_live")){
-							document.getElementById("state_save").checked = true;
+					if(typeof(data['running-chains']) === 'string' && data['running-chains'] === ''){
+						document.getElementById("none").checked = true;
+					}else if(Object.prototype.toString.call(data['running-chains']) === '[object Array]'){
+						if(data['running-chains'].includes("show_live")){
+							document.getElementById("show_live").checked = true;
+							live_connection = live_image('scheduler');
+						}else if(data['running-chains'].includes("save_live")){
+							document.getElementById("save_live").checked = true;
+							live_connection = live_image('scheduler');
 						}
 					}
 					enable_change_events();
+				}else if(data.hasOwnProperty('run-chain')){
+					if(typeof(data['run-chain']) !== 'string' || !['show_live', 'save_live'].includes(data['run-chain'])){
+						console.log("unknown chain: ", JSON.stringify(data['run-chain']));
+						return;
+					}
+
+					disable_change_events();
+					document.getElementById(data['run-chain']).checked = true;
+					enable_change_events();
+
+					live_connection = live_image('scheduler');
+				}else if(data.hasOwnProperty('stop-chain')){
+					if(typeof(data['stop-chain']) !== 'string' || !['show_live', 'save_live'].includes(data['stop-chain'])){
+						console.log("unknown chain: ", JSON.stringify(data['stop-chain']));
+						return;
+					}
+
+					disable_change_events();
+					document.getElementById("none").checked = true;
+					enable_change_events();
+
+					live_connection = false;
 				}else if(data.error){
 					alert("Error: " + data.error);
 				}
@@ -129,30 +145,19 @@ file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 		};
 
 
+		var last_chain = 'none';
 		function changeHandler(event){
-			switch(this.value){
-			case "none":
-				console.log("click: none");
-				command_socket.send(JSON.stringify({commands: [
-						{chain: 'show_live', live: false},
-						{chain: 'save_live', live: false}
-					], token: 'none'}));
-				break;
-			case "show":
-				console.log("click: show");
-				command_socket.send(JSON.stringify({commands: [
-						{chain: 'save_live', live: false},
-						{chain: 'show_live', live: true}
-					], token: 'show'}));
-				break;
-			case "save":
-				console.log("click: save");
-				command_socket.send(JSON.stringify({commands: [
-						{chain: 'show_live', live: false},
-						{chain: 'save_live', live: true}
-					], token: 'save'}));
-				break;
+			if(last_chain != 'none'){
+				command_socket.send(JSON.stringify({chain: last_chain, live: false}));
+				console.log("stop: ", last_chain);
 			}
+
+			if(this.value != 'none'){
+				command_socket.send(JSON.stringify({chain: this.value, live: true}));
+				console.log("run: ", this.value);
+			}
+
+			last_chain = this.value;
 		}
 
 		enable_change_events();

@@ -261,8 +261,8 @@ namespace disposer_module::http_server_component{
 		Component component_;
 		webservice::server& server_;
 
-		void send_running_chains(std::intptr_t identifier){
-			send_text(identifier, nlohmann::json::object({{"running-chains",
+		nlohmann::json running_chains_message(){
+			return nlohmann::json::object({{"running-chains",
 				[this]{
 					auto chains = nlohmann::json::array();
 					std::shared_lock lock(mutex_);
@@ -271,7 +271,7 @@ namespace disposer_module::http_server_component{
 						chains.push_back(name);
 					}
 					return chains;
-				}()}}));
+				}()}});
 		}
 
 	private:
@@ -320,7 +320,7 @@ namespace disposer_module::http_server_component{
 					os << "control service on_open identifier("
 						<< identifier << ")";
 				}, [this, identifier]{
-					this->send_running_chains(identifier);
+					this->send_text(identifier, this->running_chains_message());
 				});
 		}
 
@@ -336,7 +336,7 @@ namespace disposer_module::http_server_component{
 			std::uintptr_t identifier,
 			nlohmann::json&& data
 		)override{
-			component_.exception_catching_log(
+			auto success = component_.exception_catching_log(
 				[identifier, &data](logsys::stdlogb& os){
 					os << "control service on_text identifier("
 						<< identifier << "); message(";
@@ -381,6 +381,20 @@ namespace disposer_module::http_server_component{
 							"without live and exec");
 					}
 				});
+
+			if(!success){
+				component_.exception_catching_log(
+					[](logsys::stdlogb& os){
+						os << "send error";
+					},
+					[this, identifier]{
+						this->send_text(identifier, nlohmann::json::object({
+								{"error", "see server log file session("
+									+ std::to_string(identifier) + ")"}
+							}));
+						this->send_text(this->running_chains_message());
+					});
+			}
 		}
 
 		void on_binary(

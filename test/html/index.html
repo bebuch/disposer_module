@@ -31,6 +31,7 @@ file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 	</form>
 	<canvas id="image"></canvas>
 	<h1>live view</h1>
+	<button id="single_shot">single shot</button>
 	<script>
 		var radios = document.querySelectorAll('input[type=radio][name="state"]');
 
@@ -158,9 +159,15 @@ file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 			}
 
 			last_chain = this.value;
-		}
+		};
 
 		enable_change_events();
+
+		var single_shot = document.getElementById("single_shot");
+		single_shot.onclick = function(){
+			command_socket.send(JSON.stringify({chain: 'show_live', exec: 1}));
+			console.log("single shot");
+		};
 	</script>
 </body>
 </html>

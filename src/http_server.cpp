@@ -385,7 +385,7 @@ namespace disposer_module::http_server_component{
 			if(!success){
 				component_.exception_catching_log(
 					[](logsys::stdlogb& os){
-						os << "send error";
+						os << "send error message";
 					},
 					[this, identifier]{
 						this->send_text(identifier, nlohmann::json::object({

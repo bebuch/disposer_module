@@ -208,7 +208,8 @@ namespace disposer_module::save{
 					"used instead of the exec ID if set"),
 				make("id_modulo"_param,
 					free_type_c< std::optional< std::size_t > >,
-					"ID is exec ID modulo id_modulo if set"),
+					"ID is exec ID modulo id_modulo if set "
+					"(id_add is later added)"),
 				make("id_digits"_param, free_type_c< std::size_t >,
 					"minimal digit count via leading zeros",
 					default_value(4)),

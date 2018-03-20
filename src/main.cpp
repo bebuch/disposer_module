@@ -204,16 +204,21 @@ int main(int argc, char** argv){
 		logsys::exception_catching_log(
 			[](logsys::stdlogb& os){ os << "print help"; },
 			[&system, &options]{
-				for(auto component: options["component-help"]
-					.as< std::vector< std::string > >()
-				){
-					std::cout << system.directory().component_help(component);
+				if(options["component-help"].count() > 0){
+					for(auto component: options["component-help"]
+						.as< std::vector< std::string > >()
+					){
+						std::cout <<
+							system.directory().component_help(component);
+					}
 				}
 
-				for(auto module: options["module-help"]
-					.as< std::vector< std::string > >()
-				){
-					std::cout << system.directory().module_help(module);
+				if(options["module-help"].count() > 0){
+					for(auto module: options["module-help"]
+						.as< std::vector< std::string > >()
+					){
+						std::cout << system.directory().module_help(module);
+					}
 				}
 			});
 

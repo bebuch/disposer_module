@@ -87,6 +87,8 @@ file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 			});
 		};
 
+		var last_chain = 'none';
+
 		var command_socket = new WebSocket('ws://' + window.location.host + '/');
 		command_socket.onmessage = function(evt){
 			console.log("control onmessage");
@@ -98,13 +100,19 @@ file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 					disable_change_events();
 					if(typeof(data['running-chains']) === 'string' && data['running-chains'] === ''){
 						document.getElementById("none").checked = true;
+						last_chain = 'none';
 					}else if(Object.prototype.toString.call(data['running-chains']) === '[object Array]'){
 						if(data['running-chains'].includes("show_live")){
 							document.getElementById("show_live").checked = true;
+							last_chain = 'show_live';
 							live_connection = live_image('scheduler');
 						}else if(data['running-chains'].includes("save_live")){
 							document.getElementById("save_live").checked = true;
+							last_chain = 'save_live';
 							live_connection = live_image('scheduler');
+						}else{
+							document.getElementById("none").checked = true;
+							last_chain = 'none';
 						}
 					}
 					enable_change_events();
@@ -116,6 +124,7 @@ file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 
 					disable_change_events();
 					document.getElementById(data['run-chain']).checked = true;
+					last_chain = data['run-chain'];
 					enable_change_events();
 
 					live_connection = live_image('scheduler');
@@ -127,6 +136,7 @@ file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 
 					disable_change_events();
 					document.getElementById("none").checked = true;
+					last_chain = 'none';
 					enable_change_events();
 
 					live_connection = false;
@@ -146,7 +156,6 @@ file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 		};
 
 
-		var last_chain = 'none';
 		function changeHandler(event){
 			if(last_chain != 'none'){
 				command_socket.send(JSON.stringify({chain: last_chain, live: false}));

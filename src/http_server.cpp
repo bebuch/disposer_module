@@ -179,11 +179,8 @@ namespace disposer_module::http_server_component{
 
 
 		~running_chains(){
-			shutdown_ = true;
-			while(running_){
-				if(server()->poll_one() == 0){
-					std::this_thread::yield();
-				}
+			for(auto& pair: chains_){
+				lockless_erase(pair.first);
 			}
 		}
 
@@ -192,41 +189,44 @@ namespace disposer_module::http_server_component{
 			std::string const& chain,
 			std::optional< std::size_t > exec_count = {}
 		){
-			if(shutdown_){
-				throw std::logic_error("can not active chain(" + chain
-					+ ") while shutdown");
-			}
+			component_.log(
+				[&chain](logsys::stdlogb& os){
+					os << "add live chain(" << chain << ")";
+				}, [this, &chain, exec_count]{
+					std::lock_guard lock(mutex_);
+					if(shutdown_){
+						throw std::logic_error("can not add chain(" + chain
+							+ ") while shutdown");
+					}
 
-			std::unique_lock lock(mutex_);
-			if(chains_.find(chain) != chains_.end()){
-				throw std::logic_error("chain(" + chain
-					+ ") is already running");
-			}
-			chains_.try_emplace(
-				chain,
-				component_.system().enable_chain(chain),
-				exec_count);
+					if(chains_.find(chain) != chains_.end()){
+						throw std::logic_error("chain(" + chain
+							+ ") is already running");
+					}
+					chains_.try_emplace(
+						chain,
+						component_.system().enable_chain(chain),
+						exec_count);
 
-			send_text(nlohmann::json::object({{"run-chain", chain}}));
+					send_text(nlohmann::json::object({{"run-chain", chain}}));
 
-			if(chains_.size() == 1 && !shutdown_){
-				running_ = true;
-				boost::asio::post(
-					this->server()->get_executor(),
-					[this]{
-						run();
-					});
-			}
+					if(chains_.size() == 1){
+						boost::asio::post(
+							this->server()->get_executor(),
+							[this]{
+								run();
+							});
+					}
+				});
 		}
 
-		void erase(std::string const& chain){
-			std::unique_lock lock(mutex_);
+		void erase(std::string const& chain)noexcept{
+			std::lock_guard lock(mutex_);
 			lockless_erase(chain);
 		}
 
 		void run(){
-			running_ = false;
-
+			std::lock_guard lock(mutex_);
 			if(shutdown_){
 				return;
 			}
@@ -236,7 +236,6 @@ namespace disposer_module::http_server_component{
 			// TODO: This is a hack, async should better be called via timer
 			std::this_thread::sleep_for(interval_ - diff);
 
-			std::shared_lock lock(mutex_);
 			last_exec_ = std::chrono::high_resolution_clock::now();
 			for(auto& pair: chains_){
 				component_.exception_catching_log(
@@ -252,8 +251,7 @@ namespace disposer_module::http_server_component{
 					});
 			}
 
-			if(!chains_.empty() && !shutdown_){
-				running_ = true;
+			if(!chains_.empty()){
 				boost::asio::post(
 					this->server()->get_executor(),
 					[this]{
@@ -263,16 +261,25 @@ namespace disposer_module::http_server_component{
 		}
 
 
+		void on_shutdown()noexcept override{
+			shutdown();
+		}
+
+		void shutdown()noexcept{
+			std::lock_guard lock(mutex_);
+			shutdown_ = true;
+		}
+
 	protected:
 		Component component_;
 		webservice::server& server_;
-		std::atomic< bool > running_;
+		bool shutdown_{false};
 
 		nlohmann::json running_chains_message(){
 			return nlohmann::json::object({{"running-chains",
 				[this]{
 					auto chains = nlohmann::json::array();
-					std::shared_lock lock(mutex_);
+					std::lock_guard lock(mutex_);
 					for(auto const& [name, chain]: chains_){
 						(void)chain;
 						chains.push_back(name);
@@ -282,17 +289,17 @@ namespace disposer_module::http_server_component{
 		}
 
 	private:
-		void lockless_erase(std::string const& chain){
-			if(chains_.erase(chain) == 0){
-				throw std::logic_error("chain(" + chain + ") is not running");
-			}
-			send_text(nlohmann::json::object({{"stop-chain", chain}}));
-		}
-
-		void shutdown()noexcept override{
-			if(!shutdown_.exchange(true)){
-				webservice::basic_json_ws_service< std::string >::shutdown();
-			}
+		void lockless_erase(std::string const& chain)noexcept{
+			component_.exception_catching_log(
+				[&chain](logsys::stdlogb& os){
+					os << "erase live chain(" << chain << ")";
+				}, [this, &chain]{
+					if(chains_.erase(chain) == 0){
+						throw std::logic_error("chain(" + chain
+							+ ") is not running");
+					}
+					send_text(nlohmann::json::object({{"stop-chain", chain}}));
+				});
 		}
 
 		struct running_chains_data{
@@ -310,8 +317,7 @@ namespace disposer_module::http_server_component{
 
 		std::chrono::milliseconds const interval_;
 		std::chrono::high_resolution_clock::time_point last_exec_;
-		std::atomic< bool > shutdown_{false};
-		std::shared_mutex mutex_;
+		std::mutex mutex_;
 		std::map< std::string, running_chains_data > chains_;
 	};
 

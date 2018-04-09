@@ -179,6 +179,10 @@ namespace disposer_module::http_server_component{
 			, interval_(component_("min_interval_in_ms"_param)) {}
 
 		~running_chains(){
+			wait_on_last_async();
+		}
+
+		void wait_on_last_async(){
 			// As long as async calls are pending
 			while(async_calls_ > 0){
 				// Request the server to run a handler async
@@ -189,6 +193,7 @@ namespace disposer_module::http_server_component{
 				}
 			}
 		}
+
 
 		void add(
 			std::string const& chain,
@@ -236,6 +241,8 @@ namespace disposer_module::http_server_component{
 				return;
 			}
 
+			if(chains_.empty()) return;
+
 			timer_.expires_after(interval_);
 			timer_.async_wait(
 				[this, lock = webservice::async_lock(async_calls_)](
@@ -271,9 +278,15 @@ namespace disposer_module::http_server_component{
 
 
 		void on_shutdown()noexcept final{
-			std::lock_guard lock(mutex_);
+			std::unique_lock lock(mutex_);
 			shutdown_ = true;
+			lock.unlock();
+
 			timer_.cancel();
+
+			wait_on_last_async();
+
+			lock.lock();
 			for(auto& pair: chains_){
 				lockless_erase(pair.first);
 			}

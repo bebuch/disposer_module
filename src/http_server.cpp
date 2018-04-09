@@ -175,15 +175,20 @@ namespace disposer_module::http_server_component{
 		running_chains(Component component, webservice::server& server)
 			: component_(component)
 			, server_(server)
+			, timer_(server_.get_io_context())
 			, interval_(component_("min_interval_in_ms"_param)) {}
 
-
 		~running_chains(){
-			for(auto& pair: chains_){
-				lockless_erase(pair.first);
+			// As long as async calls are pending
+			while(async_calls_ > 0){
+				// Request the server to run a handler async
+				if(server_.poll_one() == 0){
+					// If no handler was waiting, the pending one must
+					// currently run in another thread
+					std::this_thread::yield();
+				}
 			}
 		}
-
 
 		void add(
 			std::string const& chain,
@@ -231,49 +236,59 @@ namespace disposer_module::http_server_component{
 				return;
 			}
 
-			auto const now = std::chrono::high_resolution_clock::now();
-			std::chrono::duration< double, std::milli > diff = now - last_exec_;
-			// TODO: This is a hack, async should better be called via timer
-			std::this_thread::sleep_for(interval_ - diff);
+			timer_.expires_after(interval_);
+			timer_.async_wait(
+				[this, lock = webservice::async_lock(async_calls_)](
+					boost::system::error_code const& error
+				){
+					if(error == boost::asio::error::operation_aborted){
+						return;
+					}
 
-			last_exec_ = std::chrono::high_resolution_clock::now();
-			for(auto& pair: chains_){
-				component_.exception_catching_log(
-					[&pair](logsys::stdlogb& os){
-						os << "server live exec chain(" << pair.first << ")";
-					}, [this, &pair]{
-						auto& [chain, count, counter] = pair.second;
-						++counter;
-						chain.exec();
-						if(count && counter >= *count){
-							lockless_erase(pair.first);
+					timer_.expires_after(interval_);
+
+					{
+						std::lock_guard lock(mutex_);
+						for(auto& pair: chains_){
+							component_.exception_catching_log(
+								[&pair](logsys::stdlogb& os){
+									os << "server live exec chain("
+										<< pair.first << ")";
+								}, [this, &pair]{
+									auto& [chain, count, counter] = pair.second;
+									++counter;
+									chain.exec();
+									if(count && counter >= *count){
+										lockless_erase(pair.first);
+									}
+								});
 						}
-					});
-			}
+					}
 
-			if(!chains_.empty()){
-				boost::asio::post(
-					this->server()->get_executor(),
-					[this]{
-						run();
-					});
-			}
+					run();
+				});
 		}
 
 
-		void on_shutdown()noexcept override{
-			shutdown();
-		}
-
-		void shutdown()noexcept{
+		void on_shutdown()noexcept final{
 			std::lock_guard lock(mutex_);
 			shutdown_ = true;
+			timer_.cancel();
+			for(auto& pair: chains_){
+				lockless_erase(pair.first);
+			}
 		}
+
 
 	protected:
 		Component component_;
+
 		webservice::server& server_;
+
 		bool shutdown_{false};
+
+		std::atomic< std::size_t > async_calls_{0};
+
 
 		nlohmann::json running_chains_message(){
 			return nlohmann::json::object({{"running-chains",
@@ -287,6 +302,7 @@ namespace disposer_module::http_server_component{
 					return chains;
 				}()}});
 		}
+
 
 	private:
 		void lockless_erase(std::string const& chain)noexcept{
@@ -314,6 +330,8 @@ namespace disposer_module::http_server_component{
 			std::optional< std::size_t > exec_count;
 			std::size_t exec_counter = 0;
 		};
+
+		boost::asio::steady_timer timer_;
 
 		std::chrono::milliseconds const interval_;
 		std::chrono::high_resolution_clock::time_point last_exec_;
@@ -595,7 +613,7 @@ namespace disposer_module::http_server_component{
 
 		void shutdown(){
 			server_->shutdown();
-			server_.reset();
+			server_->block();
 		}
 
 

@@ -184,17 +184,6 @@ namespace disposer_module::camera_infratec{
 		cam_init(cam_init&&) = delete;
 
 		~cam_init(){
-			assert(!cam_);
-			assert(!system_);
-		}
-
-		bitmap< std::uint16_t > get_image(){
-			return observer_->get_image();
-		}
-
-		void shutdown(){
-			if(!cam_) return;
-
 			component_.exception_catching_log(
 				[](logsys::stdlogb& os){ os << "acquisition stop"; },
 				[this]{
@@ -227,6 +216,11 @@ namespace disposer_module::camera_infratec{
 
 			cam_.reset();
 			system_.reset();
+
+		}
+
+		bitmap< std::uint16_t > get_image(){
+			return observer_->get_image();
 		}
 
 		AVT::VmbAPI::CameraPtr cam(){

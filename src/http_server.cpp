@@ -175,23 +175,14 @@ namespace disposer_module::http_server_component{
 		running_chains(Component component, webservice::server& server)
 			: component_(component)
 			, server_(server)
+			, locker_([]()noexcept{})
 			, timer_(server_.get_io_context())
 			, interval_(component_("min_interval_in_ms"_param)) {}
 
 		~running_chains(){
-			wait_on_last_async();
-		}
-
-		void wait_on_last_async(){
-			// As long as async calls are pending
-			while(async_calls_ > 0){
-				// Request the server to run a handler async
-				if(server_.poll_one() == 0){
-					// If no handler was waiting, the pending one must
-					// currently run in another thread
-					std::this_thread::yield();
-				}
-			}
+			server_.poll_while([this]()noexcept{
+					return locker_.count() > 0;
+				});
 		}
 
 
@@ -224,6 +215,7 @@ namespace disposer_module::http_server_component{
 						boost::asio::post(
 							this->server()->get_executor(),
 							[this]{
+								auto lock = locker_.make_first_lock("disposer_module::http_server::first");
 								run();
 							});
 					}
@@ -245,9 +237,11 @@ namespace disposer_module::http_server_component{
 
 			timer_.expires_after(interval_);
 			timer_.async_wait(
-				[this, lock = webservice::async_lock(async_calls_)](
+				[this, lock = locker_.make_lock("disposer_module::http_server")](
 					boost::system::error_code const& error
 				){
+					lock.enter();
+
 					if(error == boost::asio::error::operation_aborted){
 						return;
 					}
@@ -282,9 +276,13 @@ namespace disposer_module::http_server_component{
 			shutdown_ = true;
 			lock.unlock();
 
-			timer_.cancel();
+			try{
+				timer_.cancel();
+			}catch(...){}
 
-			wait_on_last_async();
+			server_.poll_while([this]()noexcept{
+					return locker_.count() > 0;
+				});
 
 			lock.lock();
 			for(auto& pair: chains_){
@@ -300,7 +298,7 @@ namespace disposer_module::http_server_component{
 
 		bool shutdown_{false};
 
-		std::atomic< std::size_t > async_calls_{0};
+		webservice::async_locker locker_;
 
 
 		nlohmann::json running_chains_message(){

@@ -40,20 +40,25 @@ namespace disposer_module::http_server_component{
 
 
 	template < typename Module >
-	class live_service: public webservice::basic_ws_service< std::string >{
+	class live_service
+		: public webservice::basic_ws_service< bool, std::string >{
 	public:
 		live_service(Module module)
 			: name(module("service_name"_param))
 			, module_(module) {}
+
+		void on_server_connect(
+			boost::asio::ip::tcp::socket&& socket,
+			webservice::http_request&& req
+		){
+			async_server_connect(std::move(socket), std::move(req), false);
+		}
 
 		void on_open(webservice::ws_identifier identifier)override{
 			module_.log(
 				[this, identifier](logsys::stdlogb& os){
 					os << "live service " << name << " on_open identifier("
 						<< identifier << ")";
-				}, [this, identifier]{
-					std::unique_lock lock(mutex_);
-					ready_.emplace(identifier, false);
 				});
 		}
 
@@ -62,9 +67,6 @@ namespace disposer_module::http_server_component{
 				[this, identifier](logsys::stdlogb& os){
 					os << "live service " << name << " on_close identifier("
 						<< identifier << ")";
-				}, [this, identifier]{
-					std::unique_lock lock(mutex_);
-					ready_.erase(identifier);
 				});
 		}
 
@@ -82,8 +84,8 @@ namespace disposer_module::http_server_component{
 							"live_service '" + name +
 							"' message is not 'ready' but '" + text + "'");
 					}
-					std::shared_lock lock(mutex_);
-					ready_[identifier] = true;
+
+					this->set_value(identifier, true);
 				});
 		}
 
@@ -120,29 +122,15 @@ namespace disposer_module::http_server_component{
 					}
 					os << ")";
 				}, [this, &data, &ready_identifiers]{
-					{
-						std::shared_lock lock(mutex_);
-						for(auto& [identifier, ready]: ready_){
-							if(!ready) continue;
-							ready = false;
-							ready_identifiers.insert(
-								ready_identifiers.end(), identifier);
-						}
-					}
-					send_binary(ready_identifiers, std::move(data));
-				});
-		}
-
-		void on_error(
-			webservice::ws_identifier identifier,
-			webservice::ws_handler_location location,
-			boost::system::error_code ec
-		)override{
-			module_.log(
-				[identifier, location, ec](logsys::stdlogb& os){
-					os << "live service identifier(" << identifier
-						<< ") location(" << to_string_view(location)
-						<< "); error code: " << ec.message() << " (WARNING)";
+					send_binary_if([&ready_identifiers](
+							webservice::ws_identifier identifier,
+							bool& ready
+						){
+							if(ready){
+								ready_identifiers.emplace(identifier);
+							}
+							return std::exchange(ready, false);
+						}, std::move(data));
 				});
 		}
 
@@ -158,19 +146,27 @@ namespace disposer_module::http_server_component{
 				});
 		}
 
+		void on_exception(std::exception_ptr error)noexcept override{
+			module_.exception_catching_log(
+				[](logsys::stdlogb& os){
+					os << "live service";
+				}, [error]{
+					std::rethrow_exception(error);
+				});
+		}
+
 
 		std::string const name;
 
 	private:
 		Module module_;
-		std::shared_mutex mutex_;
-		std::map< webservice::ws_identifier, std::atomic< bool > > ready_;
 	};
 
 
 	template < typename Component >
 	class running_chains
-		: public webservice::basic_json_ws_service< std::string >{
+		: public webservice::basic_json_ws_service<
+			webservice::none_t, std::string >{
 	public:
 		running_chains(Component component, webservice::server& server)
 			: component_(component)
@@ -178,12 +174,6 @@ namespace disposer_module::http_server_component{
 			, locker_([]()noexcept{})
 			, timer_(server_.get_io_context())
 			, interval_(component_("min_interval_in_ms"_param)) {}
-
-		~running_chains(){
-			server_.poll_while([this]()noexcept{
-					return locker_.count() > 0;
-				});
-		}
 
 
 		void add(
@@ -212,12 +202,10 @@ namespace disposer_module::http_server_component{
 					send_text(nlohmann::json::object({{"run-chain", chain}}));
 
 					if(chains_.size() == 1){
-						boost::asio::post(
-							this->server()->get_executor(),
-							[this]{
-								auto lock = locker_.make_first_lock("disposer_module::http_server::first");
-								run();
-							});
+						timer_.expires_after(interval_);
+
+						auto lock = locker_.make_first_lock("disposer_module::http_server::first");
+						run();
 					}
 				});
 		}
@@ -235,7 +223,6 @@ namespace disposer_module::http_server_component{
 
 			if(chains_.empty()) return;
 
-			timer_.expires_after(interval_);
 			timer_.async_wait(
 				[this, lock = locker_.make_lock("disposer_module::http_server")](
 					boost::system::error_code const& error
@@ -280,9 +267,9 @@ namespace disposer_module::http_server_component{
 				timer_.cancel();
 			}catch(...){}
 
-			server_.poll_while([this]()noexcept{
-					return locker_.count() > 0;
-				});
+// 			server_.poll_while([this]()noexcept{
+// 					return locker_.count() > 0;
+// 				});
 
 			lock.lock();
 			for(auto& pair: chains_){
@@ -362,6 +349,14 @@ namespace disposer_module::http_server_component{
 
 
 	private:
+		void on_server_connect(
+			boost::asio::ip::tcp::socket&& socket,
+			webservice::http_request&& req
+		){
+			this->async_server_connect(std::move(socket), std::move(req));
+		}
+
+
 		void on_open(webservice::ws_identifier identifier)override{
 			component_.log(
 				[identifier](logsys::stdlogb& os){
@@ -460,19 +455,6 @@ namespace disposer_module::http_server_component{
 				});
 		}
 
-		void on_error(
-			webservice::ws_identifier identifier,
-			webservice::ws_handler_location location,
-			boost::system::error_code ec
-		)override{
-			component_.log(
-				[identifier, location, ec](logsys::stdlogb& os){
-					os << "control service identifier(" << identifier
-						<< ") location(" << to_string_view(location)
-						<< "); error code: " << ec.message() << " (WARNING)";
-				});
-		}
-
 		void on_exception(
 			webservice::ws_identifier identifier,
 			std::exception_ptr error
@@ -484,6 +466,16 @@ namespace disposer_module::http_server_component{
 					std::rethrow_exception(error);
 				});
 		}
+
+		void on_exception(std::exception_ptr error)noexcept override{
+			component_.exception_catching_log(
+				[](logsys::stdlogb& os){
+					os << "control service";
+				}, [error]{
+					std::rethrow_exception(error);
+				});
+		}
+
 
 
 		std::shared_mutex mutex_;
@@ -498,30 +490,10 @@ namespace disposer_module::http_server_component{
 
 
 	private:
-		void on_error(
-			webservice::ws_identifier identifier,
-			std::string const& resource,
-			webservice::ws_handler_location location,
-			boost::system::error_code ec
-		)override{
-			component_.log(
-				[identifier, &resource, location, ec](logsys::stdlogb& os){
-					os << "service handler identifier(" << identifier
-						<< ") resource(" << resource << ") location("
-						<< to_string_view(location) << "); error code: "
-						<< ec.message() << "(WARNING)";
-				});
-		}
-
-		void on_exception(
-			webservice::ws_identifier identifier,
-			std::string const& resource,
-			std::exception_ptr error
-		)noexcept override{
+		void on_exception(std::exception_ptr error)noexcept override{
 			component_.exception_catching_log(
-				[identifier, &resource](logsys::stdlogb& os){
-					os << "service handler identifier(" << identifier
-						<< ") resource(" << resource << ")";
+				[](logsys::stdlogb& os){
+					os << "service handler";
 				}, [error]{
 					std::rethrow_exception(error);
 				});
@@ -540,14 +512,6 @@ namespace disposer_module::http_server_component{
 
 
 	private:
-		void on_error(boost::system::error_code ec)override{
-			component_.log(
-				[ec](logsys::stdlogb& os){
-					os << "server thread error code: " << ec.message()
-						<< "(WARNING)";
-				});
-		}
-
 		void on_exception(std::exception_ptr error)noexcept override{
 			component_.exception_catching_log(
 				[](logsys::stdlogb& os){
@@ -583,18 +547,6 @@ namespace disposer_module::http_server_component{
 		}
 
 	private:
-		void on_error(
-			webservice::http_request_location location,
-			boost::system::error_code ec
-		)override{
-			component_.log(
-				[ec, location](logsys::stdlogb& os){
-					os << "http file handler location("
-						<< to_string_view(location)
-						<< ") error code: " << ec.message() << "(WARNING)";
-				});
-		}
-
 		void on_exception(std::exception_ptr error)noexcept override{
 			component_.exception_catching_log(
 				[](logsys::stdlogb& os){
@@ -674,10 +626,16 @@ namespace disposer_module::http_server_component{
 
 					auto service =
 						std::make_unique< live_service< Module > >(module);
+
+					service->set_ping_time(std::chrono::milliseconds(
+						component_("timeout_in_ms"_param)));
+
 					auto result = std::make_unique< live >(
 						*service, service_name, ws_handler_, component_);
+
 					ws_handler_.add_service(
 						std::move(service_name), std::move(service));
+
 					return result;
 				});
 		}
@@ -700,14 +658,18 @@ namespace disposer_module::http_server_component{
 					component("thread_count"_param)
 				))
 		{
-			ws_handler_.set_ping_time(
-				std::chrono::milliseconds(component("timeout_in_ms"_param)));
 			component_.log(
 				[](logsys::stdlogb& os){
 					os << "add WebSocket control service on root(/)";
 				}, [this]{
-					ws_handler_.add_service("/", std::make_unique<
-						control_service< Component > >(component_, *server_));
+					auto control_service =
+						std::make_unique< class control_service< Component > >(
+							component_, *server_);
+
+					control_service->set_ping_time(std::chrono::milliseconds(
+						component_("timeout_in_ms"_param)));
+
+					ws_handler_.add_service("/", std::move(control_service));
 				});
 		}
 

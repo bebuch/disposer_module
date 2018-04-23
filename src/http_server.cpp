@@ -87,7 +87,7 @@ namespace disposer_module::http_server_component{
 							") message is not 'ready' but '" + text + "'");
 					}
 
-					this->set_value(identifier, true);
+					set_value(identifier, true);
 				});
 		}
 
@@ -161,145 +161,109 @@ namespace disposer_module::http_server_component{
 
 
 	template < typename Component >
-	class running_chains
-		: public webservice::basic_json_ws_service<
+	class control_service: public webservice::basic_json_ws_service<
 			webservice::none_t, std::string >{
 	public:
-		running_chains(Component component, webservice::server& server)
+		control_service(Component component, webservice::server& server)
 			: component_(component)
-			, server_(server)
-			, locker_([]()noexcept{})
-			, timer_(server_.get_io_context())
-			, interval_(component_("min_interval_in_ms"_param)) {}
+			, interval_(component_("min_interval_in_ms"_param))
+			, strand_(server.get_io_context().get_executor())
+			, timer_(server.get_io_context()) {}
 
 
+	private:
 		void add(
-			std::string const& chain,
+			std::string chain,
 			std::optional< std::size_t > exec_count = {}
 		){
-			component_.log(
-				[&chain](logsys::stdlogb& os){
-					os << "add live chain(" << chain << ")";
-				}, [this, &chain, exec_count]{
-					std::lock_guard lock(mutex_);
-					if(shutdown_){
-						throw std::logic_error("can not add chain(" + chain
-							+ ") while shutdown");
-					}
+			strand_.defer([this, chain = std::move(chain), exec_count]{
+					component_.log(
+						[&chain](logsys::stdlogb& os){
+							os << "add live chain(" << chain << ")";
+						}, [this, &chain, exec_count]{
+							if(shutdown_){
+								throw std::logic_error("can not add chain("
+									+ chain + ") while shutdown");
+							}
 
-					if(chains_.find(chain) != chains_.end()){
-						throw std::logic_error("chain(" + chain
-							+ ") is already running");
-					}
-					chains_.try_emplace(
-						chain,
-						component_.system().enable_chain(chain),
-						exec_count);
+							if(chains_.find(chain) != chains_.end()){
+								throw std::logic_error("chain(" + chain
+									+ ") is already running");
+							}
+							chains_.try_emplace(
+								chain,
+								component_.system().enable_chain(chain),
+								exec_count);
 
-					send_text(nlohmann::json::object({{"run-chain", chain}}));
+							send_text(nlohmann::json::object(
+								{{"run-chain", chain}}));
 
-					if(chains_.size() == 1){
-						timer_.expires_after(interval_);
-
-						auto lock = locker_.make_first_lock("disposer_module::http_server::first");
-						run();
-					}
-				});
+							if(chains_.size() == 1){
+								timer_.expires_after(interval_);
+								run();
+							}
+						});
+				}, std::allocator< void >());
 		}
 
-		void erase(std::string const& chain)noexcept{
-			std::lock_guard lock(mutex_);
-			lockless_erase(chain);
+		void erase(std::string chain)noexcept{
+			strand_.defer([this, chain = std::move(chain)]()noexcept{
+					lockless_erase(chain);
+				}, std::allocator< void >());
 		}
 
 		void run(){
-			std::lock_guard lock(mutex_);
-			if(shutdown_){
-				return;
-			}
-
-			if(chains_.empty()) return;
-
-			timer_.async_wait(
-				[this, lock = locker_.make_lock("disposer_module::http_server")](
-					boost::system::error_code const& error
-				){
-					lock.enter();
-
+			timer_.async_wait(boost::asio::bind_executor(
+				strand_,
+				[this](boost::system::error_code const& error){
 					if(error == boost::asio::error::operation_aborted){
 						return;
 					}
 
 					timer_.expires_after(interval_);
 
-					{
-						std::lock_guard lock(mutex_);
-						for(auto& pair: chains_){
+					if(!shutdown_){
+						for(auto& [name, data]: chains_){
 							component_.exception_catching_log(
-								[&pair](logsys::stdlogb& os){
+								[&name = name](logsys::stdlogb& os){
 									os << "server live exec chain("
-										<< pair.first << ")";
-								}, [this, &pair]{
-									auto& [chain, count, counter] = pair.second;
+										<< name << ")";
+								}, [this, &name = name, &data = data]{
+									auto& [chain, count, counter] = data;
 									++counter;
 									chain.exec();
 									if(count && counter >= *count){
-										lockless_erase(pair.first);
+										lockless_erase(name);
 									}
 								});
 						}
 					}
 
-					run();
-				});
+					// test shutdown_ again because on_shutdown is not stranded
+					if(shutdown_){
+						for(auto& [name, data]: chains_){
+							lockless_erase(name);
+						}
+					}else{
+						run();
+					}
+				}));
 		}
 
 
 		void on_shutdown()noexcept final{
-			std::unique_lock lock(mutex_);
 			shutdown_ = true;
-			lock.unlock();
-
-			try{
-				timer_.cancel();
-			}catch(...){}
-
-// 			server_.poll_while([this]()noexcept{
-// 					return locker_.count() > 0;
-// 				});
-
-			lock.lock();
-			for(auto& pair: chains_){
-				lockless_erase(pair.first);
-			}
 		}
 
 
-	protected:
-		Component component_;
-
-		webservice::server& server_;
-
-		bool shutdown_{false};
-
-		webservice::async_locker locker_;
-
-
-		nlohmann::json running_chains_message(){
-			return nlohmann::json::object({{"running-chains",
-				[this]{
-					auto chains = nlohmann::json::array();
-					std::lock_guard lock(mutex_);
-					for(auto const& [name, chain]: chains_){
-						(void)chain;
-						chains.push_back(name);
-					}
-					return chains;
-				}()}});
+		void on_server_connect(
+			boost::asio::ip::tcp::socket&& socket,
+			webservice::http_request&& req
+		){
+			async_server_connect(std::move(socket), std::move(req));
 		}
 
 
-	private:
 		void lockless_erase(std::string const& chain)noexcept{
 			component_.exception_catching_log(
 				[&chain](logsys::stdlogb& os){
@@ -313,44 +277,14 @@ namespace disposer_module::http_server_component{
 				});
 		}
 
-		struct running_chains_data{
-			running_chains_data(
-				disposer::enabled_chain&& chain,
-				std::optional< std::size_t > exec_count
-			)
-				: chain(std::move(chain))
-				, exec_count(exec_count) {}
+		nlohmann::json lockless_running_chains_message(){
+			auto chains = nlohmann::json::array();
+			for(auto const& [name, data]: chains_){
+				(void)data;
+				chains.push_back(name);
+			}
 
-			disposer::enabled_chain chain;
-			std::optional< std::size_t > exec_count;
-			std::size_t exec_counter = 0;
-		};
-
-		boost::asio::steady_timer timer_;
-
-		std::chrono::milliseconds const interval_;
-		std::chrono::high_resolution_clock::time_point last_exec_;
-		std::mutex mutex_;
-		std::map< std::string, running_chains_data > chains_;
-	};
-
-
-	template < typename Component >
-	class control_service: public running_chains< Component >{
-	public:
-		using running_chains< Component >::running_chains;
-
-
-	protected:
-		using running_chains< Component >::component_;
-
-
-	private:
-		void on_server_connect(
-			boost::asio::ip::tcp::socket&& socket,
-			webservice::http_request&& req
-		){
-			this->async_server_connect(std::move(socket), std::move(req));
+			return nlohmann::json::object({{"running-chains", chains}});
 		}
 
 
@@ -360,7 +294,10 @@ namespace disposer_module::http_server_component{
 					os << "control service on_open identifier("
 						<< identifier << ")";
 				}, [this, identifier]{
-					this->send_text(identifier, this->running_chains_message());
+					strand_.defer([this, identifier = std::move(identifier)]{
+							send_text(identifier,
+								lockless_running_chains_message());
+						}, std::allocator< void >());
 				});
 		}
 
@@ -399,11 +336,10 @@ namespace disposer_module::http_server_component{
 					}
 
 					if(live){
-						std::unique_lock lock(mutex_);
 						if(*live){
-							this->add(chain);
+							add(chain);
 						}else{
-							this->erase(chain);
+							erase(chain);
 						}
 					}else if(exec){
 						auto exec_count = *exec;
@@ -413,9 +349,7 @@ namespace disposer_module::http_server_component{
 								std::to_string(exec_count) + ")");
 						}
 
-						std::unique_lock lock(mutex_);
-						this->add(
-							chain, static_cast< std::size_t >(exec_count));
+						add(chain, static_cast< std::size_t >(exec_count));
 					}else{
 						throw std::logic_error("json message chain "
 							"without live and exec");
@@ -428,12 +362,15 @@ namespace disposer_module::http_server_component{
 						os << "send error message";
 					},
 					[this, identifier]{
-						this->send_text(identifier, nlohmann::json::object({
+						send_text(identifier, nlohmann::json::object({
 								{"error", io_tools::make_string(
 									"see server log file session(",
 									identifier, ")")}
 							}));
-						this->send_text(this->running_chains_message());
+
+						strand_.defer([this]{
+								send_text(lockless_running_chains_message());
+							}, std::allocator< void >());
 					});
 			}
 		}
@@ -474,8 +411,30 @@ namespace disposer_module::http_server_component{
 		}
 
 
+		struct running_chains_data{
+			running_chains_data(
+				disposer::enabled_chain&& chain,
+				std::optional< std::size_t > exec_count
+			)
+				: chain(std::move(chain))
+				, exec_count(exec_count) {}
 
-		std::shared_mutex mutex_;
+			disposer::enabled_chain chain;
+			std::optional< std::size_t > exec_count;
+			std::size_t exec_counter = 0;
+		};
+
+
+		Component component_;
+
+		std::chrono::milliseconds const interval_;
+
+		bool shutdown_{false};
+
+		boost::asio::strand< boost::asio::io_context::executor_type > strand_;
+		boost::asio::steady_timer timer_;
+
+		std::map< std::string, running_chains_data > chains_;
 	};
 
 

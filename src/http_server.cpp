@@ -176,12 +176,17 @@ namespace disposer_module::http_server_component{
 			std::string chain,
 			std::optional< std::size_t > exec_count = {}
 		){
-			strand_.defer([this, chain = std::move(chain), exec_count]{
+			strand_.defer([
+					this,
+					lock = locker_.make_lock(),
+					chain = std::move(chain),
+					exec_count
+				]{
 					component_.log(
 						[&chain](logsys::stdlogb& os){
 							os << "add live chain(" << chain << ")";
 						}, [this, &chain, exec_count]{
-							if(shutdown_){
+							if(is_shutdown()){
 								throw std::logic_error("can not add chain("
 									+ chain + ") while shutdown");
 							}
@@ -207,7 +212,12 @@ namespace disposer_module::http_server_component{
 		}
 
 		void erase(std::string chain)noexcept{
-			strand_.defer([this, chain = std::move(chain)]()noexcept{
+			strand_.defer(
+				[
+					this,
+					lock = locker_.make_lock(),
+					chain = std::move(chain)
+				]()noexcept{
 					lockless_erase(chain);
 				}, std::allocator< void >());
 		}
@@ -215,14 +225,17 @@ namespace disposer_module::http_server_component{
 		void run(){
 			timer_.async_wait(boost::asio::bind_executor(
 				strand_,
-				[this](boost::system::error_code const& error){
+				[
+					this,
+					lock = locker_.make_lock()
+				](boost::system::error_code const& error){
 					if(error == boost::asio::error::operation_aborted){
 						return;
 					}
 
 					timer_.expires_after(interval_);
 
-					if(!shutdown_){
+					if(!is_shutdown()){
 						for(auto& [name, data]: chains_){
 							component_.exception_catching_log(
 								[&name = name](logsys::stdlogb& os){
@@ -239,8 +252,8 @@ namespace disposer_module::http_server_component{
 						}
 					}
 
-					// test shutdown_ again because on_shutdown is not stranded
-					if(shutdown_){
+					// test shutdown again because on_shutdown is not stranded
+					if(is_shutdown()){
 						for(auto& [name, data]: chains_){
 							lockless_erase(name);
 						}
@@ -248,11 +261,6 @@ namespace disposer_module::http_server_component{
 						run();
 					}
 				}));
-		}
-
-
-		void on_shutdown()noexcept final{
-			shutdown_ = true;
 		}
 
 
@@ -294,7 +302,12 @@ namespace disposer_module::http_server_component{
 					os << "control service on_open identifier("
 						<< identifier << ")";
 				}, [this, identifier]{
-					strand_.defer([this, identifier = std::move(identifier)]{
+					strand_.defer(
+						[
+							this,
+							lock = locker_.make_lock(),
+							identifier = std::move(identifier)
+						]{
 							send_text(identifier,
 								lockless_running_chains_message());
 						}, std::allocator< void >());
@@ -368,7 +381,7 @@ namespace disposer_module::http_server_component{
 									identifier, ")")}
 							}));
 
-						strand_.defer([this]{
+						strand_.defer([this, lock = locker_.make_lock()]{
 								send_text(lockless_running_chains_message());
 							}, std::allocator< void >());
 					});
@@ -428,8 +441,6 @@ namespace disposer_module::http_server_component{
 		Component component_;
 
 		std::chrono::milliseconds const interval_;
-
-		bool shutdown_{false};
 
 		boost::asio::strand< boost::asio::io_context::executor_type > strand_;
 		boost::asio::steady_timer timer_;

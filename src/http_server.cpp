@@ -9,6 +9,8 @@
 #include <disposer/component.hpp>
 #include <disposer/module.hpp>
 
+#include <io_tools/range_to_string.hpp>
+
 #include <webservice/server.hpp>
 #include <webservice/json_ws_service.hpp>
 #include <webservice/ws_service_handler.hpp>
@@ -57,7 +59,7 @@ namespace disposer_module::http_server_component{
 		void on_open(webservice::ws_identifier identifier)override{
 			module_.log(
 				[this, identifier](logsys::stdlogb& os){
-					os << "live service " << name << " on_open identifier("
+					os << "live service(" << name << ") on_open identifier("
 						<< identifier << ")";
 				});
 		}
@@ -65,7 +67,7 @@ namespace disposer_module::http_server_component{
 		void on_close(webservice::ws_identifier identifier)override{
 			module_.log(
 				[this, identifier](logsys::stdlogb& os){
-					os << "live service " << name << " on_close identifier("
+					os << "live service(" << name << ") on_close identifier("
 						<< identifier << ")";
 				});
 		}
@@ -76,13 +78,13 @@ namespace disposer_module::http_server_component{
 		)override{
 			module_.log(
 				[this, identifier, &text](logsys::stdlogb& os){
-					os << "live service " << name << " on_text identifier("
+					os << "live service(" << name << ") on_text identifier("
 						<< identifier << "); message(" << text << ")";
 				}, [this, identifier, &text]{
 					if(text != "ready"){
 						throw std::runtime_error(
-							"live_service '" + name +
-							"' message is not 'ready' but '" + text + "'");
+							"live_service(" + name +
+							") message is not 'ready' but '" + text + "'");
 					}
 
 					this->set_value(identifier, true);
@@ -95,13 +97,16 @@ namespace disposer_module::http_server_component{
 		)override{
 			module_.log(
 				[this, identifier](logsys::stdlogb& os){
-					os << "live service " << name << " on_close identifier("
+					os << "live service(" << name << ") on_binary identifier("
 						<< identifier << ")";
 				}, [this, &text]{
+					if(text.size() > 50){
+						text = text.substr(0, 47) + "[…]";
+					}
 					throw std::runtime_error(
-						"live_service '" + name
-						+ "' received unexpected binary message: '" + text
-						+ "'");
+						"live_service(" + name
+						+ ") received unexpected binary message: '" + text
+						+ "' (" + std::to_string(text.size()) + " bytes)");
 				});
 		}
 
@@ -109,18 +114,9 @@ namespace disposer_module::http_server_component{
 			std::set< webservice::ws_identifier > ready_identifiers;
 			module_.log(
 				[this, &ready_identifiers](logsys::stdlogb& os){
-					os << "live service " << name
-						<< " send binary to sessions(";
-					bool first = true;
-					for(auto identifier: ready_identifiers){
-						if(!first){
-							os << ", ";
-						}else{
-							first = false;
-						}
-						os << identifier;
-					}
-					os << ")";
+					os << "live service(" << name
+						<< ") send binary to sessions("
+						<< io_tools::range_to_string(ready_identifiers) << ")";
 				}, [this, &data, &ready_identifiers]{
 					send_binary_if([&ready_identifiers](
 							webservice::ws_identifier identifier,
@@ -139,8 +135,9 @@ namespace disposer_module::http_server_component{
 			std::exception_ptr error
 		)noexcept override{
 			module_.exception_catching_log(
-				[identifier](logsys::stdlogb& os){
-					os << "live service identifier(" << identifier << ")";
+				[this, identifier](logsys::stdlogb& os){
+					os << "live service(" << name << ") identifier("
+						<< identifier << ")";
 				}, [error]{
 					std::rethrow_exception(error);
 				});
@@ -148,8 +145,8 @@ namespace disposer_module::http_server_component{
 
 		void on_exception(std::exception_ptr error)noexcept override{
 			module_.exception_catching_log(
-				[](logsys::stdlogb& os){
-					os << "live service";
+				[this](logsys::stdlogb& os){
+					os << "live service(" << name << ")";
 				}, [error]{
 					std::rethrow_exception(error);
 				});

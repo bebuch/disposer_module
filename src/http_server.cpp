@@ -111,23 +111,29 @@ namespace disposer_module::http_server_component{
 		}
 
 		void send(std::string data){
-			std::set< webservice::ws_identifier > ready_identifiers;
-			module_.log(
-				[this, &ready_identifiers](logsys::stdlogb& os){
-					os << "live service(" << name
-						<< ") send binary to sessions("
-						<< io_tools::range_to_string(ready_identifiers) << ")";
-				}, [this, &data, &ready_identifiers]{
-					send_binary_if([&ready_identifiers](
-							webservice::ws_identifier identifier,
-							bool& ready
-						){
-							if(ready){
-								ready_identifiers.emplace(identifier);
-							}
-							return std::exchange(ready, false);
-						}, std::move(data));
-				});
+			struct log_on_destruct{
+				live_service< Module >* this_;
+				std::set< webservice::ws_identifier > ready_identifiers;
+
+				~log_on_destruct(){
+					this_->module_.log([this](logsys::stdlogb& os){
+							os << "live service(" << this_->name
+								<< ") send binary to sessions("
+								<< io_tools::range_to_string(ready_identifiers)
+								<< ")";
+						});
+				}
+			};
+
+			send_binary_if([log = log_on_destruct{this}](
+					webservice::ws_identifier identifier,
+					bool& ready
+				)mutable{
+					if(ready){
+						log.ready_identifiers.emplace(identifier);
+					}
+					return std::exchange(ready, false);
+				}, std::move(data));
 		}
 
 		void on_exception(

@@ -112,25 +112,40 @@ namespace disposer_module::http_server_component{
 
 		void send(std::string data){
 			struct log_on_destruct{
-				live_service< Module >* this_;
-				std::set< webservice::ws_identifier > ready_identifiers;
+				log_on_destruct(live_service< Module >& this_)
+					: this_(this_)
+					, moved_(false) {}
+
+				log_on_destruct(log_on_destruct&& other)
+					: this_(other.this_)
+					, moved_(std::exchange(other.moved_, true))
+					, ready_identifiers_(std::move(other.ready_identifiers_)) {}
+
+
+				live_service< Module >& this_;
+				bool moved_;
+				std::set< webservice::ws_identifier > ready_identifiers_;
 
 				~log_on_destruct(){
-					this_->module_.log([this](logsys::stdlogb& os){
-							os << "live service(" << this_->name
+					if(moved_){
+						return;
+					}
+
+					this_.module_.log([this](logsys::stdlogb& os){
+							os << "live service(" << this_.name
 								<< ") send binary to sessions("
-								<< io_tools::range_to_string(ready_identifiers)
+								<< io_tools::range_to_string(ready_identifiers_)
 								<< ")";
 						});
 				}
 			};
 
-			send_binary_if([log = log_on_destruct{this}](
+			send_binary_if([log = log_on_destruct{*this}](
 					webservice::ws_identifier identifier,
 					bool& ready
 				)mutable{
 					if(ready){
-						log.ready_identifiers.emplace(identifier);
+						log.ready_identifiers_.emplace(identifier);
 					}
 					return std::exchange(ready, false);
 				}, std::move(data));

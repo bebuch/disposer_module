@@ -52,7 +52,7 @@ namespace disposer_module::http_server_component{
 		void on_server_connect(
 			boost::asio::ip::tcp::socket&& socket,
 			webservice::http_request&& req
-		){
+		)override{
 			async_server_connect(std::move(socket), std::move(req), false);
 		}
 
@@ -288,7 +288,7 @@ namespace disposer_module::http_server_component{
 		void on_server_connect(
 			boost::asio::ip::tcp::socket&& socket,
 			webservice::http_request&& req
-		){
+		)override{
 			async_server_connect(std::move(socket), std::move(req));
 		}
 
@@ -651,8 +651,9 @@ namespace disposer_module::http_server_component{
 					os << "add WebSocket control service on root(/)";
 				}, [this]{
 					auto control_service =
-						std::make_unique< class control_service< Component > >(
-							component_, *server_);
+						std::make_unique< http_server_component::
+							control_service< Component >
+						>(component_, *server_);
 
 					control_service->set_ping_time(std::chrono::milliseconds(
 						component_("timeout_in_ms"_param)));

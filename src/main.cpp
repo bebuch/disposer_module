@@ -241,7 +241,7 @@ int main(int argc, char** argv){
 			auto const exec_chain = options["chain"].as< std::string >();
 			auto const exec_count = options["count"].as< std::size_t >();
 
-			auto chain = system.enable_chain(exec_chain);
+			disposer::enabled_chain chain(system, exec_chain);
 
 			if(!multithreading){
 				// single thread version

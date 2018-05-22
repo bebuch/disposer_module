@@ -8,6 +8,7 @@
 //-----------------------------------------------------------------------------
 #include <disposer/component.hpp>
 #include <disposer/module.hpp>
+#include <disposer/core/enabled_chain.hpp>
 
 #include <io_tools/range_to_string.hpp>
 
@@ -218,7 +219,8 @@ namespace disposer_module::http_server_component{
 							}
 							chains_.try_emplace(
 								chain,
-								component_.system().enable_chain(chain),
+								component_.system(),
+								chain,
 								exec_count);
 
 							send_text(nlohmann::json::object(
@@ -447,10 +449,11 @@ namespace disposer_module::http_server_component{
 
 		struct running_chains_data{
 			running_chains_data(
-				disposer::enabled_chain&& chain,
+				disposer::system_ref&& system,
+				std::string const& chain_name,
 				std::optional< std::size_t > exec_count
 			)
-				: chain(std::move(chain))
+				: chain(system, chain_name)
 				, exec_count(exec_count) {}
 
 			disposer::enabled_chain chain;

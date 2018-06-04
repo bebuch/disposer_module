@@ -9,7 +9,6 @@ local tar = ../tar ;
 local big = ../big ;
 local webservice = ../webservice ;
 local logsys = ../logsys ;
-local cxxopts = ../cxxopts ;
 local json = ../nlohmann/json ;
 
 local vimba = /home/bebuch/media/libraries/src/Vimba_2_1 ;
@@ -67,11 +66,6 @@ project disposer_module
 	usage-requirements <include>include
 	;
 
-lib log
-	:
-	log.cpp
-	;
-
 lib VimbaC
 	:
 	:
@@ -91,7 +85,6 @@ lib VimbaCPP
 lib vimba
 	:
 	vimba.cpp
-	/disposer_module//log
 	/disposer_module//VimbaC
 	/disposer_module//VimbaCPP
 	:
@@ -99,24 +92,9 @@ lib vimba
 	<include>$(vimba)
 	;
 
-exe disposer_module
-	:
-	main.cpp
-	/disposer_module//log
-	/disposer//disposer
-	/boost//system
-	/boost//filesystem
-	/boost//thread
-	/webservice//webservice
-	:
-	<include>$(bitmap)/include
-	<include>$(cxxopts)/include
-	;
-
 lib http_server
 	:
 	http_server.cpp
-	/disposer_module//log
 	/disposer//disposer
 	/webservice//webservice
 	:
@@ -127,7 +105,6 @@ lib http_server
 lib vector_join
 	:
 	vector_join.cpp
-	/disposer_module//log
 	/disposer//disposer
 	:
 	<include>$(bitmap)/include
@@ -136,7 +113,6 @@ lib vector_join
 lib vector_disjoin
 	:
 	vector_disjoin.cpp
-	/disposer_module//log
 	/disposer//disposer
 	:
 	<include>$(bitmap)/include
@@ -145,7 +121,6 @@ lib vector_disjoin
 lib save
 	:
 	save.cpp
-	/disposer_module//log
 	/disposer//disposer
 	:
 	<include>$(io_tools)/include
@@ -157,7 +132,6 @@ lib save
 lib load
 	:
 	load.cpp
-	/disposer_module//log
 	/disposer//disposer
 	:
 	<include>$(io_tools)/include
@@ -169,7 +143,6 @@ lib load
 lib camera_ximea
 	:
 	camera_ximea.cpp
-	/disposer_module//log
 	/disposer//disposer
 	:
 	<include>$(bitmap)/include
@@ -179,7 +152,6 @@ lib camera_ximea
 lib show_image
 	:
 	show_image.cpp
-	/disposer_module//log
 	/disposer//disposer
 	:
 	<include>$(bitmap)/include
@@ -192,7 +164,6 @@ lib show_image
 lib raster
 	:
 	raster.cpp
-	/disposer_module//log
 	/disposer//disposer
 	:
 	<include>$(bitmap)/include
@@ -201,7 +172,6 @@ lib raster
 lib subbitmap
 	:
 	subbitmap.cpp
-	/disposer_module//log
 	/disposer//disposer
 	:
 	<include>$(bitmap)/include
@@ -210,7 +180,6 @@ lib subbitmap
 lib vignetting_correction
 	:
 	vignetting_correction.cpp
-	/disposer_module//log
 	/disposer//disposer
 	:
 	<include>$(bitmap)/include
@@ -219,7 +188,6 @@ lib vignetting_correction
 lib channel_unbundle
 	:
 	channel_unbundle.cpp
-	/disposer_module//log
 	/disposer//disposer
 	:
 	<include>$(bitmap)/include
@@ -228,7 +196,6 @@ lib channel_unbundle
 lib multi_subbitmap
 	:
 	multi_subbitmap.cpp
-	/disposer_module//log
 	/disposer//disposer
 	:
 	<include>$(bitmap)/include
@@ -238,7 +205,6 @@ lib multi_subbitmap
 lib bitmap_vector_join
 	:
 	bitmap_vector_join.cpp
-	/disposer_module//log
 	/disposer//disposer
 	:
 	<include>$(bitmap)/include
@@ -247,7 +213,6 @@ lib bitmap_vector_join
 lib bitmap_join
 	:
 	bitmap_join.cpp
-	/disposer_module//log
 	/disposer//disposer
 	:
 	<include>$(bitmap)/include
@@ -256,7 +221,6 @@ lib bitmap_join
 lib histogram
 	:
 	histogram.cpp
-	/disposer_module//log
 	/disposer//disposer
 	:
 	<include>$(bitmap)/include
@@ -265,7 +229,6 @@ lib histogram
 lib normalize_bitmap
 	:
 	normalize_bitmap.cpp
-	/disposer_module//log
 	/disposer//disposer
 	:
 	<include>$(bitmap)/include
@@ -274,7 +237,6 @@ lib normalize_bitmap
 lib vignetting_correction_creator
 	:
 	vignetting_correction_creator.cpp
-	/disposer_module//log
 	/disposer//disposer
 	:
 	<include>$(bitmap)/include
@@ -283,7 +245,6 @@ lib vignetting_correction_creator
 lib decode_png
 	:
 	decode_png.cpp
-	/disposer_module//log
 	/disposer//disposer
 	:
 	<include>$(bitmap)/include
@@ -293,7 +254,6 @@ lib decode_png
 lib decode_bbf
 	:
 	decode_bbf.cpp
-	/disposer_module//log
 	/disposer//disposer
 	:
 	<include>$(bitmap)/include
@@ -302,7 +262,6 @@ lib decode_bbf
 lib encode_bbf
 	:
 	encode_bbf.cpp
-	/disposer_module//log
 	/disposer//disposer
 	:
 	<include>$(bitmap)/include
@@ -311,7 +270,6 @@ lib encode_bbf
 lib transform_bitmap
 	:
 	transform_bitmap.cpp
-	/disposer_module//log
 	/disposer//disposer
 	:
 	<include>$(bitmap)/include
@@ -320,7 +278,6 @@ lib transform_bitmap
 lib calibchange
 	:
 	calibchange.cpp
-	/disposer_module//log
 	/disposer//disposer
 	/boost//system
 	/boost//thread
@@ -329,7 +286,6 @@ lib calibchange
 lib encode_png
 	:
 	encode_png.cpp
-	/disposer_module//log
 	/disposer//disposer
 	:
 	<include>$(bitmap)/include
@@ -339,7 +295,6 @@ lib encode_png
 lib encode_jpg
 	:
 	encode_jpg.cpp
-	/disposer_module//log
 	/disposer//disposer
 	:
 	<include>$(bitmap)/include
@@ -350,7 +305,6 @@ lib camera_vimba
 	:
 	camera_vimba.cpp
 	/disposer//disposer
-	/disposer_module//log
 	/disposer_module//vimba
 	/disposer_module//VimbaC
 	/disposer_module//VimbaCPP

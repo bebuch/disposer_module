@@ -6,10 +6,9 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 //-----------------------------------------------------------------------------
-#include "name_generator.hpp"
-
 #include <disposer/module.hpp>
 
+#include <io_tools/name_generator.hpp>
 #include <io_tools/time_to_dir_string.hpp>
 
 #include <boost/filesystem.hpp>
@@ -29,6 +28,8 @@ namespace disposer_module::save{
 	using namespace std::literals::string_literals;
 	using hana::type_c;
 	namespace filesystem = boost::filesystem;
+	using io_tools::name_generator;
+	using io_tools::make_name_generator;
 
 
 	using t1 = std::string;

@@ -7,13 +7,13 @@
 // file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 //-----------------------------------------------------------------------------
 #include "log.hpp"
-#include "name_generator.hpp"
 
 #include <disposer/disposer.hpp>
 
 #include <logsys/log.hpp>
 #include <logsys/stdlogb.hpp>
 
+#include <io_tools/name_generator.hpp>
 #include <io_tools/time_to_dir_string.hpp>
 
 #include <cxxopts.hpp>
@@ -111,7 +111,7 @@ int main(int argc, char** argv){
 	std::shared_ptr< std::ostream > logfile;
 	if(options["no-log"].count() == 0){
 		auto const filename_pattern = options["log"].as< std::string >();
-		auto generator = disposer_module::make_name_generator(
+		auto generator = io_tools::make_name_generator(
 			filename_pattern, {false},
 			std::make_pair("date_time"s,
 				[](std::string const& str){ return str; }));

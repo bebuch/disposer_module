@@ -11,15 +11,9 @@ local webservice = ../webservice ;
 local logsys = ../logsys ;
 local json = ../nlohmann/json ;
 
-local vimba = /home/bebuch/media/libraries/src/Vimba_2_1 ;
-
 
 use-project /boost
 	: $(boost)
-	;
-
-use-project /logsys
-	: $(logsys)
 	;
 
 use-project /webservice
@@ -66,31 +60,6 @@ project disposer_module
 	usage-requirements <include>include
 	;
 
-lib VimbaC
-	:
-	:
-	<name>VimbaC
-	<search>$(vimba)/VimbaC/DynamicLib/x86_64bit
-	;
-
-lib VimbaCPP
-	:
-	[ glob $(vimba)/VimbaCPP/Source/*.cpp ]
-	/disposer_module//VimbaC
-	:
-	<define>USER_SHARED_POINTER
-	<include>$(vimba)
-	;
-
-lib vimba
-	:
-	vimba.cpp
-	/disposer_module//VimbaC
-	/disposer_module//VimbaCPP
-	:
-	<define>USER_SHARED_POINTER
-	<include>$(vimba)
-	;
 
 lib http_server
 	:
@@ -138,15 +107,6 @@ lib load
 	<include>$(bitmap)/include
 	<include>$(tar)/include
 	<include>$(big)/cpp/include
-	;
-
-lib camera_ximea
-	:
-	camera_ximea.cpp
-	/disposer//disposer
-	:
-	<include>$(bitmap)/include
-	<linkflags>-lm3api
 	;
 
 lib show_image
@@ -299,17 +259,4 @@ lib encode_jpg
 	:
 	<include>$(bitmap)/include
 	<linkflags>-lturbojpeg
-	;
-
-lib camera_vimba
-	:
-	camera_vimba.cpp
-	/disposer//disposer
-	/disposer_module//vimba
-	/disposer_module//VimbaC
-	/disposer_module//VimbaCPP
-	:
-	<define>USER_SHARED_POINTER
-	<include>$(vimba)
-	<include>$(bitmap)/include
 	;

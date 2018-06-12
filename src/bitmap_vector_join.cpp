@@ -8,7 +8,6 @@
 //-----------------------------------------------------------------------------
 #include "thread_pool.hpp"
 
-#define DISPOSER_BITMAP_PIXEL_AS_TEXT
 #include <disposer/module.hpp>
 
 #include <bitmap/bitmap.hpp>
@@ -69,7 +68,7 @@ namespace disposer_module::bitmap_vector_join{
 				){
 					std::ostringstream os;
 					os << "value '" << v << "' does not match in type [" <<
-						type_name< T >() << "]";
+						ct_pretty_name< T >() << "]";
 					throw std::out_of_range(os.str());
 				}
 			}

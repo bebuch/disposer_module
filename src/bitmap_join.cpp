@@ -65,7 +65,7 @@ namespace disposer_module::bitmap_vector_join{
 				){
 					std::ostringstream os;
 					os << "value '" << v << "' does not match in type [" <<
-						type_name< T >() << "]";
+						ct_pretty_name< T >() << "]";
 					throw std::out_of_range(os.str());
 				}
 			}

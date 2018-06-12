@@ -13,6 +13,7 @@
 
 #include <bitmap/bitmap.hpp>
 #include <bitmap/pixel.hpp>
+#include <bitmap/pixel_output.hpp>
 
 #include <boost/dll.hpp>
 #include <boost/spirit/home/x3.hpp>
@@ -307,7 +308,10 @@ namespace disposer_module::bitmap_vector_join{
 					"if images containes more images as images_per_line and "
 					"the count is not divisible by images_per_line then some "
 					"pixels remain, they are filled with this value",
-					parser_fn(value_parser{}))
+					parser_fn(value_parser{}),
+					default_value_fn([](auto type){
+						return typename decltype(type)::type{};
+					}))
 			),
 			exec_fn([](auto module){
 				for(auto const& img: module("images"_in).references()){

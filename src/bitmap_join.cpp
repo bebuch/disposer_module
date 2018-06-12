@@ -8,7 +8,6 @@
 //-----------------------------------------------------------------------------
 #include "thread_pool.hpp"
 
-#define DISPOSER_BITMAP_PIXEL_AS_TEXT
 #include <disposer/module.hpp>
 
 #include <bitmap/bitmap.hpp>

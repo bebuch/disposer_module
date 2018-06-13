@@ -235,14 +235,6 @@ lib transform_bitmap
 	<include>$(bitmap)/include
 	;
 
-lib calibchange
-	:
-	calibchange.cpp
-	/disposer//disposer
-	/boost//system
-	/boost//thread
-	;
-
 lib encode_png
 	:
 	encode_png.cpp

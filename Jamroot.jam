@@ -36,6 +36,7 @@ project disposer_module
 
 	<define>BOOST_HANA_CONFIG_ENABLE_STRING_UDL
 	<define>BOOST_ASIO_HAS_STD_CHRONO
+	<define>BOOST_ASIO_HAS_STD_STRING_VIEW
 
 	<toolset>gcc:<cxxflags>-std=gnu++1z
 	<toolset>gcc:<cxxflags>-fconstexpr-depth=1024
@@ -49,6 +50,8 @@ project disposer_module
 	<toolset>clang:<cxxflags>-fvisibility=hidden
 	<toolset>clang:<cxxflags>-stdlib=libc++
 	<toolset>clang:<cxxflags>-Wno-gnu-string-literal-operator-template
+	<toolset>clang:<variant>debug:<cxxflags>-fstandalone-debug
+	<toolset>clang:<variant>debug:<cxxflags>-fno-limit-debug-info
 	<toolset>clang:<variant>debug:<define>_LIBCPP_DEBUG
 	<toolset>clang:<linkflags>-lpthread
 	<toolset>clang:<linkflags>-ldl

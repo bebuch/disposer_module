@@ -192,7 +192,7 @@ namespace disposer_module::transform_bitmap{
 						std::string_view data,
 						auto const type
 					){
-						using io_tools::std_array::operator>>;
+						using io_tools::io_std_array::operator>>;
 						std::istringstream is((std::string(data)));
 						typename decltype(type)::type result;
 						is >> result;

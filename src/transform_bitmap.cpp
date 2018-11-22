@@ -12,7 +12,7 @@
 #include <bitmap/rect_io.hpp>
 
 #include <io_tools/range_to_string.hpp>
-#include <io_tools/std_array_io.hpp>
+#include <io_tools/io_std_array.hpp>
 
 #include <boost/dll.hpp>
 

@@ -42,9 +42,14 @@ namespace disposer_module::vignetting_correction_creator{
 	bitmap< float > exec(Module const module, bitmap< T > const& image){
 		auto const max_v = module("max_value"_param);
 
-		T const max = module.log([](logsys::stdlogb& os, T const* max){
+		T const max = module.log([](
+				logsys::stdlogb& os,
+				std::optional< T > const& max
+			){
 				os << "find max image value";
-				if(max) os << ": " << *max;
+				if(max){
+					os << ": " << *max;
+				}
 			}, [&]{
 				return max_value(image);
 			});
@@ -55,9 +60,11 @@ namespace disposer_module::vignetting_correction_creator{
 
 		auto const reference = module("reference"_param);
 		float const reference_value = module.log(
-			[](logsys::stdlogb& os, float const* ref_v){
+			[](logsys::stdlogb& os, std::optional< float > ref_v){
 				os << "reference value";
-				if(ref_v) os << ": " << *ref_v;
+				if(ref_v){
+					os << ": " << *ref_v;
+				}
 			}, [&]{
 				if(reference == 100) return static_cast< float >(max);
 
